@@ -59,7 +59,8 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;opa
 .sync-dot.coach{background:var(--purple);box-shadow:0 0 6px var(--purple)}
 .sync-dot.err{background:var(--red)}
 @keyframes pdot{0%,100%{opacity:1}50%{opacity:.4}}
-.sync-bar{display:flex;align-items:center;gap:6px;padding:7px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;margin-bottom:10px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text3)}
+.sync-bar{position:fixed;top:auto;left:50%;transform:translateX(-50%);z-index:199;display:none;align-items:center;gap:7px;padding:7px 14px 7px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:20px;box-shadow:0 4px 20px rgba(0,0,0,.5);font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);white-space:nowrap;pointer-events:none}
+.sync-bar.show{display:flex}
 .sync-bar-label{flex:1}
 .sync-last{font-family:'DM Mono',monospace;font-size:9px;color:var(--text3);letter-spacing:.02em;text-transform:none;font-weight:400}
 /* FULLSCREEN REST TIMER */
@@ -296,6 +297,12 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;opa
   </div>
   <div class="fs-next" id="fs-next"></div>
 </div>
+<!-- Sync status pill — floats below header, center screen -->
+<div class="sync-bar" id="sync-bar">
+  <span class="sync-dot" id="sync-dot"></span>
+  <span class="sync-bar-label" id="sync-bar-label">Not syncing</span>
+  <span class="sync-last" id="sync-last"></span>
+</div>
 <div class="coach-overlay" id="coach-overlay" style="display:none">
   <div class="coach-banner">
     <div class="coach-banner-text">👁 Coach view — read only</div>
@@ -316,11 +323,6 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;opa
       </button>
       <div class="h-dayname" id="h-day">Monday</div>
     </div>
-  </div>
-  <div class="sync-bar" id="sync-bar" style="display:none">
-    <span class="sync-dot" id="sync-dot"></span>
-    <span class="sync-bar-label" id="sync-bar-label">Not syncing</span>
-    <span class="sync-last" id="sync-last"></span>
   </div>
   <div class="prog-row">
     <div class="prog-track"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
@@ -414,11 +416,13 @@ function loadGrocery(){try{const r=localStorage.getItem('trk-grocery');if(r){con
 function saveSyncPrefs(){try{localStorage.setItem('trk-sync',JSON.stringify({syncSessionId,coachSessionId,isCoachView}));}catch(e){}}
 function loadSyncPrefs(){try{const r=localStorage.getItem('trk-sync');if(r){const d=JSON.parse(r);syncSessionId=d.syncSessionId||null;coachSessionId=d.coachSessionId||null;isCoachView=d.isCoachView||false;}}catch(e){}}
 
+function showSyncBar(){const hdr=document.getElementById('main-header');const bar=document.getElementById('sync-bar');if(!bar)return;const top=hdr?hdr.getBoundingClientRect().bottom:80;bar.style.top=top+'px';bar.classList.add('show');}
+function hideSyncBar(){const bar=document.getElementById('sync-bar');if(bar)bar.classList.remove('show');}
 async function pushSync(){if(!syncSessionId)return;try{await window.storage.set('session:'+syncSessionId,JSON.stringify({st,ws,wtr,day,mode,ts:Date.now()}),true);lastSyncTime=Date.now();setSyncStatus('live','Live — syncing');updateSyncBar();}catch(e){setSyncStatus('err','Sync error');}}
 async function pullSync(id){try{const r=await window.storage.get('session:'+id,true);if(!r)return null;return JSON.parse(r.value);}catch(e){return null;}}
 
-async function startSync(id){syncSessionId=id;isCoachView=false;coachSessionId=null;saveSyncPrefs();await pushSync();document.getElementById('sync-bar').style.display='flex';document.getElementById('sync-btn').classList.add('sync-on');}
-function stopSync(){syncSessionId=null;clearInterval(syncInterval);syncInterval=null;saveSyncPrefs();document.getElementById('sync-bar').style.display='none';document.getElementById('sync-btn').classList.remove('sync-on');}
+async function startSync(id){syncSessionId=id;isCoachView=false;coachSessionId=null;saveSyncPrefs();await pushSync();showSyncBar();document.getElementById('sync-btn').classList.add('sync-on');}
+function stopSync(){syncSessionId=null;clearInterval(syncInterval);syncInterval=null;saveSyncPrefs();hideSyncBar();document.getElementById('sync-btn').classList.remove('sync-on');}
 
 async function startCoachView(id){
   coachSessionId=id;isCoachView=true;saveSyncPrefs();
@@ -427,7 +431,7 @@ async function startCoachView(id){
   applyRemoteData(data);
   document.getElementById('coach-overlay').style.display='block';
   document.getElementById('coach-banner-id').textContent='ID: '+id;
-  document.getElementById('sync-bar').style.display='flex';
+  showSyncBar();
   document.getElementById('sync-btn').classList.add('sync-on');
   setSyncStatus('coach','Watching live');
   document.getElementById('mode-bar').style.pointerEvents='none';
@@ -435,7 +439,7 @@ async function startCoachView(id){
   if(syncInterval)clearInterval(syncInterval);
   syncInterval=setInterval(async()=>{const d=await pullSync(coachSessionId);if(d){applyRemoteData(d);lastSyncTime=Date.now();updateSyncBar();}},200);
 }
-function exitCoachView(){coachSessionId=null;isCoachView=false;saveSyncPrefs();clearInterval(syncInterval);syncInterval=null;document.getElementById('coach-overlay').style.display='none';document.getElementById('sync-bar').style.display='none';document.getElementById('sync-btn').classList.remove('sync-on');document.getElementById('mode-bar').style.pointerEvents='';document.getElementById('mode-bar').style.opacity='';load();render();showToast('Exited coach view');}
+function exitCoachView(){coachSessionId=null;isCoachView=false;saveSyncPrefs();clearInterval(syncInterval);syncInterval=null;document.getElementById('coach-overlay').style.display='none';hideSyncBar();document.getElementById('sync-btn').classList.remove('sync-on');document.getElementById('mode-bar').style.pointerEvents='';document.getElementById('mode-bar').style.opacity='';load();render();showToast('Exited coach view');}
 function applyRemoteData(data){st=data.st||{};ws=data.ws||{};wtr=data.wtr||{};if(data.day)day=data.day;if(data.mode)mode=data.mode;document.getElementById('mb-workout').classList.toggle('active',mode==='workout');document.getElementById('mb-nutrition').classList.toggle('active',mode==='nutrition');render();}
 function setSyncStatus(type,label){const dot=document.getElementById('sync-dot'),lbl=document.getElementById('sync-bar-label');if(!dot||!lbl)return;dot.className='sync-dot'+({live:' live',coach:' coach',err:' err'}[type]||'');lbl.textContent=label;}
 function updateSyncBar(){if(!lastSyncTime)return;const s=Math.floor((Date.now()-lastSyncTime)/1000);const el=document.getElementById('sync-last');if(el)el.textContent=s<5?'just now':s+'s ago';}
@@ -559,11 +563,14 @@ function render(){
   document.getElementById('week-bar').innerHTML=DAYS.map(dy=>{const pp=wkProg(dy);return`<div class="wd" onclick="switchDay('${dy}')"><div class="wd-lbl${dy===d?' today':''}">${dy}</div><div class="wd-ring${dy===d?' today-ring':''}"><div class="wd-fill" style="height:${pp.pct}%"></div><div class="wd-pct">${pp.pct}</div></div></div>`;}).join('');
   updateCartBadge();
   if(syncSessionId&&!isCoachView)document.getElementById('sync-btn').classList.add('sync-on');
+  // Reposition floating sync pill below header
+  if(document.getElementById('sync-bar').classList.contains('show'))showSyncBar();
 }
 
 setInterval(updateSyncBar,5000);
+window.addEventListener('resize',()=>{if(document.getElementById('sync-bar').classList.contains('show'))showSyncBar();});
 load();loadGrocery();loadSyncPrefs();
-if(syncSessionId&&!isCoachView){document.getElementById('sync-bar').style.display='flex';setSyncStatus('live','Live — syncing');document.getElementById('sync-btn').classList.add('sync-on');pushSync();}
+if(syncSessionId&&!isCoachView){showSyncBar();setSyncStatus('live','Live — syncing');document.getElementById('sync-btn').classList.add('sync-on');pushSync();}
 if(isCoachView&&coachSessionId){startCoachView(coachSessionId);}
 render();restoreTimer();setupSW();
 </script>
