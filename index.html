@@ -433,7 +433,7 @@ async function startCoachView(id){
   document.getElementById('mode-bar').style.pointerEvents='none';
   document.getElementById('mode-bar').style.opacity='.5';
   if(syncInterval)clearInterval(syncInterval);
-  syncInterval=setInterval(async()=>{const d=await pullSync(coachSessionId);if(d){applyRemoteData(d);lastSyncTime=Date.now();updateSyncBar();}},3000);
+  syncInterval=setInterval(async()=>{const d=await pullSync(coachSessionId);if(d){applyRemoteData(d);lastSyncTime=Date.now();updateSyncBar();}},200);
 }
 function exitCoachView(){coachSessionId=null;isCoachView=false;saveSyncPrefs();clearInterval(syncInterval);syncInterval=null;document.getElementById('coach-overlay').style.display='none';document.getElementById('sync-bar').style.display='none';document.getElementById('sync-btn').classList.remove('sync-on');document.getElementById('mode-bar').style.pointerEvents='';document.getElementById('mode-bar').style.opacity='';load();render();showToast('Exited coach view');}
 function applyRemoteData(data){st=data.st||{};ws=data.ws||{};wtr=data.wtr||{};if(data.day)day=data.day;if(data.mode)mode=data.mode;document.getElementById('mb-workout').classList.toggle('active',mode==='workout');document.getElementById('mb-nutrition').classList.toggle('active',mode==='nutrition');render();}
