@@ -476,11 +476,27 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;back
 
 <div class="toast" id="toast"></div>
 
-<script>
-// ── KVDB SYNC ──────────────────────────────────────────────────────────────
-const KVDB_BUCKET='https://kvdb.io/8WMFcpGKXCkBaKLqnmLQWU';
-async function kvSet(key,value){const r=await fetch(`${KVDB_BUCKET}/${key}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(value)});return r.ok;}
-async function kvGet(key){const r=await fetch(`${KVDB_BUCKET}/${key}`);if(!r.ok)return null;const t=await r.text();if(!t||t==='null')return null;try{return JSON.parse(t);}catch(e){return null;}}
+<script type="module">
+// ── FIREBASE REALTIME DATABASE ─────────────────────────────────────────────
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import { getDatabase, ref, set, onValue, off, get } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCf2A5-Nw3QKXi4GLJm42rGRruggOjqsNQ",
+  authDomain: "unit-training-75114.firebaseapp.com",
+  databaseURL: "https://unit-training-75114-default-rtdb.firebaseio.com",
+  projectId: "unit-training-75114",
+  storageBucket: "unit-training-75114.firebasestorage.app",
+  messagingSenderId: "930734468354",
+  appId: "1:930734468354:web:5fb495b8bb74cac498a61b"
+};
+
+const fbApp = initializeApp(firebaseConfig);
+const db = getDatabase(fbApp);
+
+// Active Firebase listener reference so we can detach it when stopping
+let fbListener = null;
+let fbListenerRef = null;
 
 // ── CONSTANTS ─────────────────────────────────────────────────────────────
 const DAYS=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
@@ -528,7 +544,7 @@ let EX=JSON.parse(JSON.stringify(DEFAULT_EX)),MEALS=JSON.parse(JSON.stringify(DE
 let st={},ws={},wtr={},op={am:false,pc:false,sp:false,h2o:false},mealOp={},exop={};
 let mode='workout',day=DAYS[(new Date().getDay()+6)%7],editingMeal=null,saveT;
 let groceryChecked={},groceryCustom=[];
-let syncSessionId=null,coachSessionId=null,syncInterval=null,isCoachView=false,lastSyncTime=null;
+let syncSessionId=null,coachSessionId=null,isCoachView=false,lastSyncTime=null;
 let audioCtx=null,swReg=null,wakeLock=null;
 let restEndTime=0,restTotalSecs=0,restInterval=null,restExName='';
 // Calendar: calChecked['2026-06-26']=true means that day is logged
@@ -764,15 +780,119 @@ function loadGrocery(){try{const r=localStorage.getItem('trk-grocery');if(r){con
 function saveSyncPrefs(){try{localStorage.setItem('trk-sync',JSON.stringify({syncSessionId,coachSessionId,isCoachView}));}catch(e){}}
 function loadSyncPrefs(){try{const r=localStorage.getItem('trk-sync');if(r){const d=JSON.parse(r);syncSessionId=d.syncSessionId||null;coachSessionId=d.coachSessionId||null;isCoachView=d.isCoachView||false;}}catch(e){}}
 
-// ── SYNC ──────────────────────────────────────────────────────────────────
-async function pushSync(){if(!syncSessionId)return;try{const ok=await kvSet('unit_'+syncSessionId,{st,ws,wtr,day,mode,ts:Date.now()});if(ok){lastSyncTime=Date.now();setSyncStatus('live','Live');}else setSyncStatus('err','Sync error');}catch(e){setSyncStatus('err','No connection');}}
-async function pullSync(id){try{return await kvGet('unit_'+id);}catch(e){return null;}}
-function genSessionId(){return Math.random().toString(36).slice(2,8).toUpperCase();}
-async function startSync(id){syncSessionId=id;isCoachView=false;coachSessionId=null;saveSyncPrefs();await pushSync();showPill();document.getElementById('sync-btn').classList.add('sync-on');}
-function stopSync(){syncSessionId=null;clearInterval(syncInterval);syncInterval=null;saveSyncPrefs();hidePill();document.getElementById('sync-btn').classList.remove('sync-on');}
-async function startCoachView(id){coachSessionId=id;isCoachView=true;saveSyncPrefs();setSyncStatus('coach','Connecting…');showPill();const data=await pullSync(id);if(!data){showToast('Session not found — check the code');coachSessionId=null;isCoachView=false;saveSyncPrefs();hidePill();return;}applyRemoteData(data);document.getElementById('coach-banner').classList.add('show');document.getElementById('coach-banner-id').textContent='Code: '+id;document.getElementById('sync-btn').classList.add('sync-on');document.getElementById('mode-bar').style.pointerEvents='none';document.getElementById('mode-bar').style.opacity='.5';setSyncStatus('coach','Coach view');if(syncInterval)clearInterval(syncInterval);syncInterval=setInterval(async()=>{const d=await pullSync(coachSessionId);if(d){applyRemoteData(d);lastSyncTime=Date.now();updatePillTime();}},200);}
-function exitCoachView(){coachSessionId=null;isCoachView=false;saveSyncPrefs();clearInterval(syncInterval);syncInterval=null;document.getElementById('coach-banner').classList.remove('show');hidePill();document.getElementById('sync-btn').classList.remove('sync-on');document.getElementById('mode-bar').style.pointerEvents='';document.getElementById('mode-bar').style.opacity='';load();render();showToast('Exited coach view');}
-function applyRemoteData(data){st=data.st||{};ws=data.ws||{};wtr=data.wtr||{};if(data.day)day=data.day;if(data.mode)mode=data.mode;['workout','nutrition','calendar'].forEach(m=>{document.getElementById('mb-'+m)&&document.getElementById('mb-'+m).classList.toggle('active',mode===m);});render();}
+// ── SYNC — Firebase Realtime Database ─────────────────────────────────────
+// Data lives at /sessions/{sessionId}/ in Firebase.
+// Athlete writes; coach subscribes with onValue — zero polling, true realtime.
+
+function genSessionId(){
+  // 6 uppercase alphanumeric chars — 36^6 = ~2B combos, plenty for 100 athletes
+  return Array.from({length:6},()=>'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*32)]).join('');
+}
+
+function sessionRef(id){ return ref(db,'sessions/'+id); }
+
+async function pushSync(){
+  if(!syncSessionId||isCoachView)return;
+  try{
+    await set(sessionRef(syncSessionId),{
+      st, ws, wtr, day, mode,
+      ts: Date.now()
+    });
+    lastSyncTime=Date.now();
+    setSyncStatus('live','Live');
+  }catch(e){
+    setSyncStatus('err','Sync error');
+    console.warn('Firebase push error',e);
+  }
+}
+
+async function startSync(id){
+  syncSessionId=id; isCoachView=false; coachSessionId=null;
+  saveSyncPrefs();
+  await pushSync();
+  showPill();
+  document.getElementById('sync-btn').classList.add('sync-on');
+}
+
+function stopSync(){
+  if(syncSessionId&&!isCoachView){
+    // Optionally clear the session node so codes don't linger
+    try{ set(sessionRef(syncSessionId),null); }catch(e){}
+  }
+  syncSessionId=null;
+  detachFbListener();
+  saveSyncPrefs();
+  hidePill();
+  document.getElementById('sync-btn').classList.remove('sync-on');
+}
+
+function detachFbListener(){
+  if(fbListenerRef&&fbListener){
+    off(fbListenerRef,'value',fbListener);
+    fbListener=null; fbListenerRef=null;
+  }
+}
+
+async function startCoachView(id){
+  coachSessionId=id; isCoachView=true; saveSyncPrefs();
+  setSyncStatus('coach','Connecting…'); showPill();
+
+  // First do a one-time read to confirm the session exists
+  try{
+    const snap=await get(sessionRef(id));
+    if(!snap.exists()){
+      showToast('Session not found — check the code');
+      coachSessionId=null; isCoachView=false; saveSyncPrefs(); hidePill();
+      return;
+    }
+    applyRemoteData(snap.val());
+  }catch(e){
+    showToast('Connection error — try again');
+    coachSessionId=null; isCoachView=false; saveSyncPrefs(); hidePill();
+    return;
+  }
+
+  // Now attach a live listener — fires instantly on every athlete write
+  detachFbListener();
+  fbListenerRef=sessionRef(id);
+  fbListener=onValue(fbListenerRef,(snap)=>{
+    if(!snap.exists())return;
+    applyRemoteData(snap.val());
+    lastSyncTime=Date.now();
+    updatePillTime();
+  });
+
+  document.getElementById('coach-banner').classList.add('show');
+  document.getElementById('coach-banner-id').textContent='Code: '+id;
+  document.getElementById('sync-btn').classList.add('sync-on');
+  document.getElementById('mode-bar').style.pointerEvents='none';
+  document.getElementById('mode-bar').style.opacity='.5';
+  setSyncStatus('coach','Coach view — live');
+}
+
+function exitCoachView(){
+  detachFbListener();
+  coachSessionId=null; isCoachView=false; saveSyncPrefs();
+  document.getElementById('coach-banner').classList.remove('show');
+  hidePill();
+  document.getElementById('sync-btn').classList.remove('sync-on');
+  document.getElementById('mode-bar').style.pointerEvents='';
+  document.getElementById('mode-bar').style.opacity='';
+  load(); render();
+  showToast('Exited coach view');
+}
+
+function applyRemoteData(data){
+  if(!data)return;
+  st=data.st||{}; ws=data.ws||{}; wtr=data.wtr||{};
+  if(data.day)day=data.day;
+  if(data.mode)mode=data.mode;
+  ['workout','nutrition','calendar'].forEach(m=>{
+    const el=document.getElementById('mb-'+m);
+    if(el)el.classList.toggle('active',mode===m);
+  });
+  render();
+}
 
 // ── SYNC PILL UI ──────────────────────────────────────────────────────────
 function showPill(){const pill=document.getElementById('sync-pill'),hdr=document.getElementById('main-header');if(!pill||!hdr)return;pill.style.top=(hdr.getBoundingClientRect().bottom+8)+'px';pill.classList.add('show');}
@@ -782,8 +902,68 @@ function updatePillTime(){if(!lastSyncTime)return;const s=Math.floor((Date.now()
 function repositionPill(){const pill=document.getElementById('sync-pill');if(pill&&pill.classList.contains('show'))showPill();}
 
 // ── SYNC MODAL ────────────────────────────────────────────────────────────
-function openSyncModal(){let html='';if(isCoachView){html=`<p style="font-family:'Space Grotesk',sans-serif;font-size:14px;color:var(--text2);margin-bottom:18px">Watching session <strong style="color:var(--purple);font-family:'JetBrains Mono',monospace">${coachSessionId}</strong> live.</p><div class="modal-actions"><button class="modal-btn" onclick="closeSyncModalForce()">Close</button><button class="modal-btn primary" style="background:var(--red);border-color:var(--red)" onclick="exitCoachView();closeSyncModalForce()">Exit Coach View</button></div>`;}else{html=`<div style="display:flex;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:3px;margin-bottom:18px"><button class="mode-btn active" id="sm-a" onclick="switchSyncTab('a')" style="flex:1">Athlete</button><button class="mode-btn" id="sm-c" onclick="switchSyncTab('c')" style="flex:1">Coach</button></div><div id="st-a">${syncSessionId?`<p style="font-family:'Space Grotesk',sans-serif;font-size:13px;color:var(--text3);text-align:center;margin-bottom:8px">Your active session</p><div class="session-code">${syncSessionId}</div><p style="font-family:'Space Grotesk',sans-serif;font-size:12px;color:var(--text3);text-align:center;margin-bottom:18px">Share this code with your coach.</p><div class="modal-actions"><button class="modal-btn" onclick="if(navigator.clipboard)navigator.clipboard.writeText('${syncSessionId}').then(()=>showToast('Copied!'))">Copy Code</button><button class="modal-btn" style="color:var(--red);border-color:rgba(232,52,74,.2)" onclick="stopSync();closeSyncModalForce();render()">Stop</button></div>`:`<div class="sync-step"><div class="sync-step-num">1</div><div class="sync-step-text">Tap <strong>Start Session</strong> to get a code.</div></div><div class="sync-step"><div class="sync-step-num">2</div><div class="sync-step-text">Show or text the code to your coach.</div></div><div class="sync-step"><div class="sync-step-num">3</div><div class="sync-step-text">He enters it in <strong>Coach tab</strong> — sees everything live.</div></div><div class="modal-actions" style="margin-top:18px"><button class="modal-btn" onclick="closeSyncModalForce()">Cancel</button><button class="modal-btn primary" onclick="(async()=>{const id=genSessionId();closeSyncModalForce();await startSync(id);render();showToast('Live — code: '+id)})()">Start Session</button></div>`}</div><div id="st-c" style="display:none"><p style="font-family:'Space Grotesk',sans-serif;font-size:13px;color:var(--text2);margin-bottom:12px">Enter the athlete's 6-character code:</p><div class="join-input-row"><input class="join-code-input" id="join-code" maxlength="6" placeholder="ABC123" autocomplete="off" oninput="this.value=this.value.toUpperCase()"></div><div class="modal-actions"><button class="modal-btn" onclick="closeSyncModalForce()">Cancel</button><button class="modal-btn primary" onclick="(async()=>{const c=document.getElementById('join-code').value.trim().toUpperCase();if(c.length<4){showToast('Enter a valid code');return;}closeSyncModalForce();await startCoachView(c);})()">Watch Live</button></div></div>`;}document.getElementById('sync-modal-body').innerHTML=html;document.getElementById('sync-backdrop').classList.add('active');}
-function switchSyncTab(t){document.getElementById('st-a').style.display=t==='a'?'':'none';document.getElementById('st-c').style.display=t==='c'?'':'none';document.getElementById('sm-a').classList.toggle('active',t==='a');document.getElementById('sm-c').classList.toggle('active',t==='c');if(t==='c')setTimeout(()=>{const f=document.getElementById('join-code');if(f)f.focus();},300);}
+function openSyncModal(){
+  let html='';
+  if(isCoachView){
+    html=`<p style="font-family:'Space Grotesk',sans-serif;font-size:14px;color:var(--text2);margin-bottom:18px">
+      Watching session <strong style="color:var(--purple);font-family:'JetBrains Mono',monospace">${coachSessionId}</strong> live via Firebase.
+    </p>
+    <div class="modal-actions">
+      <button class="modal-btn" onclick="closeSyncModalForce()">Close</button>
+      <button class="modal-btn primary" style="background:var(--red);border-color:var(--red)" onclick="exitCoachView();closeSyncModalForce()">Exit Coach View</button>
+    </div>`;
+  } else {
+    const activeBlock = syncSessionId
+      ? `<p style="font-family:'Space Grotesk',sans-serif;font-size:13px;color:var(--text3);text-align:center;margin-bottom:8px">Your active session</p>
+         <div class="session-code">${syncSessionId}</div>
+         <p style="font-family:'Space Grotesk',sans-serif;font-size:12px;color:var(--text3);text-align:center;margin-bottom:18px">
+           Share this with your coach. Every set updates instantly via Firebase — no polling.
+         </p>
+         <div class="modal-actions">
+           <button class="modal-btn" onclick="if(navigator.clipboard)navigator.clipboard.writeText('${syncSessionId}').then(()=>showToast('Code copied!'))">Copy Code</button>
+           <button class="modal-btn" style="color:var(--red);border-color:rgba(232,52,74,.2)" onclick="stopSync();closeSyncModalForce();render()">Stop Session</button>
+         </div>`
+      : `<div class="sync-step"><div class="sync-step-num">1</div><div class="sync-step-text">Tap <strong>Start Session</strong> — you get a unique 6-character code.</div></div>
+         <div class="sync-step"><div class="sync-step-num">2</div><div class="sync-step-text">Text or show the code to your coach.</div></div>
+         <div class="sync-step"><div class="sync-step-num">3</div><div class="sync-step-text">Coach enters it in the <strong>Coach tab</strong> — sees every rep and set update instantly via Firebase Realtime Database.</div></div>
+         <div class="modal-actions" style="margin-top:18px">
+           <button class="modal-btn" onclick="closeSyncModalForce()">Cancel</button>
+           <button class="modal-btn primary" onclick="(async()=>{const id=genSessionId();closeSyncModalForce();await startSync(id);render();showToast('Session live — code: '+id)})()">Start Session</button>
+         </div>`;
+
+    html=`<div style="display:flex;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:3px;margin-bottom:18px">
+      <button class="mode-btn active" id="sm-a" onclick="switchSyncTab('a')" style="flex:1">Athlete</button>
+      <button class="mode-btn" id="sm-c" onclick="switchSyncTab('c')" style="flex:1">Coach</button>
+    </div>
+    <div id="st-a">${activeBlock}</div>
+    <div id="st-c" style="display:none">
+      <p style="font-family:'Space Grotesk',sans-serif;font-size:13px;color:var(--text2);margin-bottom:12px">Enter the athlete's 6-character code:</p>
+      <div class="join-input-row">
+        <input class="join-code-input" id="join-code" maxlength="6" placeholder="ABC123" autocomplete="off"
+          oninput="this.value=this.value.toUpperCase()"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();document.querySelector('#st-c .modal-btn.primary').click()}">
+      </div>
+      <div class="modal-actions">
+        <button class="modal-btn" onclick="closeSyncModalForce()">Cancel</button>
+        <button class="modal-btn primary" onclick="(async()=>{
+          const c=document.getElementById('join-code').value.trim().toUpperCase();
+          if(c.length<4){showToast('Enter a valid code');return;}
+          closeSyncModalForce();
+          await startCoachView(c);
+        })()">Watch Live</button>
+      </div>
+    </div>`;
+  }
+  document.getElementById('sync-modal-body').innerHTML=html;
+  document.getElementById('sync-backdrop').classList.add('active');
+}
+function switchSyncTab(t){
+  document.getElementById('st-a').style.display=t==='a'?'':'none';
+  document.getElementById('st-c').style.display=t==='c'?'':'none';
+  document.getElementById('sm-a').classList.toggle('active',t==='a');
+  document.getElementById('sm-c').classList.toggle('active',t==='c');
+  if(t==='c')setTimeout(()=>{const f=document.getElementById('join-code');if(f)f.focus();},300);
+}
 function closeSyncModal(e){if(e.target.id==='sync-backdrop')closeSyncModalForce();}
 function closeSyncModalForce(){document.getElementById('sync-backdrop').classList.remove('active');}
 
@@ -872,7 +1052,7 @@ function wkHTML(d){
   const done=isRest?exs.filter((_,ei)=>ws[sk(d,ei,0)]&&ws[sk(d,ei,0)].done).length:exs.reduce((a,e,ei)=>a+Array.from({length:e.s},(_,si)=>ws[sk(d,ei,si)]&&ws[sk(d,ei,si)].done?1:0).reduce((x,y)=>x+y,0),0);
   const exsH=exs.map((e,ei)=>{
     const ekey=`${d}-${ei}`,isExO=!!exop[ekey];
-    if(isRest){const k=sk(d,ei,0),dn=ws[k]&&ws[k].done;return`<div class="ci" onclick="(function(){if(isCoachView)return;var k='${esc(k)}';if(!ws[k])ws[k]={};ws[k].done=!ws[k].done;save();render();if(navigator.vibrate)navigator.vibrate(10);})()" style="padding:12px 0"><div class="cb${dn?' done':''}"><div class="ck"></div></div><div><div class="ci-text${dn?' done':''}">${esc(e.n)}</div><div class="ci-note">${esc(e.r)}${e.note?' · '+esc(e.note):''}</div></div></div>`;}
+    if(isRest){const k=sk(d,ei,0),dn=ws[k]&&ws[k].done;return`<div class="ci" onclick="(function(){if(window.isCoachView)return;var k='${esc(k)}';if(!window.ws[k])window.ws[k]={};window.ws[k].done=!window.ws[k].done;window.save();window.render();if(navigator.vibrate)navigator.vibrate(10);})()" style="padding:12px 0"><div class="cb${dn?' done':''}"><div class="ck"></div></div><div><div class="ci-text${dn?' done':''}">${esc(e.n)}</div><div class="ci-note">${esc(e.r)}${e.note?' · '+esc(e.note):''}</div></div></div>`;}
     const sd=Array.from({length:e.s},(_,si)=>ws[sk(d,ei,si)]&&ws[sk(d,ei,si)].done?1:0).reduce((a,b)=>a+b,0),allSD=sd===e.s,rl=fmtRest(e.rest);
     const sH=Array.from({length:e.s},(_,si)=>{const k=sk(d,ei,si),sv=ws[k]||{};if(sv.done){const lg=[sv.w?sv.w+' lbs':null,sv.r?sv.r+' reps':null].filter(Boolean).join(' × ');return`<div class="set-row"><div class="set-done-icon"></div><div class="set-label sdone">Set ${si+1}</div><div class="set-logged">${lg||'—'}</div>${isCoachView?'':'<button class="set-undo-btn" onclick="undoSet(\''+k+'\')">Undo</button>'}</div>`;}return`<div class="set-row"><div class="set-label">Set<br>${si+1}</div><input class="set-w-input" type="number" id="inp-${k}" min="0" step="5" inputmode="decimal" placeholder="${sv.w||'lbs'}" value="${sv.w||''}" oninput="wInput('${k}',this.value)" onclick="event.stopPropagation()"${isCoachView?' disabled':''}><div class="set-sep">×</div><input class="set-r-input" type="number" id="rep-${k}" min="0" step="1" inputmode="numeric" placeholder="${sv.r||'reps'}" value="${sv.r||''}" oninput="rInput('${k}',this.value)" onclick="event.stopPropagation()"${isCoachView?' disabled':''}><div class="set-spacer"></div>${isCoachView?'':'<button class="set-done-btn" onclick="markSet(\''+k+'\',\''+esc(e.n)+' · Set '+(si+1)+'\','+e.rest+')">Done</button>'}</div>`;}).join('');
     const ctrl=isCoachView?'':(`<div class="set-ctrl-row"><button class="set-ctrl-btn rm" onclick="removeSet('${d}',${ei})" ${e.s<=1?'disabled':''}>− Set</button><button class="set-ctrl-btn add" onclick="addSet('${d}',${ei})">+ Set</button></div><div class="ex-actions"><button class="ex-rm-btn" onclick="removeExercise('${d}',${ei})">Remove Exercise</button></div>`);
@@ -924,20 +1104,52 @@ function render(){
   repositionPill();
 }
 
+// ── EXPOSE TO GLOBAL SCOPE (needed because type="module" is scoped) ────────
+const _fns={
+  check,toggleSec,toggleMealSec,toggleEx,switchDay,setMode,
+  markSet,undoSet,wInput,rInput,addWater,resetDay,
+  addSet,removeSet,removeExercise,openAddExercise,confirmAddExercise,
+  toggleEditMeal,addMealItem,removeMealItem,updateMealMeta,addMeal,removeMeal,
+  addSupp,removeSupp,openModal,closeModal,closeModalForce,
+  openSyncModal,closeSyncModal,closeSyncModalForce,switchSyncTab,
+  startSync,stopSync,startCoachView,exitCoachView,genSessionId,
+  openGrocery,closeGrocery,closeGroceryForce,
+  toggleGroceryItem,removeGroceryCustom,addGroceryCustom,clearGroceryChecked,
+  toggleCalDay,dismissPopup,
+  skipTimer,adjustTimer,
+  showToast, save, render
+};
+Object.assign(window,_fns);
+// Live references for inline handlers that read mutable state
+Object.defineProperty(window,'isCoachView',{get:()=>isCoachView});
+Object.defineProperty(window,'ws',{get:()=>ws});
+
 // ── INIT ──────────────────────────────────────────────────────────────────
 setInterval(updateClock,1000);
 setInterval(updatePillTime,3000);
 updateClock();
 window.addEventListener('resize',repositionPill);
-load();loadGrocery();loadSyncPrefs();loadCal();
-if(syncSessionId&&!isCoachView){showPill();setSyncStatus('live','Live');document.getElementById('sync-btn').classList.add('sync-on');pushSync();}
-if(isCoachView&&coachSessionId){startCoachView(coachSessionId);}
-render();restoreTimer();setupSW();
+load(); loadGrocery(); loadSyncPrefs(); loadCal();
 
-// Show popup after a short delay (let page render first)
-setTimeout(()=>{checkAndShowPopup();},800);
-// Record that we've seen today (do this AFTER popup check)
-setTimeout(()=>{saveLastSeen();},1500);
+// Resume sync state if page was refreshed mid-session
+if(syncSessionId&&!isCoachView){
+  showPill();
+  setSyncStatus('live','Live');
+  document.getElementById('sync-btn').classList.add('sync-on');
+  pushSync();
+}
+if(isCoachView&&coachSessionId){
+  startCoachView(coachSessionId);
+}
+
+render();
+restoreTimer();
+setupSW();
+
+// Show daily popup after render
+setTimeout(()=>{ checkAndShowPopup(); }, 800);
+// Save today as last seen (after popup check)
+setTimeout(()=>{ saveLastSeen(); }, 1500);
 </script>
 </body>
 </html>
