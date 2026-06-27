@@ -1921,21 +1921,20 @@ async function doSignup(){
     if(usnap&&usnap.exists()){hideAuthLoading();errEl.textContent='Username already taken.';return;}
     // Block onAuthStateChanged from firing mid-setup
     isSigningUp=true;
-    // Create Firebase Auth user
+    // Step 1: Create Firebase Auth user (this is the critical step)
     const cred=await createUserWithEmailAndPassword(auth,email,pass);
-    await updateProfile(cred.user,{displayName:first+' '+last});
-    // Save profile to DB
+    await updateProfile(cred.user,{displayName:first+' '+last}).catch(e=>console.warn('displayName:',e));
+    // Step 2: Save profile + reserve username (non-fatal if DB rules block it)
     const profile={firstName:first,lastName:last,email,phone,username,createdAt:Date.now()};
-    await fbSet(userProfileRef(cred.user.uid),profile);
-    // Reserve username
-    await fbSet(userByUsernameRef(username),{uid:cred.user.uid,email});
-    // Run onboarding + save initial data
+    try{await fbSet(userProfileRef(cred.user.uid),profile);}catch(e){console.warn('Profile write failed (check DB rules):',e.code,e.message);}
+    try{await fbSet(userByUsernameRef(username),{uid:cred.user.uid,email});}catch(e){console.warn('Username reserve failed:',e.code,e.message);}
+    // Step 3: Onboarding wizard + save initial program data
     await initNewUserData(cred.user.uid,profile);
-    // Now finish — manually do what onAuthStateChanged would have done
+    // Step 4: Finish — load data and enter app
     isSigningUp=false;
     currentUser=cred.user;
     showAuthLoading('Loading your program…');
-    await loadUserData(cred.user.uid);
+    await loadUserData(cred.user.uid).catch(e=>console.warn('loadUserData:',e));
     hideAuthLoading();
     hideAuthScreen();
     updateHeaderName();
@@ -1944,18 +1943,24 @@ async function doSignup(){
   }catch(e){
     isSigningUp=false;
     hideAuthLoading();
-    errEl.textContent=friendlyAuthError(e);
+    console.error('Signup error:',e.code,e.message,e);
+    const msg=friendlyAuthError(e);
+    errEl.textContent=msg;
+    // Also show as toast so it's impossible to miss
+    showToast('Error: '+msg);
   }
 }
 
 function friendlyAuthError(e){
   const code=e.code||'';
   if(code.includes('user-not-found')||code.includes('wrong-password')||code.includes('invalid-credential'))return 'Incorrect username/email or password.';
-  if(code.includes('email-already'))return 'An account with this email already exists.';
+  if(code.includes('email-already'))return 'An account with this email already exists. Try signing in.';
   if(code.includes('weak-password'))return 'Password must be at least 6 characters.';
   if(code.includes('invalid-email'))return 'Invalid email address.';
   if(code.includes('network'))return 'Network error — check your connection.';
-  return e.message||'Something went wrong. Try again.';
+  if(code.includes('permission-denied'))return 'Database permission denied — contact support.';
+  if(code.includes('PERMISSION_DENIED'))return 'Database write blocked — check Firebase rules.';
+  return (e.message||'Something went wrong. Try again.').substring(0,120);
 }
 
 async function initNewUserData(uid,profile){
@@ -1995,7 +2000,13 @@ async function initNewUserData(uid,profile){
     userPrefs:userWKOverride?{wkOverride:userWKOverride,onboarded:true}:{onboarded:true},
     ts:Date.now()
   };
-  await fbSet(userDataRef(uid),data);
+  try{
+    await fbSet(userDataRef(uid),data);
+  }catch(e){
+    console.warn('initNewUserData DB write failed (check Firebase rules):',e.code,e.message);
+    // Store locally as fallback so user can still use the app
+    try{localStorage.setItem('trk-v8',JSON.stringify({st:{},ws:{},wtr:{},EX:dataEX,MEALS:dataMEALS,SUPPS:dataSUPPS,CARDIO:userCardio}));}catch(le){}
+  }
 }
 
 async function loadUserData(uid){
