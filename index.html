@@ -1008,11 +1008,9 @@ function pushTimerState(){
   const id=getTimerSyncId();
   if(!id||!db)return;
   const node=timerNodeRef(id);
-  // 'source' tells the listener which side wrote this — the other side ignores its own writes
-  const source=isCoachView?'coach':'athlete';
   const data=restEndTime>Date.now()
-    ?{end:restEndTime,total:restTotalSecs,ex:restExName,source,ts:Date.now()}
-    :{cleared:true,source,ts:Date.now()};
+    ?{end:restEndTime,total:restTotalSecs,ex:restExName,ts:Date.now()}
+    :{cleared:true,ts:Date.now()};
   fbSet(node,data).catch(()=>{});
 }
 
@@ -1027,19 +1025,19 @@ function attachTimerListener(id){
     if(!snap||!snap.exists())return;
     const td=snap.val();
     if(!td)return;
-    // Ignore our own writes — only react to the other side's timer events
-    const mySide=isCoachView?'coach':'athlete';
-    if(td.source&&td.source===mySide)return;
     if(td.cleared){
+      // Other side cleared the timer
       if(restEndTime>0){clearInterval(restInterval);restInterval=null;restEndTime=0;hideFST();}
       return;
     }
     if(!td.end||td.end<=Date.now())return;
-    // Always apply — this is from the other side so always honour it
-    restEndTime=td.end;
-    const rawTotal=td.total;restTotalSecs=(rawTotal&&rawTotal>0&&rawTotal<1800)?rawTotal:Math.ceil((td.end-Date.now())/1000);
-    restExName=td.ex||'Rest';
-    startTimerLocal();
+    // Only start if this is a new or different timer
+    if(Math.abs((td.end||0)-(restEndTime||0))>800){
+      restEndTime=td.end;
+      restTotalSecs=td.total||Math.ceil((td.end-Date.now())/1000);
+      restExName=td.ex||'Rest';
+      startTimerLocal();
+    }
   });
 }
 
@@ -1221,7 +1219,7 @@ async function startRestTimer(secs,name){
 }
 function tick(){if(Math.ceil((restEndTime-Date.now())/1000)<=0)finishTimer();else updateTimer();}
 function finishTimer(){clearInterval(restInterval);restInterval=null;restEndTime=0;try{localStorage.removeItem('trk-timer');}catch(e){}pushTimerState();const fst=document.getElementById('fs-timer');fst.classList.add('finish');setTimeout(()=>fst.classList.remove('finish'),700);hideFST();relWL();postSW({type:'CANCEL'});playAlarm();if(navigator.vibrate)navigator.vibrate([200,100,200,100,400,100,300]);showToast('Rest done — next set!');}
-function updateTimer(){if(!restEndTime)return;const left=Math.max(0,Math.ceil((restEndTime-Date.now())/1000)),m=Math.floor(left/60),s=left%60;const te=document.getElementById('fs-time'),ee=document.getElementById('fs-ex-name'),fe=document.getElementById('fs-ring-fill'),ge=document.getElementById('fs-ring-glow'),ne=document.getElementById('fs-next');if(te)te.textContent=m+':'+(s<10?'0':'')+s;if(ee)ee.textContent=restExName;const remaining=Math.ceil((restEndTime-Date.now())/1000);const total=(restTotalSecs>0&&restTotalSecs<1800)?restTotalSecs:remaining||1;const off=RING_CIRC*(1-left/total),w=left<=10;if(fe){fe.style.strokeDashoffset=off;fe.style.stroke=w?'#E8344A':'var(--amber)';fe.style.filter=w?'drop-shadow(0 0 8px rgba(232,52,74,.6))':'drop-shadow(0 0 10px rgba(245,166,35,.7))';}if(ge){ge.style.strokeDashoffset=off;ge.style.stroke=w?'#E8344A':'var(--amber)';}if(te)te.style.color=w?'var(--red)':'var(--amber)';if(ne)ne.textContent=Math.floor(total/60)+':'+String(total%60).padStart(2,'0')+' rest period';}
+function updateTimer(){if(!restEndTime)return;const left=Math.max(0,Math.ceil((restEndTime-Date.now())/1000)),m=Math.floor(left/60),s=left%60;const te=document.getElementById('fs-time'),ee=document.getElementById('fs-ex-name'),fe=document.getElementById('fs-ring-fill'),ge=document.getElementById('fs-ring-glow'),ne=document.getElementById('fs-next');if(te)te.textContent=m+':'+(s<10?'0':'')+s;if(ee)ee.textContent=restExName;const total=restTotalSecs||Math.ceil((restEndTime-Date.now())/1000)||1;const off=RING_CIRC*(1-left/total),w=left<=10;if(fe){fe.style.strokeDashoffset=off;fe.style.stroke=w?'#E8344A':'var(--amber)';fe.style.filter=w?'drop-shadow(0 0 8px rgba(232,52,74,.6))':'drop-shadow(0 0 10px rgba(245,166,35,.7))';}if(ge){ge.style.strokeDashoffset=off;ge.style.stroke=w?'#E8344A':'var(--amber)';}if(te)te.style.color=w?'var(--red)':'var(--amber)';if(ne)ne.textContent=Math.floor(total/60)+':'+String(total%60).padStart(2,'0')+' rest period';}
 function skipTimer(){
   clearInterval(restInterval);restInterval=null;restEndTime=0;
   try{localStorage.removeItem('trk-timer');}catch(e){}
