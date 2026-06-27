@@ -545,7 +545,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;back
       <div class="auth-row2">
         <div class="auth-field">
           <label class="auth-label">First Name</label>
-          <input class="auth-input" id="su-first" type="text" placeholder="Haytha" autocomplete="given-name"
+          <input class="auth-input" id="su-first" type="text" placeholder="Haytham" autocomplete="given-name"
             onkeydown="if(event.key==='Enter')document.getElementById('su-last').focus()">
         </div>
         <div class="auth-field">
@@ -834,7 +834,7 @@ function userByUsernameRef(username){return db?ref(db,'usernames/'+username.toLo
 
 // ── ADMIN ACCOUNT (pre-seeded) ────────────────────────────────────────────
 const ADMIN_USERNAME='haitamahir';
-const ADMIN_EMAIL='gaitamahir@gmail.com';
+const ADMIN_EMAIL='haitamahir@gmail.com';
 
 // ── CONSTANTS ─────────────────────────────────────────────────────────────
 // Week order starts Saturday (program day 1)
@@ -1631,7 +1631,7 @@ async function resolveEmailFromUsername(username){
     if(snap&&snap.exists())return snap.val().email;
   }catch(e){}
   // Fallback: check hardcoded admin mapping
-  const adminMap={'haitamahir':'gaitamahir@gmail.com'};
+  const adminMap={'haitamahir':'haitamahir@gmail.com'};
   if(adminMap[username])return adminMap[username];
   throw new Error('Username not found');
 }
@@ -2210,7 +2210,7 @@ async function bootstrapAdmin(){
     const su=document.getElementById('su-user');
     if(sf)sf.value='Haytha';
     if(sl)sl.value='Mahir';
-    if(se)se.value='gaitamahir@gmail.com';
+    if(se)se.value='haitamahir@gmail.com';
     if(sp)sp.value='7788144529';
     if(su)su.value='haitamahir';
   }catch(e){}
