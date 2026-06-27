@@ -1628,9 +1628,12 @@ async function resolveEmailFromUsername(username){
   if(!db)throw new Error('Offline — enter email directly');
   try{
     const snap=await fbGet(userByUsernameRef(username));
-    if(!snap||!snap.exists())throw new Error('Username not found');
-    return snap.val().email;
-  }catch(e){throw new Error('Username not found');}
+    if(snap&&snap.exists())return snap.val().email;
+  }catch(e){}
+  // Fallback: check hardcoded admin mapping
+  const adminMap={'haitamahir':'gaitamahir@gmail.com'};
+  if(adminMap[username])return adminMap[username];
+  throw new Error('Username not found');
 }
 
 async function doLogin(){
@@ -1640,12 +1643,15 @@ async function doLogin(){
   errEl.textContent='';
   if(!rawInput||!pass){errEl.textContent='Please fill in all fields.';return;}
   if(!auth){errEl.textContent='Auth unavailable — check connection.';return;}
+  const btn=document.querySelector('#auth-login .auth-btn');
+  if(btn){btn.disabled=true;btn.textContent='Signing in…';}
   try{
     const email=await resolveEmail(rawInput);
     await signInWithEmailAndPassword(auth,email,pass);
     // onAuthStateChanged handles the rest
   }catch(e){
     errEl.textContent=friendlyAuthError(e);
+    if(btn){btn.disabled=false;btn.textContent='Sign In →';}
   }
 }
 
@@ -1693,11 +1699,19 @@ function friendlyAuthError(e){
 }
 
 async function initNewUserData(uid,profile){
-  // New users start with empty exercises/meals — they build their own program
-  const emptyEX={Sat:[],Sun:[],Mon:[],Tue:[],Wed:[],Thu:[],Fri:[]};
-  const emptyMEALS=[];
-  const emptySUPPS=[];
-  const data={st:{},ws:{},wtr:{},EX:emptyEX,MEALS:emptyMEALS,SUPPS:emptySUPPS,CARDIO:{},ts:Date.now()};
+  let dataEX,dataMEALS,dataSUPPS;
+  // Admin account gets the full pre-populated program
+  if(profile.username===ADMIN_USERNAME||profile.email===ADMIN_EMAIL){
+    dataEX=JSON.parse(JSON.stringify(DEFAULT_EX));
+    dataMEALS=JSON.parse(JSON.stringify(DEFAULT_MEALS));
+    dataSUPPS=[...DEFAULT_SUPPS];
+  } else {
+    // New users start with empty program — they build their own
+    dataEX={Sat:[],Sun:[],Mon:[],Tue:[],Wed:[],Thu:[],Fri:[]};
+    dataMEALS=[];
+    dataSUPPS=[];
+  }
+  const data={st:{},ws:{},wtr:{},EX:dataEX,MEALS:dataMEALS,SUPPS:dataSUPPS,CARDIO:{},ts:Date.now()};
   await fbSet(userDataRef(uid),data);
 }
 
@@ -2179,6 +2193,29 @@ loadGrocery();loadSyncPrefs();loadCal();load(); // local fallback, overwritten b
 openPhotoDB().catch(()=>{});
 
 // ── AUTH INIT — everything flows through onAuthStateChanged ──────────────
+// Bootstrap admin account — runs silently, only creates if not already existing
+async function bootstrapAdmin(){
+  if(!auth||!db)return;
+  try{
+    // Try to sign in as admin to check if account exists
+    // We don't have the password here so just check the username node
+    const snap=await fbGet(userByUsernameRef(ADMIN_USERNAME));
+    if(snap&&snap.exists())return; // already set up
+    // Account not bootstrapped yet — user must create it via Create Account tab
+    // Pre-fill the create account form with admin details
+    const sf=document.getElementById('su-first');
+    const sl=document.getElementById('su-last');
+    const se=document.getElementById('su-email');
+    const sp=document.getElementById('su-phone');
+    const su=document.getElementById('su-user');
+    if(sf)sf.value='Haytha';
+    if(sl)sl.value='Mahir';
+    if(se)se.value='gaitamahir@gmail.com';
+    if(sp)sp.value='7788144529';
+    if(su)su.value='haitamahir';
+  }catch(e){}
+}
+
 if(auth){
   onAuthStateChanged(auth,async(user)=>{
     if(user){
@@ -2197,9 +2234,10 @@ if(auth){
       // Not signed in — show auth screen
       currentUser=null;
       // Show auth screen after loader
-      setTimeout(()=>{
+      setTimeout(async()=>{
         const a=document.getElementById('auth-screen');
         if(a){a.style.display='flex';a.classList.add('active');}
+        await bootstrapAdmin();
       },2600);
     }
   });
