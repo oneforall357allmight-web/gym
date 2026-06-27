@@ -653,6 +653,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;back
     <div class="ob-progress">
       <div class="ob-dot active" id="ob-p0"></div>
       <div class="ob-dot" id="ob-p1"></div>
+      <div class="ob-dot" id="ob-p1b"></div>
       <div class="ob-dot" id="ob-p2"></div>
       <div class="ob-dot" id="ob-p3"></div>
     </div>
@@ -697,6 +698,48 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;back
       </div>
       <button class="ob-btn" id="ob-btn-1" disabled onclick="obNext(1)">Continue →</button>
       <button class="ob-skip" onclick="obNext(1,true)">Skip this step</button>
+    </div>
+
+    <!-- Step 1b: Cardio timing (only shown if cardio=yes) -->
+    <div class="ob-step" id="ob-step-1b">
+      <div class="ob-heading">When do you prefer cardio? ⏰</div>
+      <div class="ob-sub">This determines where cardio shows up in your daily schedule.</div>
+      <div class="ob-choices" id="ob-cardio-timing">
+        <div class="ob-choice" onclick="obSelectCardioTiming('morning',this)">
+          <div class="ob-choice-icon">🌅</div>
+          <div class="ob-choice-text">
+            <div class="ob-choice-title">Morning — before workouts</div>
+            <div class="ob-choice-desc">Fasted or early cardio before lifting</div>
+          </div>
+          <div class="ob-check"></div>
+        </div>
+        <div class="ob-choice" onclick="obSelectCardioTiming('after',this)">
+          <div class="ob-choice-icon">🌇</div>
+          <div class="ob-choice-text">
+            <div class="ob-choice-title">After workouts</div>
+            <div class="ob-choice-desc">Post-lift cardio as a finisher or cool-down</div>
+          </div>
+          <div class="ob-check"></div>
+        </div>
+        <div class="ob-choice" onclick="obSelectCardioTiming('both',this)">
+          <div class="ob-choice-icon">🔁</div>
+          <div class="ob-choice-text">
+            <div class="ob-choice-title">Both — morning and after</div>
+            <div class="ob-choice-desc">Double session days — cardio AM and PM</div>
+          </div>
+          <div class="ob-check"></div>
+        </div>
+        <div class="ob-choice" onclick="obSelectCardioTiming('separate',this)">
+          <div class="ob-choice-icon">📆</div>
+          <div class="ob-choice-text">
+            <div class="ob-choice-title">Separate cardio days</div>
+            <div class="ob-choice-desc">Dedicated cardio days, not mixed with lifting</div>
+          </div>
+          <div class="ob-check"></div>
+        </div>
+      </div>
+      <button class="ob-btn" id="ob-btn-1b" disabled onclick="obNext('1b')">Continue →</button>
+      <button class="ob-skip" onclick="obNext('1b',true)">Skip this step</button>
     </div>
 
     <!-- Step 2: Training days -->
@@ -1147,6 +1190,8 @@ let st={},ws={},wtr={},op={am:false,pc:false,sp:false,h2o:false,ph:false},mealOp
 let mode='workout',day=DAYS[(new Date().getDay()+1)%7],editingMeal=null,saveT;
 let groceryChecked={},groceryCustom=[];
 let syncSessionId=null,coachSessionId=null,isCoachView=false,lastSyncTime=null;
+// Flag: true while doSignup is running — blocks onAuthStateChanged from racing ahead
+let isSigningUp=false;
 // Session mode: 'solo' | 'cotrain' | 'coach' | null (not yet chosen)
 let sessionMode=null;
 // Guest view: someone joined a co-train session (read-only, workout tab only)
@@ -1874,6 +1919,8 @@ async function doSignup(){
     // Check username not taken
     const usnap=await fbGet(userByUsernameRef(username));
     if(usnap&&usnap.exists()){hideAuthLoading();errEl.textContent='Username already taken.';return;}
+    // Block onAuthStateChanged from firing mid-setup
+    isSigningUp=true;
     // Create Firebase Auth user
     const cred=await createUserWithEmailAndPassword(auth,email,pass);
     await updateProfile(cred.user,{displayName:first+' '+last});
@@ -1882,11 +1929,20 @@ async function doSignup(){
     await fbSet(userProfileRef(cred.user.uid),profile);
     // Reserve username
     await fbSet(userByUsernameRef(username),{uid:cred.user.uid,email});
-    // New user gets empty program (no pre-populated exercises/meals)
-    showAuthLoading('Setting up your account…');
+    // Run onboarding + save initial data
     await initNewUserData(cred.user.uid,profile);
-    // onAuthStateChanged handles rest — loading hidden there
+    // Now finish — manually do what onAuthStateChanged would have done
+    isSigningUp=false;
+    currentUser=cred.user;
+    showAuthLoading('Loading your program…');
+    await loadUserData(cred.user.uid);
+    hideAuthLoading();
+    hideAuthScreen();
+    updateHeaderName();
+    render();
+    setTimeout(()=>showModeSelector(),400);
   }catch(e){
+    isSigningUp=false;
     hideAuthLoading();
     errEl.textContent=friendlyAuthError(e);
   }
@@ -1910,10 +1966,10 @@ async function initNewUserData(uid,profile){
     dataMEALS=JSON.parse(JSON.stringify(DEFAULT_MEALS));
     dataSUPPS=[...DEFAULT_SUPPS];
   } else {
-    // New user — run onboarding wizard first
+    // New user — hide loading, show onboarding wizard
     hideAuthLoading();
     const ob=await showOnboarding();
-    showAuthLoading('Setting up your program…');
+    // Loading will be shown again by doSignup after this resolves
     // Build empty EX for all days
     dataEX={Sat:[],Sun:[],Mon:[],Tue:[],Wed:[],Thu:[],Fri:[]};
     dataMEALS=[];
@@ -1922,6 +1978,7 @@ async function initNewUserData(uid,profile){
     userCardio={
       doesCardio:ob.cardio==='yes',
       cardioDays:ob.cardioDays||0,
+      cardioTiming:ob.cardioTiming||'morning',
       trainDays:ob.trainDays||[],
       split:ob.split||'custom',
       _isOnboardingData:true
@@ -2047,19 +2104,19 @@ function updateHeaderName(){
 }
 
 // ── ONBOARDING WIZARD ────────────────────────────────────────────────────
-let obData={cardio:'',cardioDays:0,trainDays:[],split:''};
+let obData={cardio:'',cardioDays:0,cardioTiming:'',trainDays:[],split:''};
 let obResolve=null; // promise resolver — wizard returns when done
 
 function showOnboarding(){
   return new Promise(res=>{
     obResolve=res;
-    obData={cardio:'',cardioDays:0,trainDays:[],split:''};
+    obData={cardio:'',cardioDays:0,cardioTiming:'',trainDays:[],split:''};
     // Reset all steps
     document.querySelectorAll('.ob-step').forEach(s=>s.classList.remove('active'));
     document.querySelectorAll('.ob-choice').forEach(c=>c.classList.remove('selected'));
     document.querySelectorAll('.ob-num').forEach(n=>n.classList.remove('selected'));
     document.querySelectorAll('.ob-day').forEach(d=>d.classList.remove('selected'));
-    ['ob-btn-0','ob-btn-1','ob-btn-2','ob-btn-3'].forEach(id=>{const b=document.getElementById(id);if(b)b.disabled=true;});
+    ['ob-btn-0','ob-btn-1','ob-btn-1b','ob-btn-2','ob-btn-3'].forEach(id=>{const b=document.getElementById(id);if(b)b.disabled=true;});
     document.getElementById('ob-step-0').classList.add('active');
     obUpdateProgress(0);
     const ob=document.getElementById('onboarding');
@@ -2070,15 +2127,22 @@ function hideOnboarding(){
   const ob=document.getElementById('onboarding');
   if(ob)ob.classList.remove('active');
 }
-function obUpdateProgress(step){
-  const totalSteps=obData.cardio==='no'?3:4; // skip cardio-days step if no cardio
-  for(let i=0;i<4;i++){
-    const d=document.getElementById('ob-p'+i);
-    if(!d)continue;
+function obUpdateProgress(stepKey){
+  // Steps in order (some skipped depending on answers)
+  const allKeys=obData.cardio==='no'?['0','2','3']:['0','1','1b','2','3'];
+  const dotIds=['ob-p0','ob-p1','ob-p1b','ob-p2','ob-p3'];
+  const stepIdx=allKeys.indexOf(String(stepKey));
+  // Map active steps to dot positions
+  dotIds.forEach((id,di)=>{
+    const d=document.getElementById(id);if(!d)return;
     d.classList.remove('done','active');
-    if(i<step)d.classList.add('done');
-    else if(i===step)d.classList.add('active');
-  }
+    const keyAtDot=allKeys[di];
+    if(keyAtDot===undefined){d.style.opacity='0.15';return;}
+    d.style.opacity='';
+    const keyIdx=allKeys.indexOf(keyAtDot);
+    if(keyIdx<stepIdx)d.classList.add('done');
+    else if(keyIdx===stepIdx)d.classList.add('active');
+  });
 }
 function obSelectCardio(val,el){
   obData.cardio=val;
@@ -2101,6 +2165,12 @@ function obToggleDay(el){
   if(countEl)countEl.textContent=count===0?'Select your training days':count+' day'+(count!==1?'s':'')+' selected';
   const btn=document.getElementById('ob-btn-2');if(btn)btn.disabled=count===0;
 }
+function obSelectCardioTiming(val,el){
+  obData.cardioTiming=val;
+  document.querySelectorAll('#ob-cardio-timing .ob-choice').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected');
+  const btn=document.getElementById('ob-btn-1b');if(btn)btn.disabled=false;
+}
 function obSelectSplit(val,el){
   obData.split=val;
   document.querySelectorAll('#ob-split-choice .ob-choice').forEach(c=>c.classList.remove('selected'));
@@ -2108,25 +2178,32 @@ function obSelectSplit(val,el){
   const btn=document.getElementById('ob-btn-3');if(btn)btn.disabled=false;
 }
 function obNext(currentStep,skip=false){
-  if(currentStep===0){
+  const s=String(currentStep);
+  if(s==='0'){
     if(obData.cardio==='no'){
-      // Skip cardio days step
-      obData.cardioDays=0;
-      obGoToStep(2);obUpdateProgress(1);
+      obData.cardioDays=0;obData.cardioTiming='';
+      obGoToStep(2);obUpdateProgress('2');
     } else {
-      obGoToStep(1);obUpdateProgress(1);
+      obGoToStep(1);obUpdateProgress('1');
     }
-  } else if(currentStep===1){
-    obGoToStep(2);obUpdateProgress(2);
-  } else if(currentStep===2){
+  } else if(s==='1'){
+    // After "how many days" — go to timing question
+    obGoToStep('1b');obUpdateProgress('1b');
+  } else if(s==='1b'){
+    if(skip)obData.cardioTiming='';
+    obGoToStep(2);obUpdateProgress('2');
+  } else if(s==='2'){
     if(skip)obData.trainDays=[];
-    obGoToStep(3);obUpdateProgress(3);
+    obGoToStep(3);obUpdateProgress('3');
   }
 }
 function obGoToStep(n){
   document.querySelectorAll('.ob-step').forEach(s=>s.classList.remove('active'));
   const s=document.getElementById('ob-step-'+n);
   if(s)s.classList.add('active');
+  // Scroll to top of onboarding wrap smoothly
+  const ob=document.getElementById('onboarding');
+  if(ob)ob.scrollTo({top:0,behavior:'smooth'});
 }
 async function obFinish(){
   hideOnboarding();
@@ -2550,7 +2627,7 @@ const _fns={
   skipTimer,adjustTimer,startTimerLocal,
   triggerPhotoCapture,handlePhotoFile,saveCurrentPhoto,openPhotoViewer,closePhotoViewer,confirmDeletePhoto,
   showToast,save,render,confirmSignOut,showAuthLoading,hideAuthLoading,markGuestDayDone,
-  showOnboarding,hideOnboarding,obSelectCardio,obSelectSplit,obSelectNum,obToggleDay,obNext,obFinish,obGoToStep
+  showOnboarding,hideOnboarding,obSelectCardio,obSelectSplit,obSelectNum,obToggleDay,obNext,obFinish,obGoToStep,obSelectCardioTiming
 };
 Object.assign(window,_fns);
 Object.defineProperty(window,'isCoachView',{get:()=>isCoachView});
@@ -2582,6 +2659,8 @@ async function bootstrapAdmin(){
 if(auth){
   onAuthStateChanged(auth,async(user)=>{
     if(user){
+      // If signup is in progress, doSignup() will call finishSignup() itself — don't race
+      if(isSigningUp)return;
       currentUser=user;
       showAuthLoading('Loading your program…');
       await loadUserData(user.uid);
