@@ -460,6 +460,40 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;back
 .guest-banner-text{font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--blue);flex:1}
 .guest-exit-btn{font-family:'Space Grotesk',sans-serif;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:rgba(91,143,212,.7);background:none;border:1px solid rgba(91,143,212,.25);border-radius:5px;padding:4px 8px;cursor:pointer;transition:all .15s}
 .guest-exit-btn:active{color:var(--blue);border-color:var(--blue)}
+/* ═══════════════════════════════════════════════
+   AUTH SCREEN
+═══════════════════════════════════════════════ */
+#auth-screen{position:fixed;inset:0;z-index:9997;background:#040810;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;opacity:0;pointer-events:none;transition:opacity .4s var(--ease);overflow-y:auto}
+#auth-screen.active{opacity:1;pointer-events:auto}
+.auth-logo{font-family:'Space Grotesk',sans-serif;font-size:32px;font-weight:700;letter-spacing:.25em;color:var(--amber);text-align:center;margin-bottom:4px;text-shadow:0 0 40px rgba(245,166,35,.3)}
+.auth-logo span{color:var(--text3);font-weight:300}
+.auth-tagline{font-family:'Space Grotesk',sans-serif;font-size:10px;font-weight:600;letter-spacing:.3em;text-transform:uppercase;color:var(--text3);text-align:center;margin-bottom:40px}
+.auth-box{width:100%;max-width:360px}
+.auth-tabs{display:flex;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:3px;margin-bottom:28px}
+.auth-tab{flex:1;padding:10px;border-radius:7px;border:none;background:none;font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);cursor:pointer;transition:all .2s}
+.auth-tab.active{background:var(--bg5);color:var(--text);border:1px solid var(--border2)}
+.auth-field{margin-bottom:14px}
+.auth-label{font-family:'Space Grotesk',sans-serif;font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);margin-bottom:6px;display:block}
+.auth-input{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:14px 14px;font-family:'Space Grotesk',sans-serif;font-size:15px;color:var(--text);outline:none;transition:all .18s;-webkit-appearance:none}
+.auth-input:focus{border-color:var(--amber);background:var(--amber-dim);box-shadow:0 0 0 3px rgba(245,166,35,.07)}
+.auth-input::placeholder{color:var(--text3)}
+.auth-row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.auth-btn{width:100%;padding:16px;border-radius:10px;border:none;background:var(--amber);font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#000;cursor:pointer;transition:all .15s;min-height:52px;box-shadow:0 0 24px var(--amber-glow);margin-top:8px}
+.auth-btn:active{background:var(--amber-soft);transform:scale(.97)}
+.auth-btn:disabled{opacity:.4;pointer-events:none}
+.auth-err{font-family:'Space Grotesk',sans-serif;font-size:12px;color:var(--red);text-align:center;margin-top:10px;min-height:18px;line-height:1.4}
+.auth-forgot{font-family:'Space Grotesk',sans-serif;font-size:11px;color:var(--text3);text-align:center;margin-top:14px;line-height:1.5}
+.auth-forgot a{color:var(--amber);text-decoration:none}
+/* Profile modal */
+.profile-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+.profile-row:last-child{border-bottom:none}
+.profile-label{font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);width:90px;flex-shrink:0}
+.profile-val{font-family:'Space Grotesk',sans-serif;font-size:14px;color:var(--text);flex:1}
+.profile-edit-input{flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;padding:8px 10px;font-family:'Space Grotesk',sans-serif;font-size:14px;color:var(--text);outline:none;transition:all .18s;-webkit-appearance:none}
+.profile-edit-input:focus{border-color:var(--amber);background:var(--amber-dim)}
+/* Guest overlay — blocks all interaction */
+#guest-overlay{position:fixed;inset:0;z-index:150;pointer-events:auto;cursor:not-allowed;display:none}
+#guest-overlay.show{display:block}
 </style>
 </head>
 <body>
@@ -477,9 +511,77 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;back
     <div class="loader-progress-wrap">
       <div class="loader-progress"></div>
     </div>
-    <div class="loader-tagline">Loading your program</div>
+    <div class="loader-tagline">Your personal training platform</div>
   </div>
 </div>
+
+<!-- AUTH SCREEN -->
+<div id="auth-screen">
+  <div class="auth-logo">UNIT<span>.</span></div>
+  <div class="auth-tagline">12-Month Transformation Program</div>
+  <div class="auth-box">
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="auth-tab-login" onclick="switchAuthTab('login')">Sign In</button>
+      <button class="auth-tab" id="auth-tab-signup" onclick="switchAuthTab('signup')">Create Account</button>
+    </div>
+    <!-- LOGIN -->
+    <div id="auth-login">
+      <div class="auth-field">
+        <label class="auth-label">Username or Email</label>
+        <input class="auth-input" id="login-email" type="text" placeholder="username or email" autocomplete="username" autocapitalize="none"
+          onkeydown="if(event.key==='Enter')document.getElementById('login-pass').focus()">
+      </div>
+      <div class="auth-field">
+        <label class="auth-label">Password</label>
+        <input class="auth-input" id="login-pass" type="password" placeholder="••••••••" autocomplete="current-password"
+          onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <button class="auth-btn" onclick="doLogin()">Sign In →</button>
+      <div class="auth-err" id="login-err"></div>
+      <div class="auth-forgot">Forgot your password? Email <a href="mailto:haitamahir@gmail.com">haitamahir@gmail.com</a> and you'll get a new one ASAP.</div>
+    </div>
+    <!-- SIGNUP -->
+    <div id="auth-signup" style="display:none">
+      <div class="auth-row2">
+        <div class="auth-field">
+          <label class="auth-label">First Name</label>
+          <input class="auth-input" id="su-first" type="text" placeholder="Haytha" autocomplete="given-name"
+            onkeydown="if(event.key==='Enter')document.getElementById('su-last').focus()">
+        </div>
+        <div class="auth-field">
+          <label class="auth-label">Last Name</label>
+          <input class="auth-input" id="su-last" type="text" placeholder="Mahir" autocomplete="family-name"
+            onkeydown="if(event.key==='Enter')document.getElementById('su-email').focus()">
+        </div>
+      </div>
+      <div class="auth-field">
+        <label class="auth-label">Email</label>
+        <input class="auth-input" id="su-email" type="email" placeholder="you@email.com" autocomplete="email" autocapitalize="none"
+          onkeydown="if(event.key==='Enter')document.getElementById('su-phone').focus()">
+      </div>
+      <div class="auth-field">
+        <label class="auth-label">Phone Number</label>
+        <input class="auth-input" id="su-phone" type="tel" placeholder="+1 234 567 8901" autocomplete="tel"
+          onkeydown="if(event.key==='Enter')document.getElementById('su-user').focus()">
+      </div>
+      <div class="auth-field">
+        <label class="auth-label">Username</label>
+        <input class="auth-input" id="su-user" type="text" placeholder="yourname123" autocomplete="username" autocapitalize="none"
+          onkeydown="if(event.key==='Enter')document.getElementById('su-pass').focus()">
+      </div>
+      <div class="auth-field">
+        <label class="auth-label">Password</label>
+        <input class="auth-input" id="su-pass" type="password" placeholder="min 6 characters" autocomplete="new-password"
+          onkeydown="if(event.key==='Enter')doSignup()">
+      </div>
+      <button class="auth-btn" onclick="doSignup()">Create Account →</button>
+      <div class="auth-err" id="signup-err"></div>
+    </div>
+  </div>
+</div>
+
+<!-- GUEST OVERLAY — blocks all interaction in guest/co-train-join mode -->
+<div id="guest-overlay"></div>
 
 <!-- SESSION MODE SELECTOR -->
 <div id="mode-selector">
@@ -629,8 +731,8 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;back
   </div>
   <div class="h-row1">
     <div>
-      <div class="logo">UNIT<span>.</span></div>
-      <span class="logo-sub">12-Month Program</span>
+      <div class="logo" onclick="openProfileModal()" style="cursor:pointer" title="My Profile">UNIT<span>.</span></div>
+      <span class="logo-sub" id="user-header-name" style="color:var(--amber);letter-spacing:.1em"></span>
     </div>
     <div class="h-right-group">
       <div class="live-clock" id="live-clock">
@@ -702,6 +804,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;back
 <script type="module" onerror="document.getElementById('loader').style.display='none'">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import { getDatabase, ref, set, onValue, off, get } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 
 const firebaseConfig = {
   apiKey: "AIzaSyCf2A5-Nw3QKXi4GLJm42rGRruggOjqsNQ",
@@ -712,10 +815,26 @@ const firebaseConfig = {
   messagingSenderId: "930734468354",
   appId: "1:930734468354:web:5fb495b8bb74cac498a61b"
 };
-let fbApp,db;
-try{fbApp=initializeApp(firebaseConfig);db=getDatabase(fbApp);}
-catch(e){console.warn('Firebase init failed:',e);db=null;}
+let fbApp,db,auth;
+try{
+  fbApp=initializeApp(firebaseConfig);
+  db=getDatabase(fbApp);
+  auth=getAuth(fbApp);
+}catch(e){console.warn('Firebase init failed:',e);db=null;auth=null;}
+
+// ── CURRENT USER ──────────────────────────────────────────────────────────
+let currentUser=null; // Firebase user object
+let userProfile=null; // {firstName,lastName,email,phone,username}
 let fbListener=null,fbListenerRef=null;
+
+// ── USER DATA PATHS ──────────────────────────────────────────────────────
+function userDataRef(uid){return db?ref(db,'users/'+uid+'/data'):null;}
+function userProfileRef(uid){return db?ref(db,'users/'+uid+'/profile'):null;}
+function userByUsernameRef(username){return db?ref(db,'usernames/'+username.toLowerCase()):null;}
+
+// ── ADMIN ACCOUNT (pre-seeded) ────────────────────────────────────────────
+const ADMIN_USERNAME='haitamahir';
+const ADMIN_EMAIL='gaitamahir@gmail.com';
 
 // ── CONSTANTS ─────────────────────────────────────────────────────────────
 // Week order starts Saturday (program day 1)
@@ -1073,7 +1192,7 @@ async function confirmDeletePhoto(id){
 }
 
 // ── PERSISTENCE ────────────────────────────────────────────────────────────
-function save(){try{localStorage.setItem('trk-v8',JSON.stringify({st,ws,wtr,EX,MEALS,SUPPS,CARDIO}));}catch(e){}if(syncSessionId&&!isCoachView)pushSync();if(isCoachView&&coachSessionId)pushCoachEdit();}
+function save(){try{localStorage.setItem('trk-v8',JSON.stringify({st,ws,wtr,EX,MEALS,SUPPS,CARDIO}));}catch(e){}if(currentUser)dCloudSave();if(syncSessionId&&!isCoachView)pushSync();if(isCoachView&&coachSessionId)pushCoachEdit();}
 function loadCardio(){try{const r=localStorage.getItem('trk-v8');if(r){const d=JSON.parse(r);if(d.CARDIO)CARDIO=d.CARDIO;}}catch(e){}}
 function seedWeights(){
   // For every exercise that has a default weight (e.w), pre-fill ws entries
@@ -1482,6 +1601,200 @@ function confirmEditCardio(d,nameField,noteField){
   setCardio(d,noteField,note.trim());
   closeModalForce();render();showToast('Cardio updated');
 }
+// ── AUTH FUNCTIONS ───────────────────────────────────────────────────────
+function showAuthScreen(){
+  const a=document.getElementById('auth-screen');
+  if(a)a.classList.add('active');
+}
+function hideAuthScreen(){
+  const a=document.getElementById('auth-screen');
+  if(a)a.classList.remove('active');
+  setTimeout(()=>{if(a)a.style.display='none';},500);
+}
+function switchAuthTab(tab){
+  document.getElementById('auth-login').style.display=tab==='login'?'':'none';
+  document.getElementById('auth-signup').style.display=tab==='signup'?'':'none';
+  document.getElementById('auth-tab-login').classList.toggle('active',tab==='login');
+  document.getElementById('auth-tab-signup').classList.toggle('active',tab==='signup');
+  document.getElementById('login-err').textContent='';
+  document.getElementById('signup-err').textContent='';
+}
+
+function resolveEmail(input){
+  // Accepts username or email — if no @ assume it's a username, look up email
+  return input.includes('@')?Promise.resolve(input.trim().toLowerCase()):resolveEmailFromUsername(input.trim().toLowerCase());
+}
+async function resolveEmailFromUsername(username){
+  if(!db)throw new Error('Offline — enter email directly');
+  try{
+    const snap=await fbGet(userByUsernameRef(username));
+    if(!snap||!snap.exists())throw new Error('Username not found');
+    return snap.val().email;
+  }catch(e){throw new Error('Username not found');}
+}
+
+async function doLogin(){
+  const rawInput=(document.getElementById('login-email').value||'').trim();
+  const pass=(document.getElementById('login-pass').value||'').trim();
+  const errEl=document.getElementById('login-err');
+  errEl.textContent='';
+  if(!rawInput||!pass){errEl.textContent='Please fill in all fields.';return;}
+  if(!auth){errEl.textContent='Auth unavailable — check connection.';return;}
+  try{
+    const email=await resolveEmail(rawInput);
+    await signInWithEmailAndPassword(auth,email,pass);
+    // onAuthStateChanged handles the rest
+  }catch(e){
+    errEl.textContent=friendlyAuthError(e);
+  }
+}
+
+async function doSignup(){
+  const first=(document.getElementById('su-first').value||'').trim();
+  const last=(document.getElementById('su-last').value||'').trim();
+  const email=(document.getElementById('su-email').value||'').trim().toLowerCase();
+  const phone=(document.getElementById('su-phone').value||'').trim();
+  const username=(document.getElementById('su-user').value||'').trim().toLowerCase();
+  const pass=(document.getElementById('su-pass').value||'').trim();
+  const errEl=document.getElementById('signup-err');
+  errEl.textContent='';
+  if(!first||!last||!email||!phone||!username||!pass){errEl.textContent='Please fill in all fields.';return;}
+  if(pass.length<6){errEl.textContent='Password must be at least 6 characters.';return;}
+  if(!/^[a-z0-9_]+$/.test(username)){errEl.textContent='Username: letters, numbers, underscores only.';return;}
+  if(!auth||!db){errEl.textContent='Connection error — try again.';return;}
+  try{
+    // Check username not taken
+    const usnap=await fbGet(userByUsernameRef(username));
+    if(usnap&&usnap.exists()){errEl.textContent='Username already taken.';return;}
+    // Create Firebase Auth user
+    const cred=await createUserWithEmailAndPassword(auth,email,pass);
+    await updateProfile(cred.user,{displayName:first+' '+last});
+    // Save profile to DB
+    const profile={firstName:first,lastName:last,email,phone,username,createdAt:Date.now()};
+    await fbSet(userProfileRef(cred.user.uid),profile);
+    // Reserve username
+    await fbSet(userByUsernameRef(username),{uid:cred.user.uid,email});
+    // New user gets empty program (no pre-populated exercises/meals)
+    await initNewUserData(cred.user.uid,profile);
+    // onAuthStateChanged handles rest
+  }catch(e){
+    errEl.textContent=friendlyAuthError(e);
+  }
+}
+
+function friendlyAuthError(e){
+  const code=e.code||'';
+  if(code.includes('user-not-found')||code.includes('wrong-password')||code.includes('invalid-credential'))return 'Incorrect username/email or password.';
+  if(code.includes('email-already'))return 'An account with this email already exists.';
+  if(code.includes('weak-password'))return 'Password must be at least 6 characters.';
+  if(code.includes('invalid-email'))return 'Invalid email address.';
+  if(code.includes('network'))return 'Network error — check your connection.';
+  return e.message||'Something went wrong. Try again.';
+}
+
+async function initNewUserData(uid,profile){
+  // New users start with empty exercises/meals — they build their own program
+  const emptyEX={Sat:[],Sun:[],Mon:[],Tue:[],Wed:[],Thu:[],Fri:[]};
+  const emptyMEALS=[];
+  const emptySUPPS=[];
+  const data={st:{},ws:{},wtr:{},EX:emptyEX,MEALS:emptyMEALS,SUPPS:emptySUPPS,CARDIO:{},ts:Date.now()};
+  await fbSet(userDataRef(uid),data);
+}
+
+async function loadUserData(uid){
+  if(!db)return;
+  try{
+    const snap=await fbGet(userDataRef(uid));
+    if(snap&&snap.exists()){
+      const d=snap.val();
+      st=d.st||{};ws=d.ws||{};wtr=d.wtr||{};
+      if(d.EX&&DAYS.every(day=>Array.isArray(d.EX[day])))EX=d.EX;
+      if(d.MEALS&&d.MEALS.length)MEALS=d.MEALS;
+      if(d.SUPPS)SUPPS=d.SUPPS;
+      if(d.CARDIO)CARDIO=d.CARDIO;
+    }
+    // Load profile
+    const psnap=await fbGet(userProfileRef(uid));
+    if(psnap&&psnap.exists())userProfile=psnap.val();
+  }catch(e){console.warn('loadUserData error',e);}
+  // If admin user and no data saved yet, seed full program
+  if(currentUser&&userProfile&&userProfile.username===ADMIN_USERNAME){
+    // Check if EX is empty (new account) and seed with defaults
+    const hasData=DAYS.some(d=>EX[d]&&EX[d].length>0);
+    if(!hasData){
+      EX=JSON.parse(JSON.stringify(DEFAULT_EX));
+      MEALS=JSON.parse(JSON.stringify(DEFAULT_MEALS));
+      SUPPS=[...DEFAULT_SUPPS];
+      await saveUserData();
+    }
+  }
+  seedWeights();
+}
+
+async function saveUserData(){
+  if(!currentUser||!db)return;
+  try{
+    await fbSet(userDataRef(currentUser.uid),{st,ws,wtr,EX,MEALS,SUPPS,CARDIO,ts:Date.now()});
+  }catch(e){console.warn('saveUserData error',e);}
+}
+
+// Debounced cloud save
+let cloudSaveT;
+function dCloudSave(){clearTimeout(cloudSaveT);cloudSaveT=setTimeout(saveUserData,1500);}
+
+// ── PROFILE FUNCTIONS ─────────────────────────────────────────────────────
+function openProfileModal(){
+  if(!userProfile&&!currentUser)return;
+  const p=userProfile||{};
+  const name=(p.firstName||'')+(p.lastName?' '+p.lastName:'');
+  const body=`
+    <div style="text-align:center;margin-bottom:20px">
+      <div style="width:64px;height:64px;border-radius:50%;background:var(--amber-dim);border:2px solid var(--amber);display:flex;align-items:center;justify-content:center;font-size:24px;margin:0 auto 10px;color:var(--amber);font-family:'Space Grotesk',sans-serif;font-weight:700">${(p.firstName||'?')[0].toUpperCase()}</div>
+      <div style="font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;color:var(--text)">${esc(name||'User')}</div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text3);margin-top:2px">@${esc(p.username||'')}</div>
+    </div>
+    <div class="profile-row"><span class="profile-label">First</span><input class="profile-edit-input" id="pf-first" value="${esc(p.firstName||'')}"></div>
+    <div class="profile-row"><span class="profile-label">Last</span><input class="profile-edit-input" id="pf-last" value="${esc(p.lastName||'')}"></div>
+    <div class="profile-row"><span class="profile-label">Email</span><input class="profile-edit-input" id="pf-email" type="email" value="${esc(p.email||'')}"></div>
+    <div class="profile-row"><span class="profile-label">Phone</span><input class="profile-edit-input" id="pf-phone" type="tel" value="${esc(p.phone||'')}"></div>
+    <div class="profile-row"><span class="profile-label">Username</span><span class="profile-val" style="color:var(--text3)">@${esc(p.username||'')} (fixed)</span></div>
+    <div class="modal-actions" style="margin-top:18px">
+      <button class="modal-btn" style="color:var(--red);border-color:rgba(232,52,74,.2)" onclick="doSignOut()">Sign Out</button>
+      <button class="modal-btn primary" onclick="saveProfile()">Save Changes</button>
+    </div>`;
+  openModal('My Profile',body);
+}
+async function saveProfile(){
+  if(!currentUser||!db)return;
+  const first=(document.getElementById('pf-first')||{}).value||'';
+  const last=(document.getElementById('pf-last')||{}).value||'';
+  const email=(document.getElementById('pf-email')||{}).value||'';
+  const phone=(document.getElementById('pf-phone')||{}).value||'';
+  const updated={...userProfile,firstName:first.trim(),lastName:last.trim(),email:email.trim(),phone:phone.trim()};
+  await fbSet(userProfileRef(currentUser.uid),updated);
+  userProfile=updated;
+  closeModalForce();
+  showToast('Profile saved!');
+  updateHeaderName();
+}
+async function doSignOut(){
+  closeModalForce();
+  if(auth)await signOut(auth).catch(()=>{});
+  currentUser=null;userProfile=null;
+  st={};ws={};wtr={};EX=JSON.parse(JSON.stringify(DEFAULT_EX));MEALS=JSON.parse(JSON.stringify(DEFAULT_MEALS));SUPPS=[...DEFAULT_SUPPS];CARDIO={};
+  // Show auth screen again
+  const a=document.getElementById('auth-screen');
+  if(a){a.style.display='flex';a.classList.add('active');}
+  const hb=document.getElementById('user-header-name');if(hb)hb.textContent='';
+  showToast('Signed out');
+}
+function updateHeaderName(){
+  const el=document.getElementById('user-header-name');
+  if(!el)return;
+  const name=userProfile?userProfile.firstName:(currentUser&&currentUser.displayName?currentUser.displayName.split(' ')[0]:'');
+  el.textContent=name?'Hi, '+name:'';
+}
+
 // ── SESSION MODE SELECTOR LOGIC ──────────────────────────────────────────
 function showModeSelector(){
   const ms=document.getElementById('mode-selector');
@@ -1602,11 +1915,11 @@ async function startGuestView(id){
   attachTimerListener(id);
   document.getElementById('guest-banner').classList.add('show');
   document.getElementById('sync-btn').style.display='none';
-  // Force workout mode only
   mode='workout';
-  // Disable nutrition and calendar tabs
   document.getElementById('mb-nutrition').style.display='none';
   document.getElementById('mb-calendar').style.display='none';
+  // Show blocking overlay — guest cannot interact with anything
+  const ov=document.getElementById('guest-overlay');if(ov)ov.classList.add('show');
   render();
 }
 function applyGuestData(data){
@@ -1628,6 +1941,7 @@ function exitGuestView(){
   document.getElementById('sync-btn').style.display='';
   document.getElementById('mb-nutrition').style.display='';
   document.getElementById('mb-calendar').style.display='';
+  const ov=document.getElementById('guest-overlay');if(ov)ov.classList.remove('show');
   resetToSolo();
 }
 function resetToSolo(){
@@ -1832,6 +2146,7 @@ async function render(){
 // ── GLOBAL EXPORTS ─────────────────────────────────────────────────────────
 const _fns={
   selectMode,enterCoachMode,showMsMain,showCoTrainRole,selectCoTrainRole,enterGuestMode,exitGuestView,startGuestView,stopCoTrainHost,showCoTrainCodeToast,
+  switchAuthTab,doLogin,doSignup,doSignOut,openProfileModal,saveProfile,updateHeaderName,
   getCardio,setCardio,openEditCardio,confirmEditCardio,
   check,toggleSec,toggleMealSec,toggleEx,switchDay,setMode,
   markSet,undoSet,wInput,rInput,addWater,resetDay,
@@ -1860,27 +2175,39 @@ setInterval(updateClock,1000);
 setInterval(updatePillTime,3000);
 updateClock();
 window.addEventListener('resize',repositionPill);
-load();loadGrocery();loadSyncPrefs();loadCal();
+loadGrocery();loadSyncPrefs();loadCal();load(); // local fallback, overwritten by cloud data on auth
 openPhotoDB().catch(()=>{});
 
-// ── SESSION MODE INIT ─────────────────────────────────────────────────────
-(async()=>{
-  if(isCoachView&&coachSessionId){
-    await startCoachView(coachSessionId);render();
-  } else if(isGuestView&&guestSessionId){
-    await startGuestView(guestSessionId);
-  } else if(sessionMode==='cotrain'&&syncSessionId){
-    await startCoTrainHost(syncSessionId);render();
-  } else if(sessionMode==='solo'){
-    // Previously chose solo — skip selector
-    const sb=document.getElementById('sync-btn');if(sb)sb.style.display='none';
-    render();
-  } else {
-    // No mode chosen yet — show selector after loader dismisses
-    render();
-    setTimeout(()=>showModeSelector(),2600);
-  }
-})();
+// ── AUTH INIT — everything flows through onAuthStateChanged ──────────────
+if(auth){
+  onAuthStateChanged(auth,async(user)=>{
+    if(user){
+      currentUser=user;
+      await loadUserData(user.uid);
+      hideAuthScreen();
+      updateHeaderName();
+      render();
+      // Restore session mode
+      if(isCoachView&&coachSessionId){await startCoachView(coachSessionId);}
+      else if(isGuestView&&guestSessionId){await startGuestView(guestSessionId);}
+      else if(sessionMode==='cotrain'&&syncSessionId){await startCoTrainHost(syncSessionId);}
+      else if(sessionMode==='solo'){const sb=document.getElementById('sync-btn');if(sb)sb.style.display='none';}
+      else{setTimeout(()=>showModeSelector(),400);}
+    } else {
+      // Not signed in — show auth screen
+      currentUser=null;
+      // Show auth screen after loader
+      setTimeout(()=>{
+        const a=document.getElementById('auth-screen');
+        if(a){a.style.display='flex';a.classList.add('active');}
+      },2600);
+    }
+  });
+} else {
+  // No auth (offline) — go straight to app with local data
+  render();
+  setTimeout(()=>showModeSelector(),2600);
+}
 restoreTimer();
 setupSW();
 
