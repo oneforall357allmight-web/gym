@@ -1104,16 +1104,15 @@ function applyRemoteData(data){
   // Timer sync — show timer on receiving end if active
   if(data.timerData&&data.timerData.end>Date.now()){
     const td=data.timerData;
-    if(td.end!==restEndTime){
-      clearInterval(restInterval);
+    // Only restart the interval if this is a NEW timer (different end time)
+    // Avoids jitter from restarting on every data push during an active countdown
+    if(Math.abs(td.end-restEndTime)>500){
       restEndTime=td.end;restTotalSecs=td.total;restExName=td.ex;
+      startTimerLocal();
+    }
+    // Always make sure the UI is showing even if interval was already running
+    if(!document.getElementById('fs-timer').classList.contains('active')){
       showFST();updateTimer();
-      restInterval=setInterval(()=>{
-        if(Math.ceil((restEndTime-Date.now())/1000)<=0){
-          clearInterval(restInterval);restInterval=null;restEndTime=0;
-          hideFST();playAlarm();if(navigator.vibrate)navigator.vibrate([200,100,200,100,400]);
-        }else updateTimer();
-      },250);
     }
   } else if(!data.timerData&&restEndTime>0){
     clearInterval(restInterval);restInterval=null;restEndTime=0;hideFST();
@@ -1162,12 +1161,44 @@ async function relWL(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}
 // ── TIMER ──────────────────────────────────────────────────────────────────
 function showFST(){document.getElementById('fs-timer').classList.add('active');document.body.style.overflow='hidden';}
 function hideFST(){document.getElementById('fs-timer').classList.remove('active');document.body.style.overflow='';}
-async function startRestTimer(secs,name){if(!secs)return;clearInterval(restInterval);restEndTime=Date.now()+secs*1000;restTotalSecs=secs;restExName=name;try{localStorage.setItem('trk-timer',JSON.stringify({end:restEndTime,total:restTotalSecs,ex:restExName}));}catch(e){}showFST();reqWL();updateTimer();restInterval=setInterval(tick,250);const g=await rqNP();if(g)postSW({type:'SCHEDULE',ms:secs*1000,ex:name+' — next set'});}
+function startTimerLocal(){
+  // Starts the visual countdown using the already-set restEndTime/restTotalSecs/restExName
+  clearInterval(restInterval);
+  try{localStorage.setItem('trk-timer',JSON.stringify({end:restEndTime,total:restTotalSecs,ex:restExName}));}catch(e){}
+  showFST();reqWL();updateTimer();
+  restInterval=setInterval(tick,250);
+  rqNP().then(g=>{if(g)postSW({type:'SCHEDULE',ms:Math.max(0,restEndTime-Date.now()),ex:restExName+' — next set'});});
+}
+async function startRestTimer(secs,name){
+  if(!secs)return;
+  restEndTime=Date.now()+secs*1000;
+  restTotalSecs=secs;
+  restExName=name;
+  startTimerLocal();
+}
 function tick(){if(Math.ceil((restEndTime-Date.now())/1000)<=0)finishTimer();else updateTimer();}
 function finishTimer(){clearInterval(restInterval);restInterval=null;restEndTime=0;try{localStorage.removeItem('trk-timer');}catch(e){}const fst=document.getElementById('fs-timer');fst.classList.add('finish');setTimeout(()=>fst.classList.remove('finish'),700);hideFST();relWL();postSW({type:'CANCEL'});playAlarm();if(navigator.vibrate)navigator.vibrate([200,100,200,100,400,100,300]);showToast('Rest done — next set!');}
 function updateTimer(){if(!restEndTime)return;const left=Math.max(0,Math.ceil((restEndTime-Date.now())/1000)),m=Math.floor(left/60),s=left%60;const te=document.getElementById('fs-time'),ee=document.getElementById('fs-ex-name'),fe=document.getElementById('fs-ring-fill'),ge=document.getElementById('fs-ring-glow'),ne=document.getElementById('fs-next');if(te)te.textContent=m+':'+(s<10?'0':'')+s;if(ee)ee.textContent=restExName;const off=RING_CIRC*(1-left/restTotalSecs),w=left<=10;if(fe){fe.style.strokeDashoffset=off;fe.style.stroke=w?'#E8344A':'var(--amber)';fe.style.filter=w?'drop-shadow(0 0 8px rgba(232,52,74,.6))':'drop-shadow(0 0 10px rgba(245,166,35,.7))';}if(ge){ge.style.strokeDashoffset=off;ge.style.stroke=w?'#E8344A':'var(--amber)';}if(te)te.style.color=w?'var(--red)':'var(--amber)';if(ne)ne.textContent=Math.floor(restTotalSecs/60)+':'+String(restTotalSecs%60).padStart(2,'0')+' rest period';}
-function skipTimer(){clearInterval(restInterval);restInterval=null;restEndTime=0;try{localStorage.removeItem('trk-timer');}catch(e){}hideFST();relWL();postSW({type:'CANCEL'});}
-function adjustTimer(delta){if(!restEndTime)return;restEndTime+=delta*1000;restTotalSecs=Math.max(restTotalSecs+delta,Math.ceil((restEndTime-Date.now())/1000));if(restEndTime<=Date.now()){finishTimer();return;}try{localStorage.setItem('trk-timer',JSON.stringify({end:restEndTime,total:restTotalSecs,ex:restExName}));}catch(e){}updateTimer();if(navigator.vibrate)navigator.vibrate(15);}
+function skipTimer(){
+  clearInterval(restInterval);restInterval=null;restEndTime=0;
+  try{localStorage.removeItem('trk-timer');}catch(e){}
+  hideFST();relWL();postSW({type:'CANCEL'});
+  // Tell other side timer was skipped
+  if(syncSessionId&&!isCoachView)pushSync();
+  if(isCoachView&&coachSessionId)pushCoachEdit();
+}
+function adjustTimer(delta){
+  if(!restEndTime)return;
+  restEndTime+=delta*1000;
+  restTotalSecs=Math.max(restTotalSecs+delta,Math.ceil((restEndTime-Date.now())/1000));
+  if(restEndTime<=Date.now()){finishTimer();return;}
+  try{localStorage.setItem('trk-timer',JSON.stringify({end:restEndTime,total:restTotalSecs,ex:restExName}));}catch(e){}
+  updateTimer();
+  if(navigator.vibrate)navigator.vibrate(15);
+  // Sync adjusted time to other side immediately
+  if(syncSessionId&&!isCoachView)pushSync();
+  if(isCoachView&&coachSessionId)pushCoachEdit();
+}
 function restoreTimer(){try{const r=localStorage.getItem('trk-timer');if(!r)return;const{end,total,ex}=JSON.parse(r);if(end>Date.now()){restEndTime=end;restTotalSecs=total;restExName=ex;showFST();reqWL();updateTimer();restInterval=setInterval(tick,250);}else localStorage.removeItem('trk-timer');}catch(e){}}
 function fmtRest(s){if(!s)return'';if(s>=60){const m=s/60;return m===Math.floor(m)?m+'m rest':Math.floor(m)+'.5m rest';}return s+'s rest';}
 
@@ -1289,13 +1320,24 @@ async function markSet(k,name,secs){
   else if(i&&!ws[k].w)ws[k].w=i.getAttribute('value')||'';
   if(r&&r.value)ws[k].r=r.value;
   ws[k].done=true;
-  save();render();
   if(navigator.vibrate)navigator.vibrate([20,40,20]);
   if(secs>0){
-    await startRestTimer(secs,name);
+    // Calculate the end time NOW — push it to Firebase before starting locally
+    // so both sides start from the exact same absolute timestamp
+    restEndTime=Date.now()+secs*1000;
+    restTotalSecs=secs;
+    restExName=name;
+    // Push first so receiver gets the timestamp immediately
+    if(syncSessionId&&!isCoachView)await pushSync();
+    if(isCoachView&&coachSessionId)await pushCoachEdit();
+    // Now start locally (interval already has the correct restEndTime)
+    startTimerLocal();
   }
-  if(syncSessionId&&!isCoachView)pushSync();
-  if(isCoachView&&coachSessionId)pushCoachEdit();
+  save();render();
+  if(!secs){
+    if(syncSessionId&&!isCoachView)pushSync();
+    if(isCoachView&&coachSessionId)pushCoachEdit();
+  }
 }
 function undoSet(k){if(ws[k])ws[k].done=false;save();render();}
 function wInput(k,v){if(!ws[k])ws[k]={};ws[k].w=v;dSave();}
@@ -1455,7 +1497,7 @@ const _fns={
   openGrocery,closeGrocery,closeGroceryForce,
   toggleGroceryItem,removeGroceryCustom,addGroceryCustom,clearGroceryChecked,moveGroceryCustom,
   toggleCalDay,dismissPopup,
-  skipTimer,adjustTimer,
+  skipTimer,adjustTimer,startTimerLocal,
   triggerPhotoCapture,handlePhotoFile,saveCurrentPhoto,openPhotoViewer,closePhotoViewer,confirmDeletePhoto,
   showToast,save,render
 };
