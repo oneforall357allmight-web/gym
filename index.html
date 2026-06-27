@@ -82,6 +82,9 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;back
 .icon-btn.sync-on{border-color:rgba(245,166,35,.3);background:var(--amber-dim)}
 .cart-badge{position:absolute;top:-5px;right:-5px;background:var(--amber);color:#000;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:600;border-radius:10px;padding:2px 5px;min-width:18px;text-align:center;border:2px solid var(--bg);display:none;line-height:1.2}
 .cart-badge.show{display:block}
+.icon-btn.logout-btn svg{stroke:var(--text3)}
+.icon-btn.logout-btn:hover svg,.icon-btn.logout-btn:active svg{stroke:var(--red)}
+.icon-btn.logout-btn:active{background:rgba(232,52,74,.08);border-color:rgba(232,52,74,.3)}
 
 /* SYNC PILL */
 .sync-pill{position:fixed;left:50%;transform:translateX(-50%);z-index:190;display:none;align-items:center;gap:7px;padding:6px 14px 6px 10px;background:rgba(13,20,32,.97);border:1px solid var(--border2);border-radius:20px;box-shadow:0 4px 24px rgba(0,0,0,.7);font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);white-space:nowrap;pointer-events:none;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);bottom:calc(60px + env(safe-area-inset-bottom,0px) + 8px)}
@@ -545,7 +548,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;back
       <div class="auth-row2">
         <div class="auth-field">
           <label class="auth-label">First Name</label>
-          <input class="auth-input" id="su-first" type="text" placeholder="Haytham" autocomplete="given-name"
+          <input class="auth-input" id="su-first" type="text" placeholder="Haytha" autocomplete="given-name"
             onkeydown="if(event.key==='Enter')document.getElementById('su-last').focus()">
         </div>
         <div class="auth-field">
@@ -739,6 +742,9 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;back
         <div class="time" id="clock-time">00:00</div>
         <div class="date-str" id="clock-date">—</div>
       </div>
+      <button class="icon-btn logout-btn" id="logout-btn" onclick="confirmSignOut()" aria-label="Sign out" title="Sign out" style="display:none">
+        <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </button>
       <button class="icon-btn" id="sync-btn" onclick="openSyncModal()" aria-label="Live sync">
         <svg viewBox="0 0 24 24"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
       </button>
@@ -1796,17 +1802,25 @@ async function doSignOut(){
   if(auth)await signOut(auth).catch(()=>{});
   currentUser=null;userProfile=null;
   st={};ws={};wtr={};EX=JSON.parse(JSON.stringify(DEFAULT_EX));MEALS=JSON.parse(JSON.stringify(DEFAULT_MEALS));SUPPS=[...DEFAULT_SUPPS];CARDIO={};
+  // Hide logout button
+  const lb=document.getElementById('logout-btn');if(lb)lb.style.display='none';
   // Show auth screen again
   const a=document.getElementById('auth-screen');
   if(a){a.style.display='flex';a.classList.add('active');}
   const hb=document.getElementById('user-header-name');if(hb)hb.textContent='';
   showToast('Signed out');
 }
+function confirmSignOut(){
+  if(confirm('Sign out of UNIT?'))doSignOut();
+}
 function updateHeaderName(){
   const el=document.getElementById('user-header-name');
   if(!el)return;
   const name=userProfile?userProfile.firstName:(currentUser&&currentUser.displayName?currentUser.displayName.split(' ')[0]:'');
   el.textContent=name?'Hi, '+name:'';
+  // Show logout button only when signed in
+  const lb=document.getElementById('logout-btn');
+  if(lb)lb.style.display=currentUser?'':'none';
 }
 
 // ── SESSION MODE SELECTOR LOGIC ──────────────────────────────────────────
@@ -2174,7 +2188,7 @@ const _fns={
   toggleCalDay,dismissPopup,
   skipTimer,adjustTimer,startTimerLocal,
   triggerPhotoCapture,handlePhotoFile,saveCurrentPhoto,openPhotoViewer,closePhotoViewer,confirmDeletePhoto,
-  showToast,save,render
+  showToast,save,render,confirmSignOut
 };
 Object.assign(window,_fns);
 Object.defineProperty(window,'isCoachView',{get:()=>isCoachView});
@@ -2208,7 +2222,7 @@ async function bootstrapAdmin(){
     const se=document.getElementById('su-email');
     const sp=document.getElementById('su-phone');
     const su=document.getElementById('su-user');
-    if(sf)sf.value='Haytham';
+    if(sf)sf.value='Haytha';
     if(sl)sl.value='Mahir';
     if(se)se.value='haitamahir@gmail.com';
     if(sp)sp.value='7788144529';
