@@ -497,6 +497,14 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;back
 /* Guest overlay — blocks all interaction */
 #guest-overlay{position:fixed;inset:0;z-index:150;pointer-events:auto;cursor:not-allowed;display:none}
 #guest-overlay.show{display:block}
+/* Auth loading overlay */
+#auth-loading{position:fixed;inset:0;z-index:9999;background:rgba(4,8,16,.95);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;opacity:0;pointer-events:none;transition:opacity .25s var(--ease)}
+#auth-loading.show{opacity:1;pointer-events:auto}
+.auth-loading-logo{font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;letter-spacing:.25em;color:var(--amber);text-shadow:0 0 40px rgba(245,166,35,.4)}
+.auth-loading-logo span{color:var(--text3);font-weight:300}
+.auth-loading-spinner{width:36px;height:36px;border:2.5px solid var(--border2);border-top-color:var(--amber);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.auth-loading-msg{font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--text3)}
 </style>
 </head>
 <body>
@@ -548,33 +556,33 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;back
       <div class="auth-row2">
         <div class="auth-field">
           <label class="auth-label">First Name</label>
-          <input class="auth-input" id="su-first" type="text" placeholder="Haytha" autocomplete="given-name"
+          <input class="auth-input" id="su-first" type="text" placeholder="" autocomplete="given-name"
             onkeydown="if(event.key==='Enter')document.getElementById('su-last').focus()">
         </div>
         <div class="auth-field">
           <label class="auth-label">Last Name</label>
-          <input class="auth-input" id="su-last" type="text" placeholder="Mahir" autocomplete="family-name"
+          <input class="auth-input" id="su-last" type="text" placeholder="" autocomplete="family-name"
             onkeydown="if(event.key==='Enter')document.getElementById('su-email').focus()">
         </div>
       </div>
       <div class="auth-field">
         <label class="auth-label">Email</label>
-        <input class="auth-input" id="su-email" type="email" placeholder="you@email.com" autocomplete="email" autocapitalize="none"
+        <input class="auth-input" id="su-email" type="email" placeholder="" autocomplete="email" autocapitalize="none"
           onkeydown="if(event.key==='Enter')document.getElementById('su-phone').focus()">
       </div>
       <div class="auth-field">
         <label class="auth-label">Phone Number</label>
-        <input class="auth-input" id="su-phone" type="tel" placeholder="+1 234 567 8901" autocomplete="tel"
+        <input class="auth-input" id="su-phone" type="tel" placeholder="" autocomplete="tel"
           onkeydown="if(event.key==='Enter')document.getElementById('su-user').focus()">
       </div>
       <div class="auth-field">
         <label class="auth-label">Username</label>
-        <input class="auth-input" id="su-user" type="text" placeholder="yourname123" autocomplete="username" autocapitalize="none"
+        <input class="auth-input" id="su-user" type="text" placeholder="" autocomplete="username" autocapitalize="none"
           onkeydown="if(event.key==='Enter')document.getElementById('su-pass').focus()">
       </div>
       <div class="auth-field">
         <label class="auth-label">Password</label>
-        <input class="auth-input" id="su-pass" type="password" placeholder="min 6 characters" autocomplete="new-password"
+        <input class="auth-input" id="su-pass" type="password" placeholder="" autocomplete="new-password"
           onkeydown="if(event.key==='Enter')doSignup()">
       </div>
       <button class="auth-btn" onclick="doSignup()">Create Account →</button>
@@ -585,6 +593,13 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;back
 
 <!-- GUEST OVERLAY — blocks all interaction in guest/co-train-join mode -->
 <div id="guest-overlay"></div>
+
+<!-- AUTH LOADING OVERLAY -->
+<div id="auth-loading">
+  <div class="auth-loading-logo">UNIT<span>.</span></div>
+  <div class="auth-loading-spinner"></div>
+  <div class="auth-loading-msg" id="auth-loading-msg">Signing in…</div>
+</div>
 
 <!-- SESSION MODE SELECTOR -->
 <div id="mode-selector">
@@ -956,7 +971,9 @@ const GROCERY_BASE=[
 ];
 
 // ── STATE ─────────────────────────────────────────────────────────────────
-let EX=JSON.parse(JSON.stringify(DEFAULT_EX)),MEALS=JSON.parse(JSON.stringify(DEFAULT_MEALS)),SUPPS=[...DEFAULT_SUPPS];
+// EX/MEALS/SUPPS start empty — populated from Firebase after auth (admin gets full program)
+const EMPTY_EX={Sat:[],Sun:[],Mon:[],Tue:[],Wed:[],Thu:[],Fri:[]};
+let EX=JSON.parse(JSON.stringify(EMPTY_EX)),MEALS=[],SUPPS=[];
 // Editable cardio: overrides WK[d].am/ams/pc/pcs per day
 let CARDIO={};  // {Mon:{am:'...',ams:'...',pc:'...',pcs:'...'}, ...}
 let st={},ws={},wtr={},op={am:false,pc:false,sp:false,h2o:false,ph:false},mealOp={},exop={};
@@ -1617,6 +1634,15 @@ function hideAuthScreen(){
   if(a)a.classList.remove('active');
   setTimeout(()=>{if(a)a.style.display='none';},500);
 }
+function showAuthLoading(msg){
+  const el=document.getElementById('auth-loading'),ml=document.getElementById('auth-loading-msg');
+  if(ml)ml.textContent=msg||'Please wait…';
+  if(el)el.classList.add('show');
+}
+function hideAuthLoading(){
+  const el=document.getElementById('auth-loading');
+  if(el)el.classList.remove('show');
+}
 function switchAuthTab(tab){
   document.getElementById('auth-login').style.display=tab==='login'?'':'none';
   document.getElementById('auth-signup').style.display=tab==='signup'?'':'none';
@@ -1650,14 +1676,16 @@ async function doLogin(){
   if(!rawInput||!pass){errEl.textContent='Please fill in all fields.';return;}
   if(!auth){errEl.textContent='Auth unavailable — check connection.';return;}
   const btn=document.querySelector('#auth-login .auth-btn');
-  if(btn){btn.disabled=true;btn.textContent='Signing in…';}
+  if(btn){btn.disabled=true;}
+  showAuthLoading('Signing in…');
   try{
     const email=await resolveEmail(rawInput);
     await signInWithEmailAndPassword(auth,email,pass);
-    // onAuthStateChanged handles the rest
+    // onAuthStateChanged handles the rest — loading hidden there
   }catch(e){
+    hideAuthLoading();
     errEl.textContent=friendlyAuthError(e);
-    if(btn){btn.disabled=false;btn.textContent='Sign In →';}
+    if(btn){btn.disabled=false;}
   }
 }
 
@@ -1674,10 +1702,11 @@ async function doSignup(){
   if(pass.length<6){errEl.textContent='Password must be at least 6 characters.';return;}
   if(!/^[a-z0-9_]+$/.test(username)){errEl.textContent='Username: letters, numbers, underscores only.';return;}
   if(!auth||!db){errEl.textContent='Connection error — try again.';return;}
+  showAuthLoading('Creating account…');
   try{
     // Check username not taken
     const usnap=await fbGet(userByUsernameRef(username));
-    if(usnap&&usnap.exists()){errEl.textContent='Username already taken.';return;}
+    if(usnap&&usnap.exists()){hideAuthLoading();errEl.textContent='Username already taken.';return;}
     // Create Firebase Auth user
     const cred=await createUserWithEmailAndPassword(auth,email,pass);
     await updateProfile(cred.user,{displayName:first+' '+last});
@@ -1687,9 +1716,11 @@ async function doSignup(){
     // Reserve username
     await fbSet(userByUsernameRef(username),{uid:cred.user.uid,email});
     // New user gets empty program (no pre-populated exercises/meals)
+    showAuthLoading('Setting up your account…');
     await initNewUserData(cred.user.uid,profile);
-    // onAuthStateChanged handles rest
+    // onAuthStateChanged handles rest — loading hidden there
   }catch(e){
+    hideAuthLoading();
     errEl.textContent=friendlyAuthError(e);
   }
 }
@@ -1799,15 +1830,18 @@ async function saveProfile(){
 }
 async function doSignOut(){
   closeModalForce();
+  showAuthLoading('Signing out…');
+  await new Promise(r=>setTimeout(r,400)); // brief pause for animation
   if(auth)await signOut(auth).catch(()=>{});
   currentUser=null;userProfile=null;
-  st={};ws={};wtr={};EX=JSON.parse(JSON.stringify(DEFAULT_EX));MEALS=JSON.parse(JSON.stringify(DEFAULT_MEALS));SUPPS=[...DEFAULT_SUPPS];CARDIO={};
+  st={};ws={};wtr={};EX=JSON.parse(JSON.stringify(EMPTY_EX));MEALS=[];SUPPS=[];CARDIO={};
   // Hide logout button
   const lb=document.getElementById('logout-btn');if(lb)lb.style.display='none';
   // Show auth screen again
   const a=document.getElementById('auth-screen');
   if(a){a.style.display='flex';a.classList.add('active');}
   const hb=document.getElementById('user-header-name');if(hb)hb.textContent='';
+  hideAuthLoading();
   showToast('Signed out');
 }
 function confirmSignOut(){
@@ -1937,7 +1971,7 @@ async function startGuestView(id){
   fbListener=fbOnValue(fbListenerRef,(snap)=>{
     if(!snap||!snap.exists())return;
     const data=snap.val();
-    if(data&&data.hostEnded){showToast('Host ended the session');exitGuestView();return;}
+    if(data&&data.hostEnded){markGuestDayDone();setTimeout(()=>exitGuestView(),800);return;}
     applyGuestData(data);lastSyncTime=Date.now();updatePillTime();
   });
   attachTimerListener(id);
@@ -1960,6 +1994,25 @@ function applyGuestData(data){
   mode='workout';
   seedWeights();
   render();
+}
+function markGuestDayDone(){
+  // When guest session ends, mark all exercises for the host's current day as done
+  // in the guest's OWN workout data so their routine shows complete
+  const d=day;
+  if(!EX[d])return;
+  // Mark cardio
+  st[d+'|am']=true;
+  if(WK[d]&&WK[d].pc)st[d+'|pc']=true;
+  // Mark all sets
+  EX[d].forEach((e,ei)=>{
+    for(let si=0;si<e.s;si++){
+      const k=d+'|'+ei+'|'+si;
+      if(!ws[k])ws[k]={};
+      ws[k].done=true;
+    }
+  });
+  if(currentUser)saveUserData();
+  showToast('✓ '+d+' workout marked complete!');
 }
 function exitGuestView(){
   detachFbListener();detachTimerListener();
@@ -2188,7 +2241,7 @@ const _fns={
   toggleCalDay,dismissPopup,
   skipTimer,adjustTimer,startTimerLocal,
   triggerPhotoCapture,handlePhotoFile,saveCurrentPhoto,openPhotoViewer,closePhotoViewer,confirmDeletePhoto,
-  showToast,save,render,confirmSignOut
+  showToast,save,render,confirmSignOut,showAuthLoading,hideAuthLoading,markGuestDayDone
 };
 Object.assign(window,_fns);
 Object.defineProperty(window,'isCoachView',{get:()=>isCoachView});
@@ -2234,7 +2287,9 @@ if(auth){
   onAuthStateChanged(auth,async(user)=>{
     if(user){
       currentUser=user;
+      showAuthLoading('Loading your program…');
       await loadUserData(user.uid);
+      hideAuthLoading();
       hideAuthScreen();
       updateHeaderName();
       render();
