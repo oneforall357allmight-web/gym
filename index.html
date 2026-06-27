@@ -598,19 +598,30 @@ const PROGRAM_START='2026-06-26';
 const GR_CATS=['🥩 Protein','🍚 Carbs','🥦 Produce','☕ Other','💊 Supps','✏️ Custom'];
 
 const WK={
-  Mon:{full:'Push — Strength',badge:'Strength',bc:'bstr',am:'40 min fasted incline walk',ams:'Incline 8-10% · HR 120-135 · empty stomach',pc:'20 min HIIT — stationary bike',pcs:'30s sprint / 90s rest × 8 rounds'},
-  Tue:{full:'Pull — Strength',badge:'Strength',bc:'bstr',am:'40 min fasted incline walk',ams:'Incline 8-10% · HR 120-135',pc:'15 min steady state — rowing',pcs:'65-70% max HR'},
+  Sat:{full:'Legs — Hypertrophy',badge:'Volume',bc:'bvol',am:'25 min cycling — easy',ams:'Moderate pace · protect legs',pc:'10 min slow walk',pcs:'Legs are done. Just flush.'},
+  Sun:{full:'Push — Strength',badge:'Strength',bc:'bstr',am:'40 min fasted incline walk',ams:'Incline 8-10% · HR 120-135 · empty stomach',pc:'20 min HIIT — stationary bike',pcs:'30s sprint / 90s rest × 8 rounds'},
+  Mon:{full:'Pull — Strength',badge:'Strength',bc:'bstr',am:'40 min fasted incline walk',ams:'Incline 8-10% · HR 120-135',pc:'15 min steady state — rowing',pcs:'65-70% max HR'},
+  Tue:{full:'Active Recovery',badge:'Rest',bc:'brst',am:'30-45 min walk or light swim',ams:'Keep moving. No structured training.',pc:null,pcs:null},
   Wed:{full:'Legs — Strength',badge:'Strength',bc:'bstr',am:'25 min cycling — easy',ams:'HR 110-125 · preserve legs',pc:'10 min slow incline walk',pcs:'Cool down only — flush lactic acid'},
   Thu:{full:'Push — Hypertrophy',badge:'Volume',bc:'bvol',am:'40 min fasted incline walk',ams:'Incline 8-10% · HR 120-135',pc:'20 min HIIT — treadmill',pcs:'20s sprint / 40s walk × 10 rounds'},
-  Fri:{full:'Pull — Hypertrophy',badge:'Volume',bc:'bvol',am:'40 min fasted incline walk',ams:'Incline 8-10% · HR 120-135',pc:'15 min elliptical',pcs:'HR 130-145 · low impact'},
-  Sat:{full:'Active Recovery',badge:'Rest',bc:'brst',am:'30-45 min walk or light swim',ams:'Keep moving. No structured training.',pc:null,pcs:null},
-  Sun:{full:'Legs — Hypertrophy',badge:'Volume',bc:'bvol',am:'25 min cycling — easy',ams:'Moderate pace · protect legs',pc:'10 min slow walk',pcs:'Legs are done. Just flush.'}
+  Fri:{full:'Pull — Hypertrophy',badge:'Volume',bc:'bvol',am:'40 min fasted incline walk',ams:'Incline 8-10% · HR 120-135',pc:'15 min elliptical',pcs:'HR 130-145 · low impact'}
 };
 
 // DEFAULT_WEIGHTS: net lbs (no bar on barbell moves · per-hand on DBs · machine/cable ignored)
 // Calibrated for a solid 7/10 lifter — RPE 8-9 on the prescribed rep range.
+// Schedule: Sat=Legs Hyper · Sun=Push Str · Mon=Pull Str · Tue=Rest · Wed=Legs Str · Thu=Push Hyper · Fri=Pull Hyper
 const DEFAULT_EX={
-  Mon:[
+  Sat:[
+    {n:'Trap Bar / Sumo Deadlift',s:5,r:'3–6',rest:210,w:'255',note:'RPE 8-9'},
+    {n:'Front Squat or Goblet Squat',s:3,r:'6–10',rest:150,w:'135',note:'Upright torso = more quad'},
+    {n:'Nordic Hamstring Curl / GHD',s:3,r:'5–8',rest:120,note:'Best hamstring eccentric'},
+    {n:'Walking Lunge (dumbbell)',s:3,r:'20 steps',rest:90,w:'45',note:'Long stride = more glute · per DB'},
+    {n:'Leg Press (feet high)',s:4,r:'12–15',rest:90,note:'Posterior chain'},
+    {n:'Hip Thrust + Abduction SS',s:3,r:'12+15',rest:75,w:'155',note:'Pre-fatigue then thrust'},
+    {n:'Seated Calf Raise (5s tempo)',s:5,r:'15–20',rest:75,note:'5s up 5s down'},
+    {n:'Tibialis Raise (ATG)',s:3,r:'20–25',rest:45,note:'Bulletproofs shins'}
+  ],
+  Sun:[
     {n:'Barbell Bench Press',s:4,r:'4–6',rest:180,w:'185',note:'RPE 8-9 · pause 1s on chest'},
     {n:'Overhead Press (standing)',s:4,r:'5–7',rest:180,w:'115',note:'RPE 8 · brace hard'},
     {n:'Incline Dumbbell Press',s:3,r:'8–12',rest:120,w:'70',note:'30-45° · full stretch'},
@@ -621,7 +632,7 @@ const DEFAULT_EX={
     {n:'Cable Overhead Tricep Ext.',s:3,r:'12–15',rest:75,note:'Long head · full stretch'},
     {n:'Lateral Raise Drop Set',s:1,r:'×3 drops',rest:0,w:'25',note:'Start 25→20→15 · finisher'}
   ],
-  Tue:[
+  Mon:[
     {n:'Weighted Pull-Up',s:4,r:'4–8',rest:180,w:'35',note:'Add weight when 10 reps clean'},
     {n:'Barbell Row (Yates)',s:4,r:'5–8',rest:150,w:'185',note:'Upright · elbows in'},
     {n:'Seated Cable Row (wide)',s:3,r:'10–12',rest:90,note:'Drive elbows back hard'},
@@ -631,6 +642,12 @@ const DEFAULT_EX={
     {n:'EZ-Bar Curl',s:3,r:'8–12',rest:90,w:'75',note:'Supinate at top · 3s eccentric'},
     {n:'Incline Dumbbell Curl',s:3,r:'10–15',rest:75,w:'30',note:'Long head stretch'},
     {n:'Hammer Curl',s:3,r:'10–15',rest:60,w:'35',note:'Brachialis · neutral grip'}
+  ],
+  Tue:[
+    {n:'Foam roll full body',s:1,r:'15 min',rest:0,note:'Quads, lats, thoracic'},
+    {n:'Hip flexor + thoracic mobility',s:1,r:'15 min',rest:0,note:'Keep these loose'},
+    {n:'Zone 2 walk or light swim',s:1,r:'30–45 min',rest:0,note:'Conversational pace'},
+    {n:'Sleep 8-9 hours tonight',s:1,r:'done',rest:0,note:'GH peaks during deep sleep'}
   ],
   Wed:[
     {n:'Back Squat',s:5,r:'3–5',rest:210,w:'225',note:'Non-negotiable · hit depth'},
@@ -663,22 +680,6 @@ const DEFAULT_EX={
     {n:'Preacher Curl',s:3,r:'10–12',rest:90,w:'65',note:'No cheating'},
     {n:'Single-Arm Cable Curl',s:3,r:'12–15',rest:60,note:'Constant tension'},
     {n:'21s (Barbell)',s:3,r:'21',rest:60,w:'55',note:'7+7+7'}
-  ],
-  Sat:[
-    {n:'Foam roll full body',s:1,r:'15 min',rest:0,note:'Quads, lats, thoracic'},
-    {n:'Hip flexor + thoracic mobility',s:1,r:'15 min',rest:0,note:'Keep these loose'},
-    {n:'Zone 2 walk or light swim',s:1,r:'30–45 min',rest:0,note:'Conversational pace'},
-    {n:'Sleep 8-9 hours tonight',s:1,r:'done',rest:0,note:'GH peaks during deep sleep'}
-  ],
-  Sun:[
-    {n:'Trap Bar / Sumo Deadlift',s:5,r:'3–6',rest:210,w:'255',note:'RPE 8-9'},
-    {n:'Front Squat or Goblet Squat',s:3,r:'6–10',rest:150,w:'135',note:'Upright torso = more quad'},
-    {n:'Nordic Hamstring Curl / GHD',s:3,r:'5–8',rest:120,note:'Best hamstring eccentric'},
-    {n:'Walking Lunge (dumbbell)',s:3,r:'20 steps',rest:90,w:'45',note:'Long stride = more glute · per DB'},
-    {n:'Leg Press (feet high)',s:4,r:'12–15',rest:90,note:'Posterior chain'},
-    {n:'Hip Thrust + Abduction SS',s:3,r:'12+15',rest:75,w:'155',note:'Pre-fatigue then thrust'},
-    {n:'Seated Calf Raise (5s tempo)',s:5,r:'15–20',rest:75,note:'5s up 5s down'},
-    {n:'Tibialis Raise (ATG)',s:3,r:'20–25',rest:45,note:'Bulletproofs shins'}
   ]
 };
 
@@ -937,7 +938,22 @@ async function confirmDeletePhoto(id){
 
 // ── PERSISTENCE ────────────────────────────────────────────────────────────
 function save(){try{localStorage.setItem('trk-v7',JSON.stringify({st,ws,wtr,EX,MEALS,SUPPS}));}catch(e){}if(syncSessionId)pushSync();}
-function load(){try{const r=localStorage.getItem('trk-v7');if(r){const d=JSON.parse(r);st=d.st||{};ws=d.ws||{};wtr=d.wtr||{};if(d.EX)EX=d.EX;if(d.MEALS)MEALS=d.MEALS;if(d.SUPPS)SUPPS=d.SUPPS;}}catch(e){}}
+function seedWeights(){
+  // For every exercise that has a default weight (e.w), pre-fill ws entries
+  // that haven't been manually set or logged yet — so inputs show the weight on first open.
+  DAYS.forEach(d=>{
+    (EX[d]||[]).forEach((e,ei)=>{
+      if(!e.w)return;
+      for(let si=0;si<e.s;si++){
+        const k=`${d}|${ei}|${si}`;
+        if(!ws[k])ws[k]={};
+        // Only seed if weight hasn't been touched at all
+        if(ws[k].w===undefined||ws[k].w==='')ws[k].w=e.w;
+      }
+    });
+  });
+}
+function load(){try{const r=localStorage.getItem('trk-v7');if(r){const d=JSON.parse(r);st=d.st||{};ws=d.ws||{};wtr=d.wtr||{};if(d.EX)EX=d.EX;if(d.MEALS)MEALS=d.MEALS;if(d.SUPPS)SUPPS=d.SUPPS;}}catch(e){}seedWeights();}
 function dSave(){clearTimeout(saveT);saveT=setTimeout(save,600);}
 function saveGrocery(){try{localStorage.setItem('trk-grocery',JSON.stringify({checked:groceryChecked,custom:groceryCustom}));}catch(e){}}
 function loadGrocery(){try{const r=localStorage.getItem('trk-grocery');if(r){const d=JSON.parse(r);groceryChecked=d.checked||{};groceryCustom=d.custom||[];}}catch(e){}}
@@ -1129,7 +1145,7 @@ function wInput(k,v){if(isCoachView)return;if(!ws[k])ws[k]={};ws[k].w=v;dSave();
 function rInput(k,v){if(isCoachView)return;if(!ws[k])ws[k]={};ws[k].r=v;dSave();}
 function addWater(d,n){if(isCoachView)return;wtr[d]=(wtr[d]||0)===n?n-1:n;save();render();}
 function resetDay(d){if(isCoachView)return;if(!confirm('Reset '+DNAMES[d]+'?'))return;[`${d}|am`,`${d}|pc`].forEach(id=>st[id]=false);getSetKeys(d).forEach(k=>{if(ws[k])ws[k].done=false;});wtr[d]=0;save();render();showToast('Day reset');}
-function addSet(d,ei){if(isCoachView)return;EX[d][ei].s++;exop[`${d}-${ei}`]=true;save();render();}
+function addSet(d,ei){if(isCoachView)return;EX[d][ei].s++;exop[`${d}-${ei}`]=true;seedWeights();save();render();}
 function removeSet(d,ei){if(isCoachView)return;const ex=EX[d][ei];if(ex.s<=1){showToast('Minimum 1 set');return;}const lk=sk(d,ei,ex.s-1);if(ws[lk]&&(ws[lk].done||ws[lk].w||ws[lk].r)){if(!confirm('Remove last set?'))return;}delete ws[lk];ex.s--;save();render();}
 function removeExercise(d,ei){if(isCoachView)return;if(!confirm('Remove "'+EX[d][ei].n+'"?'))return;for(let si=0;si<EX[d][ei].s;si++)delete ws[sk(d,ei,si)];const ol=EX[d].length;EX[d].splice(ei,1);for(let i=ei+1;i<ol;i++)for(let si=0;si<20;si++){const ok=`${d}|${i}|${si}`,nk=`${d}|${i-1}|${si}`;if(ws[ok]){ws[nk]=ws[ok];delete ws[ok];}}const neo={};Object.keys(exop).forEach(k=>{const[kd,kei]=k.split('-');if(kd!==d){neo[k]=exop[k];return;}const idx=parseInt(kei,10);if(idx<ei)neo[k]=exop[k];else if(idx>ei)neo[`${kd}-${idx-1}`]=exop[k];});exop=neo;save();render();showToast('Exercise removed');}
 function openAddExercise(d){if(isCoachView)return;const body=`<div class="modal-field"><label class="modal-label">Exercise name</label><input class="modal-input" id="ae-name" placeholder="e.g. Cable lateral raise" autocomplete="off"></div><div class="modal-grid3"><div class="modal-field"><label class="modal-label">Sets</label><input class="modal-input" id="ae-sets" type="number" min="1" max="20" value="3" inputmode="numeric"></div><div class="modal-field"><label class="modal-label">Reps</label><input class="modal-input" id="ae-reps" placeholder="8-12" value="8-12"></div><div class="modal-field"><label class="modal-label">Rest (sec)</label><input class="modal-input" id="ae-rest" type="number" min="0" max="600" value="90" inputmode="numeric"></div></div><div class="modal-hint">Rest in seconds — 60, 90, 120, 180…</div><div class="modal-actions"><button class="modal-btn" onclick="closeModalForce()">Cancel</button><button class="modal-btn primary" onclick="confirmAddExercise('${d}')">Add</button></div>`;openModal('Add Exercise',body);setTimeout(()=>{const f=document.getElementById('ae-name');if(f)f.focus();},350);}
