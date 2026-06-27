@@ -421,6 +421,45 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;back
 /* TOAST */
 .toast{position:fixed;top:calc(env(safe-area-inset-top,0px) + 14px);left:50%;transform:translateX(-50%) translateY(-120%);z-index:1000;background:var(--bg3);border:1px solid var(--border2);border-radius:9px;padding:10px 16px;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;letter-spacing:.06em;color:var(--text);box-shadow:0 8px 32px rgba(0,0,0,.6);transition:transform .35s var(--ease-out);white-space:nowrap;max-width:90vw}
 .toast.show{transform:translateX(-50%) translateY(0)}
+
+/* ═══════════════════════════════════════════════
+   SESSION MODE SELECTOR
+═══════════════════════════════════════════════ */
+#mode-selector{position:fixed;inset:0;z-index:9998;background:#040810;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;opacity:0;pointer-events:none;transition:opacity .5s var(--ease)}
+#mode-selector.active{opacity:1;pointer-events:auto}
+.ms-logo{font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;letter-spacing:.25em;color:var(--amber);text-align:center;margin-bottom:6px}
+.ms-logo span{color:var(--text3);font-weight:300}
+.ms-tagline{font-family:'Space Grotesk',sans-serif;font-size:10px;font-weight:600;letter-spacing:.3em;text-transform:uppercase;color:var(--text3);text-align:center;margin-bottom:48px}
+.ms-question{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:var(--text3);text-align:center;margin-bottom:20px}
+.ms-cards{display:flex;flex-direction:column;gap:12px;width:100%;max-width:360px}
+.ms-card{background:var(--bg2);border:1px solid var(--border2);border-radius:16px;padding:20px 22px;cursor:pointer;transition:all .2s var(--ease);display:flex;align-items:center;gap:16px;-webkit-user-select:none;user-select:none}
+.ms-card:active{transform:scale(.97)}
+.ms-card:hover{border-color:var(--border3);background:var(--bg3)}
+.ms-card.solo:hover,.ms-card.solo:active{border-color:var(--amber);background:var(--amber-dim)}
+.ms-card.cotrain:hover,.ms-card.cotrain:active{border-color:var(--blue);background:rgba(91,143,212,.08)}
+.ms-card.coach:hover,.ms-card.coach:active{border-color:var(--purple);background:rgba(155,127,212,.08)}
+.ms-card-icon{font-size:28px;flex-shrink:0;width:44px;text-align:center}
+.ms-card-text{flex:1}
+.ms-card-title{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;letter-spacing:.05em;color:var(--text);margin-bottom:3px}
+.ms-card-desc{font-family:'Space Grotesk',sans-serif;font-size:12px;color:var(--text3);line-height:1.4}
+.ms-card-arrow{font-size:16px;color:var(--text3);flex-shrink:0}
+/* Code entry sub-screen */
+.ms-back{background:none;border:none;font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);cursor:pointer;padding:8px 0;margin-bottom:24px;display:flex;align-items:center;gap:6px;transition:color .15s}
+.ms-back:active{color:var(--text)}
+.ms-code-wrap{width:100%;max-width:360px}
+.ms-code-title{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text);margin-bottom:8px;text-align:center}
+.ms-code-sub{font-family:'Space Grotesk',sans-serif;font-size:12px;color:var(--text3);text-align:center;margin-bottom:28px;line-height:1.5}
+.ms-code-input{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:12px;padding:18px;font-family:'JetBrains Mono',monospace;font-size:28px;color:var(--amber);outline:none;text-align:center;letter-spacing:.25em;text-transform:uppercase;-webkit-appearance:none;transition:border-color .18s;margin-bottom:16px}
+.ms-code-input:focus{border-color:var(--amber);background:var(--amber-dim);box-shadow:0 0 0 3px rgba(245,166,35,.07)}
+.ms-submit-btn{width:100%;padding:16px;border-radius:12px;border:none;background:var(--amber);font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#000;cursor:pointer;transition:all .15s;min-height:52px;box-shadow:0 0 24px var(--amber-glow)}
+.ms-submit-btn:active{background:var(--amber-soft);transform:scale(.97)}
+.ms-submit-btn:disabled{opacity:.4;pointer-events:none}
+/* Guest banner */
+.guest-banner{display:none;background:rgba(91,143,212,.08);border-bottom:1px solid rgba(91,143,212,.2);padding:8px 16px;align-items:center;gap:8px}
+.guest-banner.show{display:flex}
+.guest-banner-text{font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--blue);flex:1}
+.guest-exit-btn{font-family:'Space Grotesk',sans-serif;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:rgba(91,143,212,.7);background:none;border:1px solid rgba(91,143,212,.25);border-radius:5px;padding:4px 8px;cursor:pointer;transition:all .15s}
+.guest-exit-btn:active{color:var(--blue);border-color:var(--blue)}
 </style>
 </head>
 <body>
@@ -439,6 +478,54 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;back
       <div class="loader-progress"></div>
     </div>
     <div class="loader-tagline">Loading your program</div>
+  </div>
+</div>
+
+<!-- SESSION MODE SELECTOR -->
+<div id="mode-selector">
+  <div class="ms-logo">UNIT<span>.</span></div>
+  <div class="ms-tagline">12-Month Transformation Program</div>
+  <!-- Main cards screen -->
+  <div id="ms-main">
+    <div class="ms-question">How are you training today?</div>
+    <div class="ms-cards">
+      <div class="ms-card solo" onclick="selectMode('solo')">
+        <div class="ms-card-icon">🏋️</div>
+        <div class="ms-card-text">
+          <div class="ms-card-title">Solo</div>
+          <div class="ms-card-desc">Training alone. No sharing, full privacy.</div>
+        </div>
+        <div class="ms-card-arrow">›</div>
+      </div>
+      <div class="ms-card cotrain" onclick="selectMode('cotrain')">
+        <div class="ms-card-icon">🤝</div>
+        <div class="ms-card-text">
+          <div class="ms-card-title">Co-Train</div>
+          <div class="ms-card-desc">Share your workout live. A partner joins to watch your session.</div>
+        </div>
+        <div class="ms-card-arrow">›</div>
+      </div>
+      <div class="ms-card coach" onclick="selectMode('coach')">
+        <div class="ms-card-icon">👁</div>
+        <div class="ms-card-text">
+          <div class="ms-card-title">Coach</div>
+          <div class="ms-card-desc">Enter an athlete's code to take full control of their session.</div>
+        </div>
+        <div class="ms-card-arrow">›</div>
+      </div>
+    </div>
+  </div>
+  <!-- Coach code entry sub-screen -->
+  <div id="ms-coach-entry" style="display:none;width:100%;max-width:360px">
+    <button class="ms-back" onclick="showMsMain()">← Back</button>
+    <div class="ms-code-wrap">
+      <div class="ms-code-title">Enter Athlete Code</div>
+      <div class="ms-code-sub">Ask the athlete to share their 6-character session code with you.</div>
+      <input class="ms-code-input" id="ms-code-input" maxlength="6" placeholder="ABC123" autocomplete="off"
+        oninput="this.value=this.value.toUpperCase();document.getElementById('ms-submit').disabled=this.value.length<4"
+        onkeydown="if(event.key==='Enter'&&this.value.length>=4)document.getElementById('ms-submit').click()">
+      <button class="ms-submit-btn" id="ms-submit" disabled onclick="enterCoachMode()">Join as Coach →</button>
+    </div>
   </div>
 </div>
 
@@ -493,6 +580,10 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;back
 
 <!-- STICKY HEADER -->
 <div class="header" id="main-header">
+  <div class="guest-banner" id="guest-banner">
+    <div class="guest-banner-text">👥 Guest view — workout only</div>
+    <button class="guest-exit-btn" onclick="exitGuestView()">Leave</button>
+  </div>
   <div class="coach-banner" id="coach-banner">
     <div class="coach-banner-text">👁 Coach view — live edit</div>
     <div class="coach-banner-id" id="coach-banner-id"></div>
@@ -709,6 +800,10 @@ let st={},ws={},wtr={},op={am:false,pc:false,sp:false,h2o:false,ph:false},mealOp
 let mode='workout',day=DAYS[(new Date().getDay()+1)%7],editingMeal=null,saveT;
 let groceryChecked={},groceryCustom=[];
 let syncSessionId=null,coachSessionId=null,isCoachView=false,lastSyncTime=null;
+// Session mode: 'solo' | 'cotrain' | 'coach' | null (not yet chosen)
+let sessionMode=null;
+// Guest view: someone joined a co-train session (read-only, workout tab only)
+let isGuestView=false,guestSessionId=null;
 let audioCtx=null,swReg=null,wakeLock=null;
 let restEndTime=0,restTotalSecs=0,restInterval=null,restExName='';
 let calChecked={},calMonthOffset=0;
@@ -980,8 +1075,8 @@ function load(){
 function dSave(){clearTimeout(saveT);saveT=setTimeout(save,600);}
 function saveGrocery(){try{localStorage.setItem('trk-grocery',JSON.stringify({checked:groceryChecked,custom:groceryCustom}));}catch(e){}}
 function loadGrocery(){try{const r=localStorage.getItem('trk-grocery');if(r){const d=JSON.parse(r);groceryChecked=d.checked||{};groceryCustom=d.custom||[];}}catch(e){}}
-function saveSyncPrefs(){try{localStorage.setItem('trk-sync',JSON.stringify({syncSessionId,coachSessionId,isCoachView}));}catch(e){}}
-function loadSyncPrefs(){try{const r=localStorage.getItem('trk-sync');if(r){const d=JSON.parse(r);syncSessionId=d.syncSessionId||null;coachSessionId=d.coachSessionId||null;isCoachView=d.isCoachView||false;}}catch(e){}}
+function saveSyncPrefs(){try{localStorage.setItem('trk-sync',JSON.stringify({syncSessionId,coachSessionId,isCoachView,isGuestView,guestSessionId,sessionMode}));}catch(e){}}
+function loadSyncPrefs(){try{const r=localStorage.getItem('trk-sync');if(r){const d=JSON.parse(r);syncSessionId=d.syncSessionId||null;coachSessionId=d.coachSessionId||null;isCoachView=d.isCoachView||false;isGuestView=d.isGuestView||false;guestSessionId=d.guestSessionId||null;sessionMode=d.sessionMode||null;}}catch(e){}}
 
 // ── FIREBASE SYNC ──────────────────────────────────────────────────────────
 function genSessionId(){return Array.from({length:6},()=>'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*32)]).join('');}
@@ -1008,9 +1103,11 @@ function pushTimerState(){
   const id=getTimerSyncId();
   if(!id||!db)return;
   const node=timerNodeRef(id);
+  // 'source' tells the listener which side wrote this — the other side ignores its own writes
+  const source=isCoachView?'coach':'athlete';
   const data=restEndTime>Date.now()
-    ?{end:restEndTime,total:restTotalSecs,ex:restExName,ts:Date.now()}
-    :{cleared:true,ts:Date.now()};
+    ?{end:restEndTime,total:restTotalSecs,ex:restExName,source,ts:Date.now()}
+    :{cleared:true,source,ts:Date.now()};
   fbSet(node,data).catch(()=>{});
 }
 
@@ -1025,19 +1122,19 @@ function attachTimerListener(id){
     if(!snap||!snap.exists())return;
     const td=snap.val();
     if(!td)return;
+    // Ignore our own writes — only react to the other side's timer events
+    const mySide=isCoachView?'coach':'athlete';
+    if(td.source&&td.source===mySide)return;
     if(td.cleared){
-      // Other side cleared the timer
       if(restEndTime>0){clearInterval(restInterval);restInterval=null;restEndTime=0;hideFST();}
       return;
     }
     if(!td.end||td.end<=Date.now())return;
-    // Only start if this is a new or different timer
-    if(Math.abs((td.end||0)-(restEndTime||0))>800){
-      restEndTime=td.end;
-      restTotalSecs=td.total||Math.ceil((td.end-Date.now())/1000);
-      restExName=td.ex||'Rest';
-      startTimerLocal();
-    }
+    // Always apply — this is from the other side so always honour it
+    restEndTime=td.end;
+    const rawTotal=td.total;restTotalSecs=(rawTotal&&rawTotal>0&&rawTotal<1800)?rawTotal:Math.ceil((td.end-Date.now())/1000);
+    restExName=td.ex||'Rest';
+    startTimerLocal();
   });
 }
 
@@ -1096,13 +1193,13 @@ async function startSync(id){
 }
 
 async function stopSync(){
+  if(sessionMode==='cotrain'){await stopCoTrainHost();return;}
   if(syncSessionId){
-    // Write a session-ended marker so coach listener fires and kicks them out
     try{await fbSet(athleteNodeRef(syncSessionId),{ended:true,ts:Date.now()});}catch(e){}
-    // Small delay so coach receives it, then wipe
     setTimeout(async()=>{
       try{fbSet(athleteNodeRef(syncSessionId),null);}catch(e){}
       try{fbSet(coachNodeRef(syncSessionId),null);}catch(e){}
+      try{fbSet(timerNodeRef(syncSessionId),null);}catch(e){}
     },1500);
   }
   syncSessionId=null;
@@ -1159,7 +1256,7 @@ function applyRemoteData(data){
   // Timer sync — show timer on receiving end if active
   // Timer state is handled by dedicated /timer listener — nothing to do here
   seedWeights();
-  ['workout','nutrition','calendar'].forEach(m=>{const el=document.getElementById('mb-'+m);if(el)el.classList.toggle('active',mode===m);});
+  ['workout','nutrition','calendar'].forEach(m=>{const el=document.getElementById('mb-'+m);if(el){el.classList.toggle('active',mode===m);el.style.display=(isGuestView&&m!=='workout')?'none':'';}});
   render();
 }
 
@@ -1173,12 +1270,15 @@ function repositionPill(){const pill=document.getElementById('sync-pill');if(pil
 // ── SYNC MODAL ─────────────────────────────────────────────────────────────
 function openSyncModal(){
   let html='';
-  if(isCoachView){
+  if(isGuestView){
+    html=`<p style="font-family:'Space Grotesk',sans-serif;font-size:14px;color:var(--text2);margin-bottom:18px">Watching <strong style="color:var(--blue)">co-train session</strong> live — read only.</p><div class="modal-actions"><button class="modal-btn" onclick="closeSyncModalForce()">Close</button><button class="modal-btn primary" style="background:var(--red);border-color:var(--red)" onclick="exitGuestView();closeSyncModalForce()">Leave Session</button></div>`;
+  } else if(isCoachView){
     html=`<p style="font-family:'Space Grotesk',sans-serif;font-size:14px;color:var(--text2);margin-bottom:18px">Watching session <strong style="color:var(--purple);font-family:'JetBrains Mono',monospace">${coachSessionId}</strong> live.</p><div class="modal-actions"><button class="modal-btn" onclick="closeSyncModalForce()">Close</button><button class="modal-btn primary" style="background:var(--red);border-color:var(--red)" onclick="exitCoachView();closeSyncModalForce()">Exit Coach View</button></div>`;
   } else {
-    const activeBlock=syncSessionId?`<p style="font-family:'Space Grotesk',sans-serif;font-size:13px;color:var(--text3);text-align:center;margin-bottom:8px">Your active session</p><div class="session-code">${syncSessionId}</div><div class="modal-actions"><button class="modal-btn" onclick="if(navigator.clipboard)navigator.clipboard.writeText('${syncSessionId}').then(()=>showToast('Code copied!'))">Copy Code</button><button class="modal-btn" style="color:var(--red);border-color:rgba(232,52,74,.2)" onclick="stopSync();closeSyncModalForce();render()">Stop Session</button></div>`:
+    const cotrainActive=sessionMode==='cotrain'&&syncSessionId;
+    const activeBlock=syncSessionId?`<p style="font-family:'Space Grotesk',sans-serif;font-size:13px;color:var(--text3);text-align:center;margin-bottom:8px">${cotrainActive?'Co-Train session — share this code':'Your active session'}</p><div class="session-code">${syncSessionId}</div><p style="font-family:'Space Grotesk',sans-serif;font-size:12px;color:var(--text3);text-align:center;margin-bottom:18px">${cotrainActive?'Partner enters this code in Co-Train mode to join and watch your workout.':'Share with your coach. Every set updates instantly.'}</p><div class="modal-actions"><button class="modal-btn" onclick="if(navigator.clipboard)navigator.clipboard.writeText('${syncSessionId}').then(()=>showToast('Code copied!'))">Copy Code</button><button class="modal-btn" style="color:var(--red);border-color:rgba(232,52,74,.2)" onclick="stopSync();closeSyncModalForce();render()">End Session</button></div>`:
     `<div class="sync-step"><div class="sync-step-num">1</div><div class="sync-step-text">Tap <strong>Start Session</strong> — you get a unique 6-character code.</div></div><div class="sync-step"><div class="sync-step-num">2</div><div class="sync-step-text">Share the code with your coach.</div></div><div class="sync-step"><div class="sync-step-num">3</div><div class="sync-step-text">Coach enters it in the <strong>Coach tab</strong> — sees every rep update instantly.</div></div><div class="modal-actions" style="margin-top:18px"><button class="modal-btn" onclick="closeSyncModalForce()">Cancel</button><button class="modal-btn primary" onclick="(async()=>{const id=genSessionId();closeSyncModalForce();await startSync(id);render();showToast('Session live — code: '+id)})()">Start Session</button></div>`;
-    html=`<div style="display:flex;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:3px;margin-bottom:18px"><button class="mode-btn active" id="sm-a" onclick="switchSyncTab('a')" style="flex:1">Athlete</button><button class="mode-btn" id="sm-c" onclick="switchSyncTab('c')" style="flex:1">Coach</button></div><div id="st-a">${activeBlock}</div><div id="st-c" style="display:none"><p style="font-family:'Space Grotesk',sans-serif;font-size:13px;color:var(--text2);margin-bottom:12px">Enter the athlete's 6-character code:</p><div class="join-input-row"><input class="join-code-input" id="join-code" maxlength="6" placeholder="ABC123" autocomplete="off" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter'){event.preventDefault();document.querySelector('#st-c .modal-btn.primary').click()}"></div><div class="modal-actions"><button class="modal-btn" onclick="closeSyncModalForce()">Cancel</button><button class="modal-btn primary" onclick="(async()=>{const c=document.getElementById('join-code').value.trim().toUpperCase();if(c.length<4){showToast('Enter a valid code');return;}closeSyncModalForce();await startCoachView(c);})()">Watch Live</button></div></div>`;
+    html=`<div style="display:flex;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:3px;margin-bottom:18px"><button class="mode-btn active" id="sm-a" onclick="switchSyncTab('a')" style="flex:1">Athlete</button><button class="mode-btn" id="sm-c" onclick="switchSyncTab('c')" style="flex:1">Coach</button></div><div id="st-a">${activeBlock}</div><div id="st-c" style="display:none"><p style="font-family:'Space Grotesk',sans-serif;font-size:13px;color:var(--text2);margin-bottom:12px">Enter the athlete's 6-character code:</p><div class="join-input-row"><input class="join-code-input" id="join-code" maxlength="6" placeholder="ABC123" autocomplete="off" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter'){event.preventDefault();document.querySelector('#st-c .modal-btn.primary').click()}"></div><div class="modal-actions"><button class="modal-btn" onclick="closeSyncModalForce()">Cancel</button><button class="modal-btn" onclick="(async()=>{const c=document.getElementById('join-code').value.trim().toUpperCase();if(c.length<4){showToast('Enter a valid code');return;}closeSyncModalForce();await startGuestView(c);})()" style="border-color:rgba(91,143,212,.3);color:var(--blue)">Join as Guest</button><button class="modal-btn primary" onclick="(async()=>{const c=document.getElementById('join-code').value.trim().toUpperCase();if(c.length<4){showToast('Enter a valid code');return;}closeSyncModalForce();await startCoachView(c);})()">Coach (full control)</button></div></div>`;
   }
   document.getElementById('sync-modal-body').innerHTML=html;
   document.getElementById('sync-backdrop').classList.add('active');
@@ -1219,7 +1319,7 @@ async function startRestTimer(secs,name){
 }
 function tick(){if(Math.ceil((restEndTime-Date.now())/1000)<=0)finishTimer();else updateTimer();}
 function finishTimer(){clearInterval(restInterval);restInterval=null;restEndTime=0;try{localStorage.removeItem('trk-timer');}catch(e){}pushTimerState();const fst=document.getElementById('fs-timer');fst.classList.add('finish');setTimeout(()=>fst.classList.remove('finish'),700);hideFST();relWL();postSW({type:'CANCEL'});playAlarm();if(navigator.vibrate)navigator.vibrate([200,100,200,100,400,100,300]);showToast('Rest done — next set!');}
-function updateTimer(){if(!restEndTime)return;const left=Math.max(0,Math.ceil((restEndTime-Date.now())/1000)),m=Math.floor(left/60),s=left%60;const te=document.getElementById('fs-time'),ee=document.getElementById('fs-ex-name'),fe=document.getElementById('fs-ring-fill'),ge=document.getElementById('fs-ring-glow'),ne=document.getElementById('fs-next');if(te)te.textContent=m+':'+(s<10?'0':'')+s;if(ee)ee.textContent=restExName;const total=restTotalSecs||Math.ceil((restEndTime-Date.now())/1000)||1;const off=RING_CIRC*(1-left/total),w=left<=10;if(fe){fe.style.strokeDashoffset=off;fe.style.stroke=w?'#E8344A':'var(--amber)';fe.style.filter=w?'drop-shadow(0 0 8px rgba(232,52,74,.6))':'drop-shadow(0 0 10px rgba(245,166,35,.7))';}if(ge){ge.style.strokeDashoffset=off;ge.style.stroke=w?'#E8344A':'var(--amber)';}if(te)te.style.color=w?'var(--red)':'var(--amber)';if(ne)ne.textContent=Math.floor(total/60)+':'+String(total%60).padStart(2,'0')+' rest period';}
+function updateTimer(){if(!restEndTime)return;const left=Math.max(0,Math.ceil((restEndTime-Date.now())/1000)),m=Math.floor(left/60),s=left%60;const te=document.getElementById('fs-time'),ee=document.getElementById('fs-ex-name'),fe=document.getElementById('fs-ring-fill'),ge=document.getElementById('fs-ring-glow'),ne=document.getElementById('fs-next');if(te)te.textContent=m+':'+(s<10?'0':'')+s;if(ee)ee.textContent=restExName;const remaining=Math.ceil((restEndTime-Date.now())/1000);const total=(restTotalSecs>0&&restTotalSecs<1800)?restTotalSecs:remaining||1;const off=RING_CIRC*(1-left/total),w=left<=10;if(fe){fe.style.strokeDashoffset=off;fe.style.stroke=w?'#E8344A':'var(--amber)';fe.style.filter=w?'drop-shadow(0 0 8px rgba(232,52,74,.6))':'drop-shadow(0 0 10px rgba(245,166,35,.7))';}if(ge){ge.style.strokeDashoffset=off;ge.style.stroke=w?'#E8344A':'var(--amber)';}if(te)te.style.color=w?'var(--red)':'var(--amber)';if(ne)ne.textContent=Math.floor(total/60)+':'+String(total%60).padStart(2,'0')+' rest period';}
 function skipTimer(){
   clearInterval(restInterval);restInterval=null;restEndTime=0;
   try{localStorage.removeItem('trk-timer');}catch(e){}
@@ -1344,13 +1444,155 @@ function confirmEditCardio(d,nameField,noteField){
   setCardio(d,noteField,note.trim());
   closeModalForce();render();showToast('Cardio updated');
 }
-function check(id){st[id]=!st[id];save();render();if(navigator.vibrate)navigator.vibrate(10);}
+// ── SESSION MODE SELECTOR LOGIC ──────────────────────────────────────────
+function showModeSelector(){
+  const ms=document.getElementById('mode-selector');
+  if(ms)ms.classList.add('active');
+}
+function hideModeSelector(){
+  const ms=document.getElementById('mode-selector');
+  if(ms)ms.classList.remove('active');
+  setTimeout(()=>{if(ms)ms.style.display='none';},500);
+}
+function showMsMain(){
+  document.getElementById('ms-main').style.display='';
+  document.getElementById('ms-coach-entry').style.display='none';
+}
+async function selectMode(m){
+  sessionMode=m;
+  try{localStorage.setItem('unit-session-mode',m);}catch(e){}
+  if(m==='solo'){
+    hideModeSelector();
+    // Hide sync button for solo — no sharing by default
+    const sb=document.getElementById('sync-btn');
+    if(sb)sb.style.display='none';
+    render();
+  } else if(m==='cotrain'){
+    // Host: start a co-train session immediately, show code
+    hideModeSelector();
+    const id=genSessionId();
+    await startCoTrainHost(id);
+    render();
+    showCoTrainCodeToast(id);
+  } else if(m==='coach'){
+    // Show code entry
+    document.getElementById('ms-main').style.display='none';
+    document.getElementById('ms-coach-entry').style.display='';
+    setTimeout(()=>{const f=document.getElementById('ms-code-input');if(f)f.focus();},300);
+  }
+}
+async function enterCoachMode(){
+  const code=(document.getElementById('ms-code-input')||{}).value||'';
+  const id=code.trim().toUpperCase();
+  if(id.length<4){showToast('Enter a valid code');return;}
+  hideModeSelector();
+  sessionMode='coach';
+  try{localStorage.setItem('unit-session-mode','coach');}catch(e){}
+  await startCoachView(id);
+  render();
+}
+function showCoTrainCodeToast(id){
+  // Show the session code prominently so host can share it
+  const el=document.getElementById('toast');
+  if(!el)return;
+  el.textContent='Share code: '+id+' — tap sync icon to copy';
+  el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),5000);
+}
+
+// ── CO-TRAIN HOST (shares session, guest watches workout only) ──
+async function startCoTrainHost(id){
+  syncSessionId=id;isCoachView=false;isGuestView=false;coachSessionId=null;
+  saveSyncPrefs();
+  await pushSync();
+  // Guest listens to host's /coguest node for kick signal
+  attachTimerListener(id);
+  showPill();setSyncStatus('live','Sharing — code: '+id);
+  document.getElementById('sync-btn').classList.add('sync-on');
+  document.getElementById('sync-btn').style.display='';
+}
+
+// ── CO-TRAIN GUEST (read-only, workout tab only) ──
+async function startGuestView(id){
+  guestSessionId=id;isGuestView=true;isCoachView=false;syncSessionId=null;
+  try{localStorage.setItem('unit-session-mode','guest');}catch(e){}
+  setSyncStatus('live','Watching');showPill();
+  // Read initial state from host's athlete node
+  try{
+    const snap=await fbGet(athleteNodeRef(id));
+    if(!snap||!snap.exists()){showToast('Session not found');resetToSolo();return;}
+    applyGuestData(snap.val());
+  }catch(e){showToast('Connection error');resetToSolo();return;}
+  // Listen for updates
+  detachFbListener();
+  fbListenerRef=athleteNodeRef(id);
+  fbListener=fbOnValue(fbListenerRef,(snap)=>{
+    if(!snap||!snap.exists())return;
+    const data=snap.val();
+    if(data&&data.hostEnded){showToast('Host ended the session');exitGuestView();return;}
+    applyGuestData(data);lastSyncTime=Date.now();updatePillTime();
+  });
+  attachTimerListener(id);
+  document.getElementById('guest-banner').classList.add('show');
+  document.getElementById('sync-btn').style.display='none';
+  // Force workout mode only
+  mode='workout';
+  // Disable nutrition and calendar tabs
+  document.getElementById('mb-nutrition').style.display='none';
+  document.getElementById('mb-calendar').style.display='none';
+  render();
+}
+function applyGuestData(data){
+  if(!data)return;
+  // Guests only get workout state — no meals, no personal data
+  if(data.ws)ws=data.ws;
+  if(data.st)st=data.st;
+  if(data.EX)EX=data.EX;
+  if(data.day)day=data.day;
+  mode='workout';
+  seedWeights();
+  render();
+}
+function exitGuestView(){
+  detachFbListener();detachTimerListener();
+  guestSessionId=null;isGuestView=false;
+  document.getElementById('guest-banner').classList.remove('show');
+  hidePill();
+  document.getElementById('sync-btn').style.display='';
+  document.getElementById('mb-nutrition').style.display='';
+  document.getElementById('mb-calendar').style.display='';
+  resetToSolo();
+}
+function resetToSolo(){
+  sessionMode='solo';
+  try{localStorage.setItem('unit-session-mode','solo');}catch(e){}
+  load();render();
+}
+
+// ── STOP CO-TRAIN (host ends) — signal guests then stop ──
+async function stopCoTrainHost(){
+  if(syncSessionId){
+    // Signal any guests that host ended
+    try{await fbSet(athleteNodeRef(syncSessionId),{...buildPayload(),hostEnded:true});}catch(e){}
+    setTimeout(async()=>{
+      try{fbSet(athleteNodeRef(syncSessionId),null);}catch(e){}
+      try{fbSet(coachNodeRef(syncSessionId),null);}catch(e){}
+      try{fbSet(timerNodeRef(syncSessionId),null);}catch(e){}
+    },1500);
+  }
+  syncSessionId=null;detachFbListener();detachAthleteListener();detachTimerListener();
+  saveSyncPrefs();hidePill();
+  document.getElementById('sync-btn').classList.remove('sync-on');
+  showToast('Session ended');
+}
+
+function check(id){if(isGuestView)return;st[id]=!st[id];save();render();if(navigator.vibrate)navigator.vibrate(10);}
 function toggleSec(k){op[k]=!op[k];render();}
 function toggleMealSec(k){mealOp[k]=!mealOp[k];render();}
 function toggleEx(k){exop[k]=!exop[k];render();}
 function switchDay(d){day=d;editingMeal=null;if(syncSessionId&&!isCoachView)pushSync();if(isCoachView&&coachSessionId)pushCoachEdit();render();window.scrollTo({top:0,behavior:'smooth'});}
 function setMode(m){mode=m;editingMeal=null;['workout','nutrition','calendar'].forEach(x=>{const el=document.getElementById('mb-'+x);if(el)el.classList.toggle('active',x===m);});if(syncSessionId&&!isCoachView)pushSync();if(isCoachView&&coachSessionId)pushCoachEdit();render();}
-async function markSet(k,name,secs){
+async function markSet(k,name,secs){if(isGuestView)return;
   if(!ws[k])ws[k]={};
   // Capture weight/reps from inputs
   const i=document.getElementById('inp-'+k),r=document.getElementById('rep-'+k);
@@ -1471,8 +1713,9 @@ function nutrHTML(d){
 
 // ── RENDER ─────────────────────────────────────────────────────────────────
 async function render(){
-  // Safety: if current day has no WK entry, fall back to first valid day
   if(!WK[day]||!EX[day])day=DAYS.find(x=>WK[x]&&EX[x])||DAYS[0];
+  // Guest view: force workout mode, hide other tabs
+  if(isGuestView){mode='workout';}
   const d=day,w=WK[d],p=wkProg(d);
   document.getElementById('prog-fill').style.width=p.pct+'%';
   document.getElementById('prog-pct').textContent=p.pct+'%';
@@ -1515,12 +1758,13 @@ async function render(){
   document.getElementById('week-bar').innerHTML=DAYS.map(dy=>{const pp=wkProg(dy);const isToday=dy===realToday;const isSel=dy===d;return`<div class="wd" onclick="switchDay('${dy}')"><div class="wd-lbl${isToday?' today':''}">${dy}${isToday?'<br><span style="font-size:6px;letter-spacing:.04em;color:var(--amber);display:block;line-height:1">NOW</span>':''}</div><div class="wd-ring${isSel?' today-ring':''}"><div class="wd-fill" style="height:${pp.pct}%"></div><div class="wd-pct">${pp.pct}</div></div></div>`;}).join('');
   updateCartBadge();
   if(syncSessionId||isCoachView)document.getElementById('sync-btn').classList.add('sync-on');
-  ['workout','nutrition','calendar'].forEach(m=>{const el=document.getElementById('mb-'+m);if(el)el.classList.toggle('active',mode===m);});
+  ['workout','nutrition','calendar'].forEach(m=>{const el=document.getElementById('mb-'+m);if(el){el.classList.toggle('active',mode===m);el.style.display=(isGuestView&&m!=='workout')?'none':'';}});
   repositionPill();
 }
 
 // ── GLOBAL EXPORTS ─────────────────────────────────────────────────────────
 const _fns={
+  selectMode,enterCoachMode,showMsMain,exitGuestView,startGuestView,stopCoTrainHost,showCoTrainCodeToast,
   getCardio,setCardio,openEditCardio,confirmEditCardio,
   check,toggleSec,toggleMealSec,toggleEx,switchDay,setMode,
   markSet,undoSet,wInput,rInput,addWater,resetDay,
@@ -1538,6 +1782,7 @@ const _fns={
 };
 Object.assign(window,_fns);
 Object.defineProperty(window,'isCoachView',{get:()=>isCoachView});
+Object.defineProperty(window,'isGuestView',{get:()=>isGuestView});
 Object.defineProperty(window,'ws',{get:()=>ws});
 Object.defineProperty(window,'currentPhotoCaptureData',{get:()=>currentPhotoCaptureData,set:(v)=>{currentPhotoCaptureData=v;}});
 Object.defineProperty(window,'calMonthOffset',{get:()=>calMonthOffset,set:(v)=>{calMonthOffset=v;}});
@@ -1551,10 +1796,24 @@ window.addEventListener('resize',repositionPill);
 load();loadGrocery();loadSyncPrefs();loadCal();
 openPhotoDB().catch(()=>{});
 
-if(syncSessionId&&!isCoachView){startSync(syncSessionId).then(()=>showToast('Session resumed'));}
-if(isCoachView&&coachSessionId){startCoachView(coachSessionId);}
-
-render();
+// ── SESSION MODE INIT ─────────────────────────────────────────────────────
+(async()=>{
+  if(isCoachView&&coachSessionId){
+    await startCoachView(coachSessionId);render();
+  } else if(isGuestView&&guestSessionId){
+    await startGuestView(guestSessionId);
+  } else if(sessionMode==='cotrain'&&syncSessionId){
+    await startCoTrainHost(syncSessionId);render();
+  } else if(sessionMode==='solo'){
+    // Previously chose solo — skip selector
+    const sb=document.getElementById('sync-btn');if(sb)sb.style.display='none';
+    render();
+  } else {
+    // No mode chosen yet — show selector after loader dismisses
+    render();
+    setTimeout(()=>showModeSelector(),2600);
+  }
+})();
 restoreTimer();
 setupSW();
 
