@@ -570,7 +570,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;back
 
 <div class="toast" id="toast"></div>
 
-<script type="module">
+<script type="module" onerror="document.getElementById('loader').style.display='none'">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import { getDatabase, ref, set, onValue, off, get } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
 
@@ -583,8 +583,9 @@ const firebaseConfig = {
   messagingSenderId: "930734468354",
   appId: "1:930734468354:web:5fb495b8bb74cac498a61b"
 };
-const fbApp = initializeApp(firebaseConfig);
-const db = getDatabase(fbApp);
+let fbApp,db;
+try{fbApp=initializeApp(firebaseConfig);db=getDatabase(fbApp);}
+catch(e){console.warn('Firebase init failed:',e);db=null;}
 let fbListener=null,fbListenerRef=null;
 
 // ── CONSTANTS ─────────────────────────────────────────────────────────────
@@ -972,8 +973,12 @@ function genSessionId(){return Array.from({length:6},()=>'ABCDEFGHJKLMNPQRSTUVWX
 let fbAthleteListener=null,fbAthleteRef=null; // athlete listens to coach node
 // fbListener/fbListenerRef = coach listens to athlete node (existing vars)
 
-function athleteNodeRef(id){return ref(db,'sessions/'+id+'/athlete');}
-function coachNodeRef(id){return ref(db,'sessions/'+id+'/coach');}
+function athleteNodeRef(id){return db?ref(db,'sessions/'+id+'/athlete'):null;}
+function coachNodeRef(id){return db?ref(db,'sessions/'+id+'/coach'):null;}
+
+async function fbSet(nodeRef,data){if(!db||!nodeRef)return;try{await set(nodeRef,data);}catch(e){console.warn('fbSet error',e);}}
+async function fbGet(nodeRef){if(!db||!nodeRef)return null;try{return await get(nodeRef);}catch(e){return null;}}
+function fbOnValue(nodeRef,cb){if(!db||!nodeRef)return ()=>{};return onValue(nodeRef,cb);}
 
 function buildPayload(){
   const timerData=restEndTime>Date.now()?{end:restEndTime,total:restTotalSecs,ex:restExName}:null;
@@ -983,22 +988,22 @@ function buildPayload(){
 async function pushSync(){
   // Athlete pushes to /athlete node
   if(!syncSessionId||isCoachView)return;
-  try{await set(athleteNodeRef(syncSessionId),buildPayload());lastSyncTime=Date.now();setSyncStatus('live','Live');}
+  try{await fbSet(athleteNodeRef(syncSessionId),buildPayload());lastSyncTime=Date.now();setSyncStatus('live','Live');}
   catch(e){setSyncStatus('err','Sync error');}
 }
 
 async function pushCoachEdit(){
   // Coach pushes to /coach node
   if(!isCoachView||!coachSessionId)return;
-  try{await set(coachNodeRef(coachSessionId),buildPayload());lastSyncTime=Date.now();setSyncStatus('coach','Coach — live edit');}
+  try{await fbSet(coachNodeRef(coachSessionId),buildPayload());lastSyncTime=Date.now();setSyncStatus('coach','Coach — live edit');}
   catch(e){console.warn('Coach push error',e);}
 }
 
 function detachFbListener(){
-  if(fbListenerRef&&fbListener){off(fbListenerRef,'value',fbListener);fbListener=null;fbListenerRef=null;}
+  if(fbListenerRef&&fbListener){if(db)try{off(fbListenerRef,'value',fbListener);}catch(e){};fbListener=null;fbListenerRef=null;}
 }
 function detachAthleteListener(){
-  if(fbAthleteRef&&fbAthleteListener){off(fbAthleteRef,'value',fbAthleteListener);fbAthleteListener=null;fbAthleteRef=null;}
+  if(fbAthleteRef&&fbAthleteListener){if(db)try{off(fbAthleteRef,'value',fbAthleteListener);}catch(e){};fbAthleteListener=null;fbAthleteRef=null;}
 }
 
 async function startSync(id){
@@ -1008,8 +1013,8 @@ async function startSync(id){
   // Athlete listens to coach node for incoming edits
   detachAthleteListener();
   fbAthleteRef=coachNodeRef(id);
-  fbAthleteListener=onValue(fbAthleteRef,(snap)=>{
-    if(!snap.exists())return;
+  fbAthleteListener=fbOnValue(fbAthleteRef,(snap)=>{
+    if(!snap||!snap.exists())return;
     applyRemoteData(snap.val());
     lastSyncTime=Date.now();updatePillTime();
     showToast('Coach updated your session');
@@ -1020,11 +1025,11 @@ async function startSync(id){
 async function stopSync(){
   if(syncSessionId){
     // Write a session-ended marker so coach listener fires and kicks them out
-    try{await set(athleteNodeRef(syncSessionId),{ended:true,ts:Date.now()});}catch(e){}
+    try{await fbSet(athleteNodeRef(syncSessionId),{ended:true,ts:Date.now()});}catch(e){}
     // Small delay so coach receives it, then wipe
     setTimeout(async()=>{
-      try{set(athleteNodeRef(syncSessionId),null);}catch(e){}
-      try{set(coachNodeRef(syncSessionId),null);}catch(e){}
+      try{fbSet(athleteNodeRef(syncSessionId),null);}catch(e){}
+      try{fbSet(coachNodeRef(syncSessionId),null);}catch(e){}
     },1500);
   }
   syncSessionId=null;
@@ -1037,15 +1042,15 @@ async function startCoachView(id){
   coachSessionId=id;isCoachView=true;saveSyncPrefs();setSyncStatus('coach','Connecting…');showPill();
   // Try reading athlete node first
   try{
-    const snap=await get(athleteNodeRef(id));
-    if(!snap.exists()){showToast('Session not found — athlete must start session first');coachSessionId=null;isCoachView=false;saveSyncPrefs();hidePill();return;}
+    const snap=await fbGet(athleteNodeRef(id));
+    if(!snap||!snap.exists()){showToast('Session not found — athlete must start session first');coachSessionId=null;isCoachView=false;saveSyncPrefs();hidePill();return;}
     applyRemoteData(snap.val());
   }catch(e){showToast('Connection error');coachSessionId=null;isCoachView=false;saveSyncPrefs();hidePill();return;}
   // Coach listens to athlete node for changes
   detachFbListener();
   fbListenerRef=athleteNodeRef(id);
-  fbListener=onValue(fbListenerRef,(snap)=>{
-    if(!snap.exists())return;
+  fbListener=fbOnValue(fbListenerRef,(snap)=>{
+    if(!snap||!snap.exists())return;
     const data=snap.val();
     // Athlete ended the session — kick coach out
     if(data&&data.ended){
@@ -1064,7 +1069,7 @@ async function startCoachView(id){
 
 function exitCoachView(){
   // Clear coach node so athlete knows coach left
-  if(coachSessionId){try{set(coachNodeRef(coachSessionId),null);}catch(e){}}
+  if(coachSessionId){try{fbSet(coachNodeRef(coachSessionId),null);}catch(e){}}
   detachFbListener();coachSessionId=null;isCoachView=false;saveSyncPrefs();
   document.getElementById('coach-banner').classList.remove('show');hidePill();
   document.getElementById('sync-btn').classList.remove('sync-on');
@@ -1455,16 +1460,23 @@ render();
 restoreTimer();
 setupSW();
 
-// ── LOADING SCREEN DISMISS ─────────────────────────────────────────────────
-// Dismiss after animation completes (~2.5s) or once DOM is ready, whichever is later
-setTimeout(()=>{
-  const loader=document.getElementById('loader');
-  if(loader)loader.classList.add('hidden');
-  setTimeout(()=>{if(loader)loader.style.display='none';},700);
-},2400);
-
 setTimeout(()=>{ checkAndShowPopup(); },3200);
 setTimeout(()=>{ saveLastSeen(); },3800);
+</script>
+<!-- Loader dismiss runs in a PLAIN script so a module error can't block it -->
+<script>
+(function(){
+  function dismissLoader(){
+    var loader=document.getElementById('loader');
+    if(!loader)return;
+    loader.classList.add('hidden');
+    setTimeout(function(){if(loader)loader.style.display='none';},700);
+  }
+  // Dismiss after animations finish
+  setTimeout(dismissLoader,2400);
+  // Hard fallback — always dismiss after 4s no matter what
+  setTimeout(dismissLoader,4000);
+})();
 </script>
 </body>
 </html>
