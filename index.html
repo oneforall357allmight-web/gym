@@ -84,7 +84,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;back
 .cart-badge.show{display:block}
 
 /* SYNC PILL */
-.sync-pill{position:fixed;left:50%;transform:translateX(-50%);z-index:190;display:none;align-items:center;gap:7px;padding:6px 14px 6px 10px;background:rgba(13,20,32,.97);border:1px solid var(--border2);border-radius:20px;box-shadow:0 4px 24px rgba(0,0,0,.7);font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);white-space:nowrap;pointer-events:none;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.sync-pill{position:fixed;left:50%;transform:translateX(-50%);z-index:190;display:none;align-items:center;gap:7px;padding:6px 14px 6px 10px;background:rgba(13,20,32,.97);border:1px solid var(--border2);border-radius:20px;box-shadow:0 4px 24px rgba(0,0,0,.7);font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);white-space:nowrap;pointer-events:none;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);bottom:calc(60px + env(safe-area-inset-bottom,0px) + 8px)}
 .sync-pill.show{display:flex}
 .sync-dot{width:7px;height:7px;border-radius:50%;background:var(--text3);flex-shrink:0}
 .sync-dot.live{background:var(--amber);box-shadow:0 0 6px var(--amber);animation:pdot 2s infinite}
@@ -494,7 +494,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;back
 <!-- STICKY HEADER -->
 <div class="header" id="main-header">
   <div class="coach-banner" id="coach-banner">
-    <div class="coach-banner-text">👁 Coach view — read only</div>
+    <div class="coach-banner-text">👁 Coach view — live edit</div>
     <div class="coach-banner-id" id="coach-banner-id"></div>
     <button class="coach-exit-btn" onclick="exitCoachView()">Exit</button>
   </div>
@@ -702,6 +702,8 @@ const GROCERY_BASE=[
 
 // ── STATE ─────────────────────────────────────────────────────────────────
 let EX=JSON.parse(JSON.stringify(DEFAULT_EX)),MEALS=JSON.parse(JSON.stringify(DEFAULT_MEALS)),SUPPS=[...DEFAULT_SUPPS];
+// Editable cardio: overrides WK[d].am/ams/pc/pcs per day
+let CARDIO={};  // {Mon:{am:'...',ams:'...',pc:'...',pcs:'...'}, ...}
 let st={},ws={},wtr={},op={am:false,pc:false,sp:false,h2o:false,ph:false},mealOp={},exop={};
 let mode='workout',day=DAYS[(new Date().getDay()+1)%7],editingMeal=null,saveT;
 let groceryChecked={},groceryCustom=[];
@@ -854,7 +856,7 @@ function renderCalendar(){
     if(c.checked){const week=Math.floor(daysIn/7);if(week<13)hClass=' h1';else if(week<26)hClass=' h2';else if(week<39)hClass=' h3';else hClass=' h4';}
     let cls='cal-cell';
     if(!c.inProgram)cls+=' before-start';if(c.isFuture)cls+=' future';if(c.isToday)cls+=' today-cell';if(c.checked)cls+=` checked${hClass}`;
-    const onclick=(c.inProgram&&!c.isFuture&&!isCoachView)?`onclick="toggleCalDay('${c.dateStr}')"`:' ';
+    const onclick=(c.inProgram&&!c.isFuture)?`onclick="toggleCalDay('${c.dateStr}')"`:' ';
     h+=`<div class="${cls}" ${onclick}><span class="cal-cell-num">${c.dayNum}</span></div>`;
   });
   h+=`</div>`;
@@ -937,7 +939,8 @@ async function confirmDeletePhoto(id){
 }
 
 // ── PERSISTENCE ────────────────────────────────────────────────────────────
-function save(){try{localStorage.setItem('trk-v7',JSON.stringify({st,ws,wtr,EX,MEALS,SUPPS}));}catch(e){}if(syncSessionId)pushSync();}
+function save(){try{if(!isCoachView)localStorage.setItem('trk-v7',JSON.stringify({st,ws,wtr,EX,MEALS,SUPPS,CARDIO}));}catch(e){}if(syncSessionId&&!isCoachView)pushSync();if(isCoachView&&coachSessionId)pushCoachEdit();}
+function loadCardio(){try{const r=localStorage.getItem('trk-v7');if(r){const d=JSON.parse(r);if(d.CARDIO)CARDIO=d.CARDIO;}}catch(e){}}
 function seedWeights(){
   // For every exercise that has a default weight (e.w), pre-fill ws entries
   // that haven't been manually set or logged yet — so inputs show the weight on first open.
@@ -953,7 +956,7 @@ function seedWeights(){
     });
   });
 }
-function load(){try{const r=localStorage.getItem('trk-v7');if(r){const d=JSON.parse(r);st=d.st||{};ws=d.ws||{};wtr=d.wtr||{};if(d.EX)EX=d.EX;if(d.MEALS)MEALS=d.MEALS;if(d.SUPPS)SUPPS=d.SUPPS;}}catch(e){}seedWeights();}
+function load(){try{const r=localStorage.getItem('trk-v7');if(r){const d=JSON.parse(r);st=d.st||{};ws=d.ws||{};wtr=d.wtr||{};if(d.EX)EX=d.EX;if(d.MEALS)MEALS=d.MEALS;if(d.SUPPS)SUPPS=d.SUPPS;if(d.CARDIO)CARDIO=d.CARDIO;}}catch(e){}seedWeights();}
 function dSave(){clearTimeout(saveT);saveT=setTimeout(save,600);}
 function saveGrocery(){try{localStorage.setItem('trk-grocery',JSON.stringify({checked:groceryChecked,custom:groceryCustom}));}catch(e){}}
 function loadGrocery(){try{const r=localStorage.getItem('trk-grocery');if(r){const d=JSON.parse(r);groceryChecked=d.checked||{};groceryCustom=d.custom||[];}}catch(e){}}
@@ -965,12 +968,21 @@ function genSessionId(){return Array.from({length:6},()=>'ABCDEFGHJKLMNPQRSTUVWX
 function sessionRef(id){return ref(db,'sessions/'+id);}
 async function pushSync(){
   if(!syncSessionId||isCoachView)return;
-  try{await set(sessionRef(syncSessionId),{st,ws,wtr,day,mode,ts:Date.now()});lastSyncTime=Date.now();setSyncStatus('live','Live');}
+  const timerData=restEndTime>Date.now()?{end:restEndTime,total:restTotalSecs,ex:restExName}:null;
+  try{await set(sessionRef(syncSessionId),{st,ws,wtr,day,mode,EX,CARDIO,timerData,ts:Date.now()});lastSyncTime=Date.now();setSyncStatus('live','Live');}
   catch(e){setSyncStatus('err','Sync error');}
 }
 async function startSync(id){syncSessionId=id;isCoachView=false;coachSessionId=null;saveSyncPrefs();await pushSync();showPill();document.getElementById('sync-btn').classList.add('sync-on');}
 function stopSync(){if(syncSessionId&&!isCoachView){try{set(sessionRef(syncSessionId),null);}catch(e){}}syncSessionId=null;detachFbListener();saveSyncPrefs();hidePill();document.getElementById('sync-btn').classList.remove('sync-on');}
 function detachFbListener(){if(fbListenerRef&&fbListener){off(fbListenerRef,'value',fbListener);fbListener=null;fbListenerRef=null;}}
+async function pushCoachEdit(){
+  // Coach writes edits back to the same session node — athlete picks them up via onValue
+  if(!isCoachView||!coachSessionId)return;
+  const timerData=restEndTime>Date.now()?{end:restEndTime,total:restTotalSecs,ex:restExName}:null;
+  try{await set(sessionRef(coachSessionId),{st,ws,wtr,day,mode,EX,CARDIO,timerData,ts:Date.now()});}
+  catch(e){console.warn('Coach push error',e);}
+}
+
 async function startCoachView(id){
   coachSessionId=id;isCoachView=true;saveSyncPrefs();setSyncStatus('coach','Connecting…');showPill();
   try{const snap=await get(sessionRef(id));if(!snap.exists()){showToast('Session not found');coachSessionId=null;isCoachView=false;saveSyncPrefs();hidePill();return;}applyRemoteData(snap.val());}
@@ -981,26 +993,38 @@ async function startCoachView(id){
   document.getElementById('coach-banner').classList.add('show');
   document.getElementById('coach-banner-id').textContent='Code: '+id;
   document.getElementById('sync-btn').classList.add('sync-on');
-  document.getElementById('mode-bar').style.pointerEvents='none';
-  document.getElementById('mode-bar').style.opacity='.5';
-  setSyncStatus('coach','Coach view — live');
+  setSyncStatus('coach','Coach — live edit');
 }
 function exitCoachView(){
   detachFbListener();coachSessionId=null;isCoachView=false;saveSyncPrefs();
   document.getElementById('coach-banner').classList.remove('show');hidePill();
   document.getElementById('sync-btn').classList.remove('sync-on');
-  document.getElementById('mode-bar').style.pointerEvents='';document.getElementById('mode-bar').style.opacity='';
+
   load();render();showToast('Exited coach view');
 }
 function applyRemoteData(data){
-  if(!data)return;st=data.st||{};ws=data.ws||{};wtr=data.wtr||{};
+  if(!data)return;
+  st=data.st||{};ws=data.ws||{};wtr=data.wtr||{};
+  if(data.EX)EX=data.EX;if(data.CARDIO)CARDIO=data.CARDIO;
   if(data.day)day=data.day;if(data.mode)mode=data.mode;
+  // Sync timer state to coach screen
+  if(data.timerData&&data.timerData.end>Date.now()){
+    const td=data.timerData;
+    if(td.end!==restEndTime){
+      clearInterval(restInterval);
+      restEndTime=td.end;restTotalSecs=td.total;restExName=td.ex;
+      showFST();updateTimer();
+      restInterval=setInterval(()=>{if(Math.ceil((restEndTime-Date.now())/1000)<=0){clearInterval(restInterval);restInterval=null;restEndTime=0;hideFST();playAlarm();if(navigator.vibrate)navigator.vibrate([200,100,200,100,400]);}else updateTimer();},250);
+    }
+  } else if(!data.timerData&&restEndTime>0&&isCoachView){
+    clearInterval(restInterval);restInterval=null;restEndTime=0;hideFST();
+  }
   ['workout','nutrition','calendar'].forEach(m=>{const el=document.getElementById('mb-'+m);if(el)el.classList.toggle('active',mode===m);});
   render();
 }
 
 // ── SYNC PILL ──────────────────────────────────────────────────────────────
-function showPill(){const pill=document.getElementById('sync-pill'),hdr=document.getElementById('main-header');if(!pill||!hdr)return;pill.style.top=(hdr.getBoundingClientRect().bottom+8)+'px';pill.classList.add('show');}
+function showPill(){const pill=document.getElementById('sync-pill');if(!pill)return;pill.classList.add('show');}
 function hidePill(){const pill=document.getElementById('sync-pill');if(pill)pill.classList.remove('show');}
 function setSyncStatus(type,label){const dot=document.getElementById('sync-dot'),lbl=document.getElementById('sync-label');if(!dot||!lbl)return;dot.className='sync-dot'+(type==='live'?' live':type==='coach'?' coach':type==='err'?' err':'');lbl.textContent=label;}
 function updatePillTime(){if(!lastSyncTime)return;const s=Math.floor((Date.now()-lastSyncTime)/1000);const el=document.getElementById('sync-time');if(el)el.textContent=s<3?'· just now':s<60?'· '+s+'s ago':'';}
@@ -1133,39 +1157,57 @@ function getSetKeys(d){return EX[d].flatMap((e,ei)=>Array.from({length:e.s},(_,s
 function wkProg(d){const c=[`${d}|am`];if(WK[d].pc)c.push(`${d}|pc`);const sets=getSetKeys(d);const done=c.filter(id=>st[id]).length+sets.filter(k=>ws[k]&&ws[k].done).length;const tot=c.length+sets.length;return{done,total:tot,pct:tot?Math.round(done/tot*100):0};}
 
 // ── ACTIONS ────────────────────────────────────────────────────────────────
-function check(id){if(isCoachView)return;st[id]=!st[id];save();render();if(navigator.vibrate)navigator.vibrate(10);}
+function getCardio(d,field){return(CARDIO[d]&&CARDIO[d][field]!==undefined)?CARDIO[d][field]:WK[d][field];}
+function setCardio(d,field,val){if(!CARDIO[d])CARDIO[d]={};CARDIO[d][field]=val;save();}
+function openEditCardio(d,type){
+  // type = 'am' or 'pc'
+  const nameField=type,noteField=type==='am'?'ams':'pcs';
+  const currentName=getCardio(d,nameField);
+  const currentNote=getCardio(d,noteField);
+  const label=type==='am'?'Morning Cardio':'Post-Workout Cardio';
+  const body=`<div class="modal-field"><label class="modal-label">Activity</label><input class="modal-input" id="ec-name" placeholder="e.g. 40 min fasted incline walk" value="${esc(currentName||'')}"></div><div class="modal-field"><label class="modal-label">Details / Notes</label><input class="modal-input" id="ec-note" placeholder="e.g. HR 120-135 · incline 8%" value="${esc(currentNote||'')}"></div><div class="modal-hint">Edit the cardio description for ${DNAMES[d]}</div><div class="modal-actions"><button class="modal-btn" onclick="closeModalForce()">Cancel</button><button class="modal-btn primary" onclick="confirmEditCardio('${d}','${nameField}','${noteField}')">Save</button></div>`;
+  openModal('Edit '+label,body);
+  setTimeout(()=>{const f=document.getElementById('ec-name');if(f)f.focus();},350);
+}
+function confirmEditCardio(d,nameField,noteField){
+  const name=(document.getElementById('ec-name')||{}).value||'';
+  const note=(document.getElementById('ec-note')||{}).value||'';
+  setCardio(d,nameField,name.trim());
+  setCardio(d,noteField,note.trim());
+  closeModalForce();render();showToast('Cardio updated');
+}
+function check(id){st[id]=!st[id];save();render();if(navigator.vibrate)navigator.vibrate(10);}
 function toggleSec(k){op[k]=!op[k];render();}
 function toggleMealSec(k){mealOp[k]=!mealOp[k];render();}
 function toggleEx(k){exop[k]=!exop[k];render();}
 function switchDay(d){day=d;editingMeal=null;if(syncSessionId)pushSync();render();window.scrollTo({top:0,behavior:'smooth'});}
-function setMode(m){if(isCoachView&&m!=='calendar')return;mode=m;editingMeal=null;['workout','nutrition','calendar'].forEach(x=>{const el=document.getElementById('mb-'+x);if(el)el.classList.toggle('active',x===m);});if(syncSessionId)pushSync();render();}
-function markSet(k,name,secs){if(isCoachView)return;if(!ws[k])ws[k]={};const i=document.getElementById('inp-'+k),r=document.getElementById('rep-'+k);if(i&&i.value)ws[k].w=i.value;else if(i&&!ws[k].w){ws[k].w=i.getAttribute('value')||'';}if(r&&r.value)ws[k].r=r.value;ws[k].done=true;save();render();if(navigator.vibrate)navigator.vibrate([20,40,20]);startRestTimer(secs,name);}
-function undoSet(k){if(isCoachView)return;if(ws[k])ws[k].done=false;save();render();}
-function wInput(k,v){if(isCoachView)return;if(!ws[k])ws[k]={};ws[k].w=v;dSave();}
-function rInput(k,v){if(isCoachView)return;if(!ws[k])ws[k]={};ws[k].r=v;dSave();}
-function addWater(d,n){if(isCoachView)return;wtr[d]=(wtr[d]||0)===n?n-1:n;save();render();}
-function resetDay(d){if(isCoachView)return;if(!confirm('Reset '+DNAMES[d]+'?'))return;[`${d}|am`,`${d}|pc`].forEach(id=>st[id]=false);getSetKeys(d).forEach(k=>{if(ws[k])ws[k].done=false;});wtr[d]=0;save();render();showToast('Day reset');}
-function addSet(d,ei){if(isCoachView)return;EX[d][ei].s++;exop[`${d}-${ei}`]=true;seedWeights();save();render();}
-function removeSet(d,ei){if(isCoachView)return;const ex=EX[d][ei];if(ex.s<=1){showToast('Minimum 1 set');return;}const lk=sk(d,ei,ex.s-1);if(ws[lk]&&(ws[lk].done||ws[lk].w||ws[lk].r)){if(!confirm('Remove last set?'))return;}delete ws[lk];ex.s--;save();render();}
-function removeExercise(d,ei){if(isCoachView)return;if(!confirm('Remove "'+EX[d][ei].n+'"?'))return;for(let si=0;si<EX[d][ei].s;si++)delete ws[sk(d,ei,si)];const ol=EX[d].length;EX[d].splice(ei,1);for(let i=ei+1;i<ol;i++)for(let si=0;si<20;si++){const ok=`${d}|${i}|${si}`,nk=`${d}|${i-1}|${si}`;if(ws[ok]){ws[nk]=ws[ok];delete ws[ok];}}const neo={};Object.keys(exop).forEach(k=>{const[kd,kei]=k.split('-');if(kd!==d){neo[k]=exop[k];return;}const idx=parseInt(kei,10);if(idx<ei)neo[k]=exop[k];else if(idx>ei)neo[`${kd}-${idx-1}`]=exop[k];});exop=neo;save();render();showToast('Exercise removed');}
-function openAddExercise(d){if(isCoachView)return;const body=`<div class="modal-field"><label class="modal-label">Exercise name</label><input class="modal-input" id="ae-name" placeholder="e.g. Cable lateral raise" autocomplete="off"></div><div class="modal-grid3"><div class="modal-field"><label class="modal-label">Sets</label><input class="modal-input" id="ae-sets" type="number" min="1" max="20" value="3" inputmode="numeric"></div><div class="modal-field"><label class="modal-label">Reps</label><input class="modal-input" id="ae-reps" placeholder="8-12" value="8-12"></div><div class="modal-field"><label class="modal-label">Rest (sec)</label><input class="modal-input" id="ae-rest" type="number" min="0" max="600" value="90" inputmode="numeric"></div></div><div class="modal-hint">Rest in seconds — 60, 90, 120, 180…</div><div class="modal-actions"><button class="modal-btn" onclick="closeModalForce()">Cancel</button><button class="modal-btn primary" onclick="confirmAddExercise('${d}')">Add</button></div>`;openModal('Add Exercise',body);setTimeout(()=>{const f=document.getElementById('ae-name');if(f)f.focus();},350);}
+function setMode(m){mode=m;editingMeal=null;['workout','nutrition','calendar'].forEach(x=>{const el=document.getElementById('mb-'+x);if(el)el.classList.toggle('active',x===m);});if(syncSessionId)pushSync();render();}
+function markSet(k,name,secs){if(!ws[k])ws[k]={};const i=document.getElementById('inp-'+k),r=document.getElementById('rep-'+k);if(i&&i.value)ws[k].w=i.value;else if(i&&!ws[k].w){ws[k].w=i.getAttribute('value')||'';}if(r&&r.value)ws[k].r=r.value;ws[k].done=true;save();render();if(navigator.vibrate)navigator.vibrate([20,40,20]);startRestTimer(secs,name).then(()=>{if(syncSessionId&&!isCoachView)pushSync();if(isCoachView&&coachSessionId)pushCoachEdit();});}
+function undoSet(k){if(ws[k])ws[k].done=false;save();render();}
+function wInput(k,v){if(!ws[k])ws[k]={};ws[k].w=v;dSave();}
+function rInput(k,v){if(!ws[k])ws[k]={};ws[k].r=v;dSave();}
+function addWater(d,n){wtr[d]=(wtr[d]||0)===n?n-1:n;save();render();}
+function resetDay(d){if(!confirm('Reset '+DNAMES[d]+'?'))return;[`${d}|am`,`${d}|pc`].forEach(id=>st[id]=false);getSetKeys(d).forEach(k=>{if(ws[k])ws[k].done=false;});wtr[d]=0;save();render();showToast('Day reset');}
+function addSet(d,ei){EX[d][ei].s++;exop[`${d}-${ei}`]=true;seedWeights();save();render();}
+function removeSet(d,ei){const ex=EX[d][ei];if(ex.s<=1){showToast('Minimum 1 set');return;}const lk=sk(d,ei,ex.s-1);if(ws[lk]&&(ws[lk].done||ws[lk].w||ws[lk].r)){if(!confirm('Remove last set?'))return;}delete ws[lk];ex.s--;save();render();}
+function removeExercise(d,ei){if(!confirm('Remove "'+EX[d][ei].n+'"?'))return;for(let si=0;si<EX[d][ei].s;si++)delete ws[sk(d,ei,si)];const ol=EX[d].length;EX[d].splice(ei,1);for(let i=ei+1;i<ol;i++)for(let si=0;si<20;si++){const ok=`${d}|${i}|${si}`,nk=`${d}|${i-1}|${si}`;if(ws[ok]){ws[nk]=ws[ok];delete ws[ok];}}const neo={};Object.keys(exop).forEach(k=>{const[kd,kei]=k.split('-');if(kd!==d){neo[k]=exop[k];return;}const idx=parseInt(kei,10);if(idx<ei)neo[k]=exop[k];else if(idx>ei)neo[`${kd}-${idx-1}`]=exop[k];});exop=neo;save();render();showToast('Exercise removed');}
+function openAddExercise(d){const body=`<div class="modal-field"><label class="modal-label">Exercise name</label><input class="modal-input" id="ae-name" placeholder="e.g. Cable lateral raise" autocomplete="off"></div><div class="modal-grid3"><div class="modal-field"><label class="modal-label">Sets</label><input class="modal-input" id="ae-sets" type="number" min="1" max="20" value="3" inputmode="numeric"></div><div class="modal-field"><label class="modal-label">Reps</label><input class="modal-input" id="ae-reps" placeholder="8-12" value="8-12"></div><div class="modal-field"><label class="modal-label">Rest (sec)</label><input class="modal-input" id="ae-rest" type="number" min="0" max="600" value="90" inputmode="numeric"></div></div><div class="modal-hint">Rest in seconds — 60, 90, 120, 180…</div><div class="modal-actions"><button class="modal-btn" onclick="closeModalForce()">Cancel</button><button class="modal-btn primary" onclick="confirmAddExercise('${d}')">Add</button></div>`;openModal('Add Exercise',body);setTimeout(()=>{const f=document.getElementById('ae-name');if(f)f.focus();},350);}
 function confirmAddExercise(d){const name=(document.getElementById('ae-name').value||'').trim(),sets=parseInt(document.getElementById('ae-sets').value,10),reps=(document.getElementById('ae-reps').value||'').trim(),rest=parseInt(document.getElementById('ae-rest').value,10)||0;if(!name){showToast('Name required');return;}if(!sets||sets<1){showToast('Sets must be ≥ 1');return;}if(!reps){showToast('Reps required');return;}EX[d].push({n:name,s:sets,r:reps,rest,note:''});exop[`${d}-${EX[d].length-1}`]=true;save();closeModalForce();render();showToast('Exercise added');}
-function toggleEditMeal(mid){if(isCoachView)return;editingMeal=editingMeal===mid?null:mid;render();}
-function addMealItem(mid){if(isCoachView)return;const inp=document.getElementById('meal-add-'+mid);if(!inp)return;const val=inp.value.trim();if(!val){showToast('Enter an item');return;}const m=MEALS.find(x=>x.id===mid);if(!m)return;m.items.push(val);inp.value='';save();render();}
-function removeMealItem(mid,idx){if(isCoachView)return;const m=MEALS.find(x=>x.id===mid);if(!m)return;m.items.splice(idx,1);save();render();}
+function toggleEditMeal(mid){editingMeal=editingMeal===mid?null:mid;render();}
+function addMealItem(mid){const inp=document.getElementById('meal-add-'+mid);if(!inp)return;const val=inp.value.trim();if(!val){showToast('Enter an item');return;}const m=MEALS.find(x=>x.id===mid);if(!m)return;m.items.push(val);inp.value='';save();render();}
+function removeMealItem(mid,idx){const m=MEALS.find(x=>x.id===mid);if(!m)return;m.items.splice(idx,1);save();render();}
 function updateMealMeta(mid,field,val){if(isCoachView)return;const m=MEALS.find(x=>x.id===mid);if(!m)return;m[field]=val;dSave();}
 function moveMeal(mid,dir){
-  if(isCoachView)return;
   const idx=MEALS.findIndex(x=>x.id===mid);
   const newIdx=idx+dir;
   if(newIdx<0||newIdx>=MEALS.length)return;
   [MEALS[idx],MEALS[newIdx]]=[MEALS[newIdx],MEALS[idx]];
   save();render();if(navigator.vibrate)navigator.vibrate(10);
 }
-function addMeal(){if(isCoachView)return;MEALS.push({id:'m'+Date.now(),label:'New Meal',time:'',cal:'',items:[]});save();render();}
-function removeMeal(mid){if(isCoachView)return;if(!confirm('Remove this meal?'))return;MEALS=MEALS.filter(x=>x.id!==mid);editingMeal=null;save();render();}
-function addSupp(){if(isCoachView)return;const inp=document.getElementById('supp-add-input');if(!inp)return;const val=inp.value.trim();if(!val)return;SUPPS.push(val);inp.value='';save();render();}
-function removeSupp(i){if(isCoachView)return;SUPPS.splice(i,1);save();render();}
+function addMeal(){MEALS.push({id:'m'+Date.now(),label:'New Meal',time:'',cal:'',items:[]});save();render();}
+function removeMeal(mid){if(!confirm('Remove this meal?'))return;MEALS=MEALS.filter(x=>x.id!==mid);editingMeal=null;save();render();}
+function addSupp(){const inp=document.getElementById('supp-add-input');if(!inp)return;const val=inp.value.trim();if(!val)return;SUPPS.push(val);inp.value='';save();render();}
+function removeSupp(i){SUPPS.splice(i,1);save();render();}
 function openModal(t,b){document.getElementById('modal-title').textContent=t;document.getElementById('modal-body').innerHTML=b;document.getElementById('modal-backdrop').classList.add('active');}
 function closeModal(e){if(e.target.id==='modal-backdrop')closeModalForce();}
 function closeModalForce(){document.getElementById('modal-backdrop').classList.remove('active');}
@@ -1182,11 +1224,11 @@ function wkHTML(d){
     const ekey=`${d}-${ei}`,isExO=!!exop[ekey];
     if(isRest){const k=sk(d,ei,0),dn=ws[k]&&ws[k].done;return`<div class="ci" onclick="(function(){if(window.isCoachView)return;var k='${esc(k)}';if(!window.ws[k])window.ws[k]={};window.ws[k].done=!window.ws[k].done;window.save();window.render();if(navigator.vibrate)navigator.vibrate(10);})()" style="padding:12px 0"><div class="cb${dn?' done':''}"><div class="ck"></div></div><div><div class="ci-text${dn?' done':''}">${esc(e.n)}</div><div class="ci-note">${esc(e.r)}${e.note?' · '+esc(e.note):''}</div></div></div>`;}
     const sd=Array.from({length:e.s},(_,si)=>ws[sk(d,ei,si)]&&ws[sk(d,ei,si)].done?1:0).reduce((a,b)=>a+b,0),allSD=sd===e.s,rl=fmtRest(e.rest);
-    const sH=Array.from({length:e.s},(_,si)=>{const k=sk(d,ei,si),sv=ws[k]||{};const defW=e.w||'';const curW=sv.w!==undefined?sv.w:defW;if(sv.done){const lg=[curW?curW+' lbs':null,sv.r?sv.r+' reps':null].filter(Boolean).join(' × ');return`<div class="set-row"><div class="set-done-icon"></div><div class="set-label sdone">Set ${si+1}</div><div class="set-logged">${lg||'—'}</div>${isCoachView?'':'<button class="set-undo-btn" onclick="undoSet(\''+k+'\')">Undo</button>'}</div>`;}return`<div class="set-row"><div class="set-label">Set<br>${si+1}</div><input class="set-w-input" type="number" id="inp-${k}" min="0" step="5" inputmode="decimal" placeholder="lbs" value="${curW}" oninput="wInput('${k}',this.value)" onclick="event.stopPropagation()"${isCoachView?' disabled':''}><div class="set-sep">×</div><input class="set-r-input" type="number" id="rep-${k}" min="0" step="1" inputmode="numeric" placeholder="${sv.r||'reps'}" value="${sv.r||''}" oninput="rInput('${k}',this.value)" onclick="event.stopPropagation()"${isCoachView?' disabled':''}><div class="set-spacer"></div>${isCoachView?'':'<button class="set-done-btn" onclick="markSet(\''+k+'\',\''+esc(e.n)+' · Set '+(si+1)+'\','+e.rest+')">Done</button>'}</div>`;}).join('');
-    const ctrl=isCoachView?'':(`<div class="set-ctrl-row"><button class="set-ctrl-btn rm" onclick="removeSet('${d}',${ei})" ${e.s<=1?'disabled':''}>− Set</button><button class="set-ctrl-btn add" onclick="addSet('${d}',${ei})">+ Set</button></div><div class="ex-actions"><button class="ex-rm-btn" onclick="removeExercise('${d}',${ei})">Remove Exercise</button></div>`);
+    const sH=Array.from({length:e.s},(_,si)=>{const k=sk(d,ei,si),sv=ws[k]||{};const defW=e.w||'';const curW=sv.w!==undefined?sv.w:defW;if(sv.done){const lg=[curW?curW+' lbs':null,sv.r?sv.r+' reps':null].filter(Boolean).join(' × ');return`<div class="set-row"><div class="set-done-icon"></div><div class="set-label sdone">Set ${si+1}</div><div class="set-logged">${lg||'—'}</div><button class="set-undo-btn" onclick="undoSet(\''+k+'\')">Undo</button></div>`;}return`<div class="set-row"><div class="set-label">Set<br>${si+1}</div><input class="set-w-input" type="number" id="inp-${k}" min="0" step="5" inputmode="decimal" placeholder="lbs" value="${curW}" oninput="wInput('${k}',this.value)" onclick="event.stopPropagation()"><div class="set-sep">×</div><input class="set-r-input" type="number" id="rep-${k}" min="0" step="1" inputmode="numeric" placeholder="${sv.r||'reps'}" value="${sv.r||''}" oninput="rInput('${k}',this.value)" onclick="event.stopPropagation()"><div class="set-spacer"></div><button class="set-done-btn" onclick="markSet(\''+k+'\',\''+esc(e.n)+' · Set '+(si+1)+'\','+e.rest+')">Done</button></div>`;}).join('');
+    const ctrl=`<div class="set-ctrl-row"><button class="set-ctrl-btn rm" onclick="removeSet('${d}',${ei})" ${e.s<=1?'disabled':''}>− Set</button><button class="set-ctrl-btn add" onclick="addSet('${d}',${ei})">+ Set</button></div><div class="ex-actions"><button class="ex-rm-btn" onclick="removeExercise('${d}',${ei})">Remove Exercise</button></div>`;
     return`<div class="ex-wrap${isExO?' ex-open':''}"><div class="ex-head" onclick="toggleEx('${ekey}')"><div class="ex-num-badge">${ei+1}</div><div class="ex-info"><div class="ex-name">${esc(e.n)}</div><div class="ex-meta">${e.s}×${esc(e.r)}${rl?' · '+rl:''}${e.note?' · '+esc(e.note):''}</div></div><div class="ex-prog${allSD?' full':''}">${sd}/${e.s}</div><div class="ex-chev${isExO?' open':''}">▾</div></div><div class="ex-body${isExO?' open':''}">${sH}${ctrl}</div></div>`;
   }).join('');
-  const addBtn=isCoachView?'':(`<button class="add-btn" onclick="openAddExercise('${d}')"><svg viewBox="0 0 14 14"><line x1="7" y1="2" x2="7" y2="12"/><line x1="2" y1="7" x2="12" y2="7"/></svg>Add Exercise</button>`);
+  const addBtn=`<button class="add-btn" onclick="openAddExercise('${d}')"><svg viewBox="0 0 14 14"><line x1="7" y1="2" x2="7" y2="12"/><line x1="2" y1="7" x2="12" y2="7"/></svg>Add Exercise</button>`;
   return`<div class="section open-section"><div class="sec-head" onclick="toggleSec('wk')"><div class="sec-icon ic-wk">WK</div><div class="sec-title">${isRest?'Recovery Tasks':'Workout'}<span class="sec-sub">${esc(WK[d].full)}</span></div><div class="sec-count${done===tot?' done':''}">${done}/${tot}</div><div class="sec-chev open">▾</div></div><div class="sec-body open">${exsH}${addBtn}</div></div>`;
 }
 
@@ -1194,7 +1236,7 @@ function nutrHTML(d){
   let h=`<div class="macros-strip"><div class="mac"><div class="mac-val">~2,310</div><div class="mac-lbl">Cal</div></div><div class="mac"><div class="mac-val">~205g</div><div class="mac-lbl">Protein</div></div><div class="mac"><div class="mac-val">~190g</div><div class="mac-lbl">Carbs</div></div><div class="mac"><div class="mac-val">~70g</div><div class="mac-lbl">Fat</div></div></div>`;
 
   MEALS.forEach((m,mi)=>{
-    const isO=!!mealOp[m.id],isE=editingMeal===m.id&&!isCoachView;
+    const isO=!!mealOp[m.id],isE=editingMeal===m.id;
     let bh='';
     if(isE){
       bh+=`<div class="meal-meta-row"><input class="meal-meta-input" style="flex:2" placeholder="Meal name" value="${esc(m.label)}" oninput="updateMealMeta('${m.id}','label',this.value)"><input class="meal-meta-input" style="flex:1" placeholder="Time" value="${esc(m.time)}" oninput="updateMealMeta('${m.id}','time',this.value)"><input class="meal-meta-input" style="width:80px;flex-shrink:0" placeholder="Cal" value="${esc(m.cal)}" oninput="updateMealMeta('${m.id}','cal',this.value)"></div>`;
@@ -1205,15 +1247,15 @@ function nutrHTML(d){
     }
     const dc=m.items.filter((_,ii)=>st[`${d}|${m.id}|${ii}`]).length,allD=dc===m.items.length&&m.items.length>0;
     // Meal reorder buttons
-    const orderBtns=isCoachView?'':(`<div class="meal-order-btns"><button class="meal-order-btn" onclick="event.stopPropagation();moveMeal('${m.id}',-1)" ${mi===0?'disabled':''} title="Move up">↑</button><button class="meal-order-btn" onclick="event.stopPropagation();moveMeal('${m.id}',1)" ${mi===MEALS.length-1?'disabled':''} title="Move down">↓</button></div>`);
-    h+=`<div class="nutr-section"><div class="nutr-head" onclick="toggleMealSec('${m.id}')"><div class="sec-icon ic-m">M${mi+1}</div><div class="sec-title">${esc(m.label)}<span class="sec-sub">${esc(m.time)}${m.cal?' · '+esc(m.cal):''}</span></div><div class="sec-count${allD?' done':''}">${dc}/${m.items.length}</div>${orderBtns}${isCoachView?'':'<button class="edit-meal-btn'+(isE?' active':'')+'" onclick="event.stopPropagation();toggleEditMeal(\''+m.id+'\')">'+(isE?'✓':'Edit')+'</button>'}<div class="sec-chev${isO?' open':''}">▾</div></div><div class="nutr-body${isO?' open':''}">${bh}</div></div>`;
+    const orderBtns=`<div class="meal-order-btns"><button class="meal-order-btn" onclick="event.stopPropagation();moveMeal('${m.id}',-1)" ${mi===0?'disabled':''} title="Move up">↑</button><button class="meal-order-btn" onclick="event.stopPropagation();moveMeal('${m.id}',1)" ${mi===MEALS.length-1?'disabled':''} title="Move down">↓</button></div>`;
+    h+=`<div class="nutr-section"><div class="nutr-head" onclick="toggleMealSec('${m.id}')"><div class="sec-icon ic-m">M${mi+1}</div><div class="sec-title">${esc(m.label)}<span class="sec-sub">${esc(m.time)}${m.cal?' · '+esc(m.cal):''}</span></div><div class="sec-count${allD?' done':''}">${dc}/${m.items.length}</div>${orderBtns}<button class="edit-meal-btn${isE?' active':''}" onclick="event.stopPropagation();toggleEditMeal('${m.id}')">${isE?'✓':'Edit'}</button><div class="sec-chev${isO?' open':''}">▾</div></div><div class="nutr-body${isO?' open':''}">${bh}</div></div>`;
   });
 
-  if(!isCoachView)h+=`<button class="add-btn" onclick="addMeal()"><svg viewBox="0 0 14 14"><line x1="7" y1="2" x2="7" y2="12"/><line x1="2" y1="7" x2="12" y2="7"/></svg>Add Meal</button>`;
+  h+=`<button class="add-btn" onclick="addMeal()"><svg viewBox="0 0 14 14"><line x1="7" y1="2" x2="7" y2="12"/><line x1="2" y1="7" x2="12" y2="7"/></svg>Add Meal</button>`;
 
   const spD=SUPPS.filter((_,i)=>st[`${d}|sp|${i}`]).length;
-  let sb=SUPPS.map((x,i)=>`<div style="display:flex;align-items:center;gap:6px">${ciHTML(`${d}|sp|${i}`,x,'')}${isCoachView?'':'<button class="meal-item-rm" onclick="event.stopPropagation();removeSupp('+i+')" style="margin-top:-12px;flex-shrink:0">×</button>'}</div>`).join('');
-  if(!isCoachView)sb+=`<div class="meal-add-row"><input class="meal-add-input" id="supp-add-input" placeholder="Add supplement…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();addSupp();}"><button class="meal-add-btn" onclick="addSupp()">Add</button></div>`;
+  let sb=SUPPS.map((x,i)=>`<div style="display:flex;align-items:center;gap:6px">${ciHTML(`${d}|sp|${i}`,x,'')}<button class="meal-item-rm" onclick="event.stopPropagation();removeSupp(${i})" style="margin-top:-12px;flex-shrink:0">×</button></div>`).join('');
+  sb+=`<div class="meal-add-row"><input class="meal-add-input" id="supp-add-input" placeholder="Add supplement…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();addSupp();}"><button class="meal-add-btn" onclick="addSupp()">Add</button></div>`;
   h+=secHTML('sp','ic-sp','SP','Supplements','Daily protocol',sb,`${spD}/${SUPPS.length}`);
 
   const wd=wtr[d]||0,drops=[1,2,3,4,5,6,7,8].map(n=>`<div class="drop${wd>=n?' filled':''}" onclick="addWater('${d}',${n})"><div class="drop-inner"></div></div>`).join('');
@@ -1233,11 +1275,17 @@ async function render(){
   if(mode==='calendar'){
     h=renderCalendar();
   } else {
-    h=`<div class="reset-row">${isCoachView?'':'<button class="reset-btn" onclick="resetDay(\''+d+'\')">Reset '+d+'</button>'}</div>`;
+    h=`<div class="reset-row"><button class="reset-btn" onclick="resetDay('${d}')">Reset ${d}</button></div>`;
     if(mode==='workout'){
-      h+=secHTML('am','ic-am','AM','Morning Cardio',w.am,ciHTML(`${d}|am`,w.am,w.ams),st[`${d}|am`]?'1/1':'0/1');
+      const amName=getCardio(d,'am'),amNote=getCardio(d,'ams');
+      const amBody=ciHTML(`${d}|am`,amName,amNote)+`<button class="add-btn" style="margin-top:4px;border-style:solid;border-color:var(--border);font-size:10px;padding:8px" onclick="openEditCardio('${d}','am')">✏️ Edit Cardio</button>`;
+      h+=secHTML('am','ic-am','AM','Morning Cardio',amName,amBody,st[`${d}|am`]?'1/1':'0/1');
       h+=wkHTML(d);
-      if(w.pc)h+=secHTML('pc','ic-pc','PC','Post-Workout Cardio',w.pc,ciHTML(`${d}|pc`,w.pc,w.pcs),st[`${d}|pc`]?'1/1':'0/1');
+      if(w.pc||getCardio(d,'pc')){
+        const pcName=getCardio(d,'pc'),pcNote=getCardio(d,'pcs');
+        const pcBody=ciHTML(`${d}|pc`,pcName,pcNote)+`<button class="add-btn" style="margin-top:4px;border-style:solid;border-color:var(--border);font-size:10px;padding:8px" onclick="openEditCardio('${d}','pc')">✏️ Edit Cardio</button>`;
+        h+=secHTML('pc','ic-pc','PC','Post-Workout Cardio',pcName,pcBody,st[`${d}|pc`]?'1/1':'0/1');
+      }
 
       // Progress Photos section (workout mode)
       const isPhO=!!op.ph;
@@ -1265,6 +1313,7 @@ async function render(){
 
 // ── GLOBAL EXPORTS ─────────────────────────────────────────────────────────
 const _fns={
+  getCardio,setCardio,openEditCardio,confirmEditCardio,
   check,toggleSec,toggleMealSec,toggleEx,switchDay,setMode,
   markSet,undoSet,wInput,rInput,addWater,resetDay,
   addSet,removeSet,removeExercise,openAddExercise,confirmAddExercise,
