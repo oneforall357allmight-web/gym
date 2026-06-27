@@ -26,26 +26,40 @@
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 html{background:var(--bg);scroll-behavior:smooth}
 body{background:var(--bg);color:var(--text);font-family:'Space Grotesk',sans-serif;min-height:100vh;overscroll-behavior:none;-webkit-font-smoothing:antialiased}
-
-/* subtle vignette grain */
 body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.025;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-size:180px}
 body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background:radial-gradient(ellipse at 50% 0%,rgba(245,166,35,.04) 0%,transparent 60%)}
+
+/* ═══════════════════════════════════════════════
+   LOADING SCREEN
+═══════════════════════════════════════════════ */
+#loader{position:fixed;inset:0;z-index:9999;background:#040810;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .6s var(--ease),transform .6s var(--ease)}
+#loader.hidden{opacity:0;pointer-events:none;transform:scale(1.04)}
+.loader-bg{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 40%,rgba(245,166,35,.12) 0%,transparent 65%);animation:lpulse 2.4s ease-in-out infinite}
+@keyframes lpulse{0%,100%{opacity:.6}50%{opacity:1}}
+.loader-grid{position:absolute;inset:0;opacity:.04;background-image:linear-gradient(rgba(245,166,35,.5) 1px,transparent 1px),linear-gradient(90deg,rgba(245,166,35,.5) 1px,transparent 1px);background-size:40px 40px}
+.loader-logo-wrap{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:0}
+.loader-logo{font-family:'Space Grotesk',sans-serif;font-size:64px;font-weight:700;letter-spacing:.3em;color:var(--amber);line-height:1;text-transform:uppercase;opacity:0;transform:translateY(16px);animation:lfadein .7s .2s var(--ease-out) forwards;text-shadow:0 0 60px rgba(245,166,35,.4),0 0 120px rgba(245,166,35,.2)}
+.loader-logo span{color:rgba(245,166,35,.35);font-weight:300}
+.loader-sub{font-family:'Space Grotesk',sans-serif;font-size:10px;font-weight:600;letter-spacing:.45em;text-transform:uppercase;color:var(--text3);margin-top:8px;opacity:0;animation:lfadein .6s .6s var(--ease-out) forwards}
+@keyframes lfadein{to{opacity:1;transform:translateY(0)}}
+.loader-line{width:0;height:1px;background:linear-gradient(90deg,transparent,var(--amber),transparent);margin-top:36px;animation:lline 1s .9s var(--ease-out) forwards;opacity:0}
+@keyframes lline{to{width:200px;opacity:1}}
+.loader-progress-wrap{margin-top:28px;width:200px;height:1px;background:var(--border);border-radius:1px;overflow:hidden;opacity:0;animation:lfadein .4s 1.1s forwards}
+.loader-progress{height:100%;width:0;background:linear-gradient(90deg,var(--amber-soft),var(--amber));border-radius:1px;animation:lbar 1.2s 1.2s var(--ease-out) forwards;box-shadow:0 0 12px var(--amber-glow)}
+@keyframes lbar{to{width:100%}}
+.loader-tagline{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text3);letter-spacing:.15em;text-transform:uppercase;margin-top:20px;opacity:0;animation:lfadein .5s 1.6s forwards}
 
 /* HEADER */
 .header{position:sticky;top:0;z-index:200;background:rgba(8,12,20,.96);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-bottom:1px solid var(--border);padding:calc(env(safe-area-inset-top,0px) + 12px) 16px 10px}
 .content{padding:10px 14px calc(82px + env(safe-area-inset-bottom,0px));position:relative;z-index:2}
 .week-bar{position:fixed;bottom:0;left:0;right:0;z-index:200;background:rgba(8,12,20,.97);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid var(--border);padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px));display:flex;gap:2px;justify-content:center}
-
 .h-row1{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
 .logo{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;letter-spacing:.25em;color:var(--amber);line-height:1;text-transform:uppercase}
 .logo span{color:var(--text3);font-weight:300;font-size:18px}
 .logo-sub{font-size:8px;font-weight:500;letter-spacing:.3em;color:var(--text3);text-transform:uppercase;display:block;margin-top:1px}
-
-/* LIVE CLOCK */
 .live-clock{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:500;color:var(--text3);text-align:right;line-height:1.3}
 .live-clock .time{color:var(--amber);font-size:16px;letter-spacing:.05em}
 .live-clock .date-str{font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--text3)}
-
 .h-right-group{display:flex;align-items:center;gap:8px}
 .h-badge{display:inline-block;font-family:'Space Grotesk',sans-serif;font-size:9px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;padding:3px 7px;border-radius:3px;margin-left:6px;vertical-align:middle}
 .bstr{background:rgba(91,143,212,.12);color:var(--blue)}.bvol{background:rgba(245,166,35,.1);color:var(--amber)}.brst{background:var(--bg3);color:var(--text3)}
@@ -57,12 +71,10 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;back
 .day-tab{flex:1;min-width:0;padding:7px 2px;border-radius:6px;background:transparent;border:1px solid transparent;font-family:'Space Grotesk',sans-serif;font-size:10px;font-weight:600;letter-spacing:.06em;text-align:center;cursor:pointer;color:var(--text3);text-transform:uppercase;transition:all .18s var(--ease);-webkit-user-select:none;user-select:none}
 .day-tab:active{transform:scale(.93)}
 .day-tab.active{background:var(--amber);border-color:var(--amber);color:#000;box-shadow:0 0 14px var(--amber-glow)}
-
 .mode-bar{display:flex;gap:0;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:3px;margin-bottom:10px}
 .mode-btn{flex:1;padding:8px 6px;border-radius:5px;border:none;background:none;font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);cursor:pointer;transition:all .2s;-webkit-user-select:none;user-select:none}
 .mode-btn:active{transform:scale(.96)}
 .mode-btn.active{background:var(--bg5);color:var(--text);border:1px solid var(--border2)}
-
 .icon-btn{position:relative;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:7px 9px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s var(--ease);min-height:36px;min-width:36px;flex-shrink:0}
 .icon-btn:active{background:var(--bg4);transform:scale(.93)}
 .icon-btn svg{width:17px;height:17px;stroke:var(--text2);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;display:block}
@@ -118,7 +130,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;back
 .sec-head{display:flex;align-items:center;gap:10px;padding:14px;cursor:pointer;-webkit-user-select:none;user-select:none;min-height:56px;transition:background .15s}
 .sec-head:active{background:var(--bg3)}
 .sec-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:9px;font-weight:700;letter-spacing:.04em;flex-shrink:0;text-transform:uppercase}
-.ic-am{background:rgba(245,166,35,.1);color:var(--amber)}.ic-m{background:var(--done-dim);color:var(--done)}.ic-wk{background:rgba(91,143,212,.1);color:var(--blue)}.ic-pc{background:rgba(232,52,74,.1);color:var(--red)}.ic-sp{background:rgba(245,166,35,.08);color:var(--amber)}.ic-h2o{background:rgba(91,143,212,.08);color:var(--blue)}
+.ic-am{background:rgba(245,166,35,.1);color:var(--amber)}.ic-m{background:var(--done-dim);color:var(--done)}.ic-wk{background:rgba(91,143,212,.1);color:var(--blue)}.ic-pc{background:rgba(232,52,74,.1);color:var(--red)}.ic-sp{background:rgba(245,166,35,.08);color:var(--amber)}.ic-h2o{background:rgba(91,143,212,.08);color:var(--blue)}.ic-ph{background:rgba(155,127,212,.1);color:var(--purple)}
 .sec-title{flex:1;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--text);line-height:1.1;min-width:0}
 .sec-sub{font-size:11px;font-weight:400;color:var(--text3);display:block;text-transform:none;letter-spacing:0;font-family:'Space Grotesk',sans-serif;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sec-count{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text3);flex-shrink:0;text-align:right;transition:color .2s}
@@ -250,21 +262,32 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;back
 .join-code-input{flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:14px 12px;font-family:'JetBrains Mono',monospace;font-size:22px;color:var(--amber);outline:none;text-align:center;letter-spacing:.2em;text-transform:uppercase;-webkit-appearance:none;transition:border-color .18s}
 .join-code-input:focus{border-color:var(--amber);box-shadow:0 0 0 3px rgba(245,166,35,.07)}
 
-/* GROCERY */
+/* ═══════════════════════════════════════════════
+   GROCERY - enhanced
+═══════════════════════════════════════════════ */
 .gr-cat-hdr{font-family:'Space Grotesk',sans-serif;font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);padding:12px 0 4px;border-bottom:1px solid var(--border);margin-bottom:2px}
-.gr-item{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--border);cursor:pointer;min-height:48px;transition:opacity .1s;-webkit-user-select:none;user-select:none}
-.gr-item:active{opacity:.5}
+.gr-item{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--border);min-height:48px;-webkit-user-select:none;user-select:none}
+.gr-item-check{cursor:pointer;display:flex;align-items:center;gap:10px;flex:1;min-width:0;transition:opacity .1s}
+.gr-item-check:active{opacity:.5}
 .gr-item-info{flex:1;min-width:0}
 .gr-item-name{font-family:'Space Grotesk',sans-serif;font-size:14px;color:var(--text);line-height:1.3;transition:color .2s}
 .gr-item-name.done{color:var(--text3);text-decoration:line-through;text-decoration-color:var(--text3)}
 .gr-item-qty{font-size:11px;color:var(--text3);margin-top:2px;font-family:'Space Grotesk',sans-serif;font-style:italic}
-.gr-item-rm{padding:6px 8px;border:none;background:none;color:var(--text3);font-size:18px;line-height:1;cursor:pointer;border-radius:6px;transition:all .12s;flex-shrink:0;min-height:34px;min-width:34px;display:flex;align-items:center;justify-content:center}
+.gr-item-actions{display:flex;gap:4px;flex-shrink:0}
+.gr-item-rm{padding:6px 8px;border:none;background:none;color:var(--text3);font-size:18px;line-height:1;cursor:pointer;border-radius:6px;transition:all .12s;min-height:34px;min-width:34px;display:flex;align-items:center;justify-content:center}
 .gr-item-rm:active{color:var(--red);background:rgba(232,52,74,.08)}
-.gr-add-row{display:flex;gap:8px;padding:12px 0 4px;border-top:1px solid var(--border2);margin-top:6px}
-.gr-add-input{flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:11px 12px;font-family:'Space Grotesk',sans-serif;font-size:15px;color:var(--text);outline:none;transition:all .18s;-webkit-appearance:none;min-width:0}
+.gr-move-btn{padding:6px 6px;border:1px solid var(--border);background:none;color:var(--text3);font-size:11px;line-height:1;cursor:pointer;border-radius:5px;transition:all .12s;min-height:28px;min-width:24px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace}
+.gr-move-btn:active{color:var(--amber);border-color:var(--amber);background:var(--amber-dim)}
+.gr-move-btn:disabled{opacity:.2;pointer-events:none}
+.gr-add-section{background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:12px;margin-top:10px}
+.gr-add-title{font-family:'Space Grotesk',sans-serif;font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);margin-bottom:10px}
+.gr-add-row{display:flex;gap:8px;margin-bottom:8px}
+.gr-add-input{flex:1;background:var(--bg4);border:1px solid var(--border2);border-radius:8px;padding:11px 12px;font-family:'Space Grotesk',sans-serif;font-size:15px;color:var(--text);outline:none;transition:all .18s;-webkit-appearance:none;min-width:0}
 .gr-add-input:focus{border-color:var(--amber);background:var(--amber-dim)}
-.gr-qty-input{width:78px;flex-shrink:0;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:11px 10px;font-family:'Space Grotesk',sans-serif;font-size:15px;color:var(--text);outline:none;transition:all .18s;-webkit-appearance:none}
+.gr-qty-input{width:78px;flex-shrink:0;background:var(--bg4);border:1px solid var(--border2);border-radius:8px;padding:11px 10px;font-family:'Space Grotesk',sans-serif;font-size:15px;color:var(--text);outline:none;transition:all .18s;-webkit-appearance:none}
 .gr-qty-input:focus{border-color:var(--amber);background:var(--amber-dim)}
+.gr-cat-select{width:100%;background:var(--bg4);border:1px solid var(--border2);border-radius:8px;padding:10px 12px;font-family:'Space Grotesk',sans-serif;font-size:14px;color:var(--text);outline:none;transition:all .18s;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%234A6480' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;margin-bottom:8px}
+.gr-cat-select:focus{border-color:var(--amber);background-color:var(--amber-dim)}
 .gr-add-btn{padding:11px 14px;border-radius:8px;border:1px solid var(--amber);background:var(--amber-dim);font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--amber);cursor:pointer;transition:all .15s;white-space:nowrap;flex-shrink:0}
 .gr-add-btn:active{background:var(--amber);color:#000;transform:scale(.95)}
 .gr-footer{display:flex;gap:8px;padding:12px 0 0;border-top:1px solid var(--border);margin-top:6px}
@@ -275,7 +298,9 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;back
 .gr-progress{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text3);text-align:center;margin-bottom:12px}
 .gr-progress span{color:var(--done)}
 
-/* NUTRITION */
+/* ═══════════════════════════════════════════════
+   NUTRITION - reorderable meals
+═══════════════════════════════════════════════ */
 .nutr-section{background:var(--bg2);border:1px solid var(--border);border-radius:14px;margin-bottom:6px;overflow:hidden}
 .nutr-head{display:flex;align-items:center;gap:10px;padding:14px;cursor:pointer;min-height:56px;transition:background .15s;-webkit-user-select:none;user-select:none}
 .nutr-head:active{background:var(--bg3)}
@@ -296,11 +321,51 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;back
 .meal-meta-input:focus{border-color:var(--amber);background:var(--amber-dim)}
 .edit-meal-btn{font-family:'Space Grotesk',sans-serif;font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);background:none;border:1px solid var(--border);border-radius:6px;padding:5px 9px;cursor:pointer;min-height:30px;transition:all .15s;flex-shrink:0}
 .edit-meal-btn:active,.edit-meal-btn.active{color:var(--amber);border-color:var(--amber);background:var(--amber-dim)}
+/* Meal reorder buttons */
+.meal-order-btns{display:flex;gap:4px;flex-shrink:0}
+.meal-order-btn{width:26px;height:26px;border:1px solid var(--border2);background:var(--bg3);border-radius:5px;font-size:11px;color:var(--text3);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .14s;font-family:'JetBrains Mono',monospace}
+.meal-order-btn:active{color:var(--amber);border-color:var(--amber);background:var(--amber-dim)}
+.meal-order-btn:disabled{opacity:.2;pointer-events:none}
 .reset-row{display:flex;justify-content:flex-end;margin-bottom:8px}
 .reset-btn{font-family:'Space Grotesk',sans-serif;font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);background:none;border:1px solid var(--border);border-radius:6px;padding:6px 12px;cursor:pointer;min-height:32px;transition:all .15s}
 .reset-btn:active{color:var(--red);border-color:var(--red)}
 
-/* ── CALENDAR TAB ─────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════
+   PROGRESS PHOTOS
+═══════════════════════════════════════════════ */
+.photo-gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px}
+.photo-thumb{aspect-ratio:3/4;border-radius:8px;overflow:hidden;position:relative;border:1px solid var(--border2);background:var(--bg3);cursor:pointer}
+.photo-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.photo-thumb-overlay{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(4,7,16,.85));padding:6px 6px 4px;font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--text2);letter-spacing:.04em}
+.photo-thumb:active{opacity:.7}
+.photo-empty{aspect-ratio:3/4;border-radius:8px;border:1.5px dashed var(--border2);background:var(--bg3);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;color:var(--text3)}
+.photo-empty-icon{font-size:22px}
+.photo-empty-txt{font-family:'Space Grotesk',sans-serif;font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text3)}
+/* Photo capture UI */
+.photo-capture-wrap{background:var(--bg3);border:1px solid var(--border2);border-radius:12px;padding:14px;margin-bottom:10px}
+.photo-capture-title{font-family:'Space Grotesk',sans-serif;font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--text3);margin-bottom:10px}
+.photo-preview{width:100%;aspect-ratio:3/4;max-height:260px;object-fit:cover;border-radius:8px;display:none;margin-bottom:10px;border:1px solid var(--border2)}
+.photo-preview.show{display:block}
+.photo-actions{display:flex;gap:8px;margin-bottom:10px}
+.photo-btn{flex:1;padding:12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);cursor:pointer;transition:all .15s;min-height:44px;display:flex;align-items:center;justify-content:center;gap:6px}
+.photo-btn:active{background:var(--bg5);transform:scale(.97)}
+.photo-btn.primary{background:var(--amber);border-color:var(--amber);color:#000}
+.photo-btn.primary:active{background:var(--amber-soft)}
+.photo-note-input{width:100%;background:var(--bg4);border:1px solid var(--border2);border-radius:8px;padding:10px 12px;font-family:'Space Grotesk',sans-serif;font-size:14px;color:var(--text);outline:none;resize:none;min-height:70px;line-height:1.5;transition:border-color .18s;-webkit-appearance:none;margin-bottom:8px}
+.photo-note-input:focus{border-color:var(--amber);background:var(--amber-dim)}
+/* Full photo viewer */
+.photo-viewer{position:fixed;inset:0;z-index:800;background:rgba(0,0,0,.97);display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s;padding:16px}
+.photo-viewer.active{opacity:1;pointer-events:auto}
+.photo-viewer-img{max-width:100%;max-height:65vh;object-fit:contain;border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,.8)}
+.photo-viewer-meta{margin-top:16px;text-align:center;padding:0 16px}
+.photo-viewer-date{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--amber);letter-spacing:.08em;margin-bottom:4px}
+.photo-viewer-note{font-family:'Space Grotesk',sans-serif;font-size:14px;color:var(--text2);line-height:1.5;max-width:360px}
+.photo-viewer-actions{display:flex;gap:10px;margin-top:20px}
+.photo-viewer-btn{padding:12px 20px;border-radius:8px;border:1px solid var(--border2);background:var(--bg3);font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);cursor:pointer;transition:all .15s}
+.photo-viewer-btn:active{transform:scale(.95)}
+.photo-viewer-btn.del{color:var(--red);border-color:rgba(232,52,74,.25);background:rgba(232,52,74,.06)}
+
+/* CALENDAR */
 .cal-mode{padding:10px 0}
 .cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
 .cal-month-title{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text)}
@@ -320,7 +385,6 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;back
 .cal-cell.today-cell{border-color:var(--amber);box-shadow:0 0 0 2px rgba(245,166,35,.2)}
 .cal-cell.checked{background:var(--amber);border-color:var(--amber-soft)}
 .cal-cell.checked::after{content:'✓';position:absolute;color:#000;font-weight:700;font-size:11px}
-/* Heat map: the deeper into the program, the more golden the glow */
 .cal-cell.checked.h1{background:rgba(245,166,35,.35);border-color:rgba(245,166,35,.5)}
 .cal-cell.checked.h2{background:rgba(245,166,35,.55);border-color:rgba(245,166,35,.7)}
 .cal-cell.checked.h3{background:rgba(245,166,35,.75);border-color:var(--amber)}
@@ -333,10 +397,9 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;back
 .cal-legend-item{display:flex;align-items:center;gap:4px}
 .cal-legend-dot{width:10px;height:10px;border-radius:3px;border:1px solid rgba(255,255,255,.1)}
 .cal-legend-txt{font-family:'Space Grotesk',sans-serif;font-size:9px;color:var(--text3)}
-/* Year overview strip */
 .cal-year-title{font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--text3);margin-bottom:10px;margin-top:4px}
 .cal-year-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:3px;margin-bottom:4px}
-.cal-year-month{background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:4px;text-align:center;position:relative;overflow:hidden}
+.cal-year-month{background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:4px;text-align:center;position:relative;overflow:hidden;cursor:pointer}
 .cal-year-month-fill{position:absolute;bottom:0;left:0;right:0;background:rgba(245,166,35,.2);transition:height .5s var(--ease-out)}
 .cal-year-month-lbl{font-family:'Space Grotesk',sans-serif;font-size:7px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);position:relative;z-index:1}
 .cal-year-month-pct{font-family:'JetBrains Mono',monospace;font-size:7px;color:var(--text3);position:relative;z-index:1;margin-top:2px}
@@ -362,6 +425,23 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;back
 </head>
 <body>
 
+<!-- ═══════════════════════════════════════════════
+     LOADING SCREEN
+═══════════════════════════════════════════════ -->
+<div id="loader">
+  <div class="loader-bg"></div>
+  <div class="loader-grid"></div>
+  <div class="loader-logo-wrap">
+    <div class="loader-logo">UNIT<span>.</span></div>
+    <div class="loader-sub">12-Month Transformation Program</div>
+    <div class="loader-line"></div>
+    <div class="loader-progress-wrap">
+      <div class="loader-progress"></div>
+    </div>
+    <div class="loader-tagline">Loading your program</div>
+  </div>
+</div>
+
 <!-- REST TIMER fullscreen -->
 <div class="fs-timer" id="fs-timer">
   <div class="fs-timer-bg"></div>
@@ -383,6 +463,19 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;back
     <button class="fs-btn" onclick="adjustTimer(15)">+15s</button>
   </div>
   <div class="fs-next" id="fs-next"></div>
+</div>
+
+<!-- FULL PHOTO VIEWER -->
+<div class="photo-viewer" id="photo-viewer">
+  <img class="photo-viewer-img" id="photo-viewer-img" src="" alt="">
+  <div class="photo-viewer-meta">
+    <div class="photo-viewer-date" id="photo-viewer-date"></div>
+    <div class="photo-viewer-note" id="photo-viewer-note"></div>
+  </div>
+  <div class="photo-viewer-actions">
+    <button class="photo-viewer-btn" onclick="closePhotoViewer()">← Back</button>
+    <button class="photo-viewer-btn del" id="photo-viewer-del">Delete</button>
+  </div>
 </div>
 
 <!-- DAY COMPLETE POPUP -->
@@ -411,7 +504,6 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;back
       <span class="logo-sub">12-Month Program</span>
     </div>
     <div class="h-right-group">
-      <!-- Live clock -->
       <div class="live-clock" id="live-clock">
         <div class="time" id="clock-time">00:00</div>
         <div class="date-str" id="clock-date">—</div>
@@ -437,7 +529,6 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;back
   <div class="day-tabs" id="day-tabs"></div>
 </div>
 
-<!-- SYNC STATUS PILL -->
 <div class="sync-pill" id="sync-pill">
   <span class="sync-dot" id="sync-dot"></span>
   <span class="sync-pill-label" id="sync-label">Syncing</span>
@@ -474,10 +565,12 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;back
   </div>
 </div>
 
+<!-- Hidden file input for photos -->
+<input type="file" id="photo-file-input" accept="image/*" capture="environment" style="display:none" onchange="handlePhotoFile(event)">
+
 <div class="toast" id="toast"></div>
 
 <script type="module">
-// ── FIREBASE REALTIME DATABASE ─────────────────────────────────────────────
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import { getDatabase, ref, set, onValue, off, get } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
 
@@ -490,19 +583,19 @@ const firebaseConfig = {
   messagingSenderId: "930734468354",
   appId: "1:930734468354:web:5fb495b8bb74cac498a61b"
 };
-
 const fbApp = initializeApp(firebaseConfig);
 const db = getDatabase(fbApp);
-
-// Active Firebase listener reference so we can detach it when stopping
-let fbListener = null;
-let fbListenerRef = null;
+let fbListener=null,fbListenerRef=null;
 
 // ── CONSTANTS ─────────────────────────────────────────────────────────────
-const DAYS=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+// Week order starts Saturday (program day 1)
+const DAYS=['Sat','Sun','Mon','Tue','Wed','Thu','Fri'];
 const DNAMES={Mon:'Monday',Tue:'Tuesday',Wed:'Wednesday',Thu:'Thursday',Fri:'Friday',Sat:'Saturday',Sun:'Sunday'};
 const RING_CIRC=804.247719;
-const PROGRAM_START='2026-06-26'; // ← today, day one
+const PROGRAM_START='2026-06-26';
+
+// Grocery categories (fixed order)
+const GR_CATS=['🥩 Protein','🍚 Carbs','🥦 Produce','☕ Other','💊 Supps','✏️ Custom'];
 
 const WK={
   Mon:{full:'Push — Strength',badge:'Strength',bc:'bstr',am:'40 min fasted incline walk',ams:'Incline 8-10% · HR 120-135 · empty stomach',pc:'20 min HIIT — stationary bike',pcs:'30s sprint / 90s rest × 8 rounds'},
@@ -514,14 +607,79 @@ const WK={
   Sun:{full:'Legs — Hypertrophy',badge:'Volume',bc:'bvol',am:'25 min cycling — easy',ams:'Moderate pace · protect legs',pc:'10 min slow walk',pcs:'Legs are done. Just flush.'}
 };
 
+// DEFAULT_WEIGHTS: net lbs (no bar on barbell moves · per-hand on DBs · machine/cable ignored)
+// Calibrated for a solid 7/10 lifter — RPE 8-9 on the prescribed rep range.
 const DEFAULT_EX={
-  Mon:[{n:'Barbell Bench Press',s:4,r:'4–6',rest:180,note:'RPE 8-9 · pause 1s on chest'},{n:'Overhead Press (standing)',s:4,r:'5–7',rest:180,note:'RPE 8 · brace hard'},{n:'Incline Dumbbell Press',s:3,r:'8–12',rest:120,note:'30-45° · full stretch'},{n:'Seated Lateral Raise',s:4,r:'15–20',rest:60,note:'Slight forward lean'},{n:'Cable Chest Fly (low-high)',s:3,r:'12–15',rest:75,note:'Cross arms at top'},{n:'Dumbbell Rear Delt Fly',s:3,r:'15–20',rest:60,note:'Bent over · elbows wide'},{n:'Close-Grip Bench Press',s:3,r:'8–10',rest:90,note:'Elbows tucked in'},{n:'Cable Overhead Tricep Ext.',s:3,r:'12–15',rest:75,note:'Long head · full stretch'},{n:'Lateral Raise Drop Set',s:1,r:'×3 drops',rest:0,note:'Finisher'}],
-  Tue:[{n:'Weighted Pull-Up',s:4,r:'4–8',rest:180,note:'Add weight when 10 reps clean'},{n:'Barbell Row (Yates)',s:4,r:'5–8',rest:150,note:'Upright · elbows in'},{n:'Seated Cable Row (wide)',s:3,r:'10–12',rest:90,note:'Drive elbows back hard'},{n:'Lat Pulldown (close supine)',s:3,r:'10–12',rest:90,note:'Supinated · lean back'},{n:'Single-Arm Dumbbell Row',s:3,r:'10–12',rest:75,note:'Heavy · elbow to ceiling'},{n:'Face Pull',s:4,r:'15–20',rest:60,note:'Rope to forehead · elbows high'},{n:'EZ-Bar Curl',s:3,r:'8–12',rest:90,note:'Supinate at top · 3s eccentric'},{n:'Incline Dumbbell Curl',s:3,r:'10–15',rest:75,note:'Long head stretch'},{n:'Hammer Curl',s:3,r:'10–15',rest:60,note:'Brachialis · neutral grip'}],
-  Wed:[{n:'Back Squat',s:5,r:'3–5',rest:210,note:'Non-negotiable · hit depth'},{n:'Romanian Deadlift',s:4,r:'8–10',rest:150,note:'Hip hinge · feel the stretch'},{n:'Leg Press',s:4,r:'10–15',rest:120,note:'Wide feet = more glute'},{n:'Leg Extension',s:3,r:'12–15',rest:75,note:'Full extension + pause'},{n:'Leg Curl (seated)',s:4,r:'10–15',rest:90,note:'Slow eccentric'},{n:'Bulgarian Split Squat',s:3,r:'8–10',rest:90,note:'Each leg'},{n:'Hip Thrust (barbell)',s:4,r:'10–15',rest:90,note:'Full extension · squeeze hard'},{n:'Standing Calf Raise',s:4,r:'15–20',rest:60,note:'Full ROM · pause at top'}],
-  Thu:[{n:'Incline Barbell Press',s:4,r:'6–10',rest:120,note:'Upper chest leads'},{n:'Dumbbell Shoulder Press',s:4,r:'8–12',rest:120,note:'Greater ROM'},{n:'Flat Dumbbell Press',s:3,r:'10–12',rest:90,note:'Let DBs drop below chest'},{n:'Cable Lateral Raise',s:4,r:'15–20',rest:60,note:'Constant tension'},{n:'Pec Deck / Machine Fly',s:3,r:'12–15',rest:75,note:'Safe deep stretch'},{n:'Arnold Press',s:3,r:'10–12',rest:90,note:'All 3 delt heads'},{n:'Cable Pushdown (straight bar)',s:3,r:'12–15',rest:75,note:'Elbows pinned'},{n:'Skull Crusher (EZ-bar)',s:3,r:'10–12',rest:75,note:'Lower behind head'},{n:'Cable Fly + Pushdown SS',s:3,r:'12 ea',rest:60,note:'Superset'}],
-  Fri:[{n:'Conventional Deadlift',s:4,r:'3–5',rest:240,note:'RPE 8-9'},{n:'Chest-Supported T-Bar Row',s:4,r:'8–12',rest:120,note:'No lower back fatigue'},{n:'Straight-Arm Lat Pulldown',s:3,r:'12–15',rest:75,note:'Pure lat isolation'},{n:'Wide-Grip Lat Pulldown',s:3,r:'10–12',rest:90,note:'Maximize lat stretch'},{n:'Barbell Shrug',s:4,r:'12–15',rest:75,note:'Full ROM · pause 1s'},{n:'Face Pull (rope)',s:3,r:'15–20',rest:60,note:'Rear delt health'},{n:'Preacher Curl',s:3,r:'10–12',rest:90,note:'No cheating'},{n:'Single-Arm Cable Curl',s:3,r:'12–15',rest:60,note:'Constant tension'},{n:'21s (Barbell)',s:3,r:'21',rest:60,note:'7+7+7'}],
-  Sat:[{n:'Foam roll full body',s:1,r:'15 min',rest:0,note:'Quads, lats, thoracic'},{n:'Hip flexor + thoracic mobility',s:1,r:'15 min',rest:0,note:'Keep these loose'},{n:'Zone 2 walk or light swim',s:1,r:'30–45 min',rest:0,note:'Conversational pace'},{n:'Sleep 8-9 hours tonight',s:1,r:'done',rest:0,note:'GH peaks during deep sleep'}],
-  Sun:[{n:'Trap Bar / Sumo Deadlift',s:5,r:'3–6',rest:210,note:'RPE 8-9'},{n:'Front Squat or Goblet Squat',s:3,r:'6–10',rest:150,note:'Upright torso = more quad'},{n:'Nordic Hamstring Curl / GHD',s:3,r:'5–8',rest:120,note:'Best hamstring eccentric'},{n:'Walking Lunge (dumbbell)',s:3,r:'20 steps',rest:90,note:'Long stride = more glute'},{n:'Leg Press (feet high)',s:4,r:'12–15',rest:90,note:'Posterior chain'},{n:'Hip Thrust + Abduction SS',s:3,r:'12+15',rest:75,note:'Pre-fatigue then thrust'},{n:'Seated Calf Raise (5s tempo)',s:5,r:'15–20',rest:75,note:'5s up 5s down'},{n:'Tibialis Raise (ATG)',s:3,r:'20–25',rest:45,note:'Bulletproofs shins'}]
+  Mon:[
+    {n:'Barbell Bench Press',s:4,r:'4–6',rest:180,w:'185',note:'RPE 8-9 · pause 1s on chest'},
+    {n:'Overhead Press (standing)',s:4,r:'5–7',rest:180,w:'115',note:'RPE 8 · brace hard'},
+    {n:'Incline Dumbbell Press',s:3,r:'8–12',rest:120,w:'70',note:'30-45° · full stretch'},
+    {n:'Seated Lateral Raise',s:4,r:'15–20',rest:60,w:'20',note:'Slight forward lean'},
+    {n:'Cable Chest Fly (low-high)',s:3,r:'12–15',rest:75,note:'Cross arms at top'},
+    {n:'Dumbbell Rear Delt Fly',s:3,r:'15–20',rest:60,w:'25',note:'Bent over · elbows wide'},
+    {n:'Close-Grip Bench Press',s:3,r:'8–10',rest:90,w:'155',note:'Elbows tucked in'},
+    {n:'Cable Overhead Tricep Ext.',s:3,r:'12–15',rest:75,note:'Long head · full stretch'},
+    {n:'Lateral Raise Drop Set',s:1,r:'×3 drops',rest:0,w:'25',note:'Start 25→20→15 · finisher'}
+  ],
+  Tue:[
+    {n:'Weighted Pull-Up',s:4,r:'4–8',rest:180,w:'35',note:'Add weight when 10 reps clean'},
+    {n:'Barbell Row (Yates)',s:4,r:'5–8',rest:150,w:'185',note:'Upright · elbows in'},
+    {n:'Seated Cable Row (wide)',s:3,r:'10–12',rest:90,note:'Drive elbows back hard'},
+    {n:'Lat Pulldown (close supine)',s:3,r:'10–12',rest:90,note:'Supinated · lean back'},
+    {n:'Single-Arm Dumbbell Row',s:3,r:'10–12',rest:75,w:'90',note:'Heavy · elbow to ceiling'},
+    {n:'Face Pull',s:4,r:'15–20',rest:60,note:'Rope to forehead · elbows high'},
+    {n:'EZ-Bar Curl',s:3,r:'8–12',rest:90,w:'75',note:'Supinate at top · 3s eccentric'},
+    {n:'Incline Dumbbell Curl',s:3,r:'10–15',rest:75,w:'30',note:'Long head stretch'},
+    {n:'Hammer Curl',s:3,r:'10–15',rest:60,w:'35',note:'Brachialis · neutral grip'}
+  ],
+  Wed:[
+    {n:'Back Squat',s:5,r:'3–5',rest:210,w:'225',note:'Non-negotiable · hit depth'},
+    {n:'Romanian Deadlift',s:4,r:'8–10',rest:150,w:'165',note:'Hip hinge · feel the stretch'},
+    {n:'Leg Press',s:4,r:'10–15',rest:120,note:'Wide feet = more glute'},
+    {n:'Leg Extension',s:3,r:'12–15',rest:75,note:'Full extension + pause'},
+    {n:'Leg Curl (seated)',s:4,r:'10–15',rest:90,note:'Slow eccentric'},
+    {n:'Bulgarian Split Squat',s:3,r:'8–10',rest:90,w:'50',note:'Each leg · per DB'},
+    {n:'Hip Thrust (barbell)',s:4,r:'10–15',rest:90,w:'185',note:'Full extension · squeeze hard'},
+    {n:'Standing Calf Raise',s:4,r:'15–20',rest:60,note:'Full ROM · pause at top'}
+  ],
+  Thu:[
+    {n:'Incline Barbell Press',s:4,r:'6–10',rest:120,w:'155',note:'Upper chest leads'},
+    {n:'Dumbbell Shoulder Press',s:4,r:'8–12',rest:120,w:'55',note:'Greater ROM'},
+    {n:'Flat Dumbbell Press',s:3,r:'10–12',rest:90,w:'75',note:'Let DBs drop below chest'},
+    {n:'Cable Lateral Raise',s:4,r:'15–20',rest:60,note:'Constant tension'},
+    {n:'Pec Deck / Machine Fly',s:3,r:'12–15',rest:75,note:'Safe deep stretch'},
+    {n:'Arnold Press',s:3,r:'10–12',rest:90,w:'45',note:'All 3 delt heads'},
+    {n:'Cable Pushdown (straight bar)',s:3,r:'12–15',rest:75,note:'Elbows pinned'},
+    {n:'Skull Crusher (EZ-bar)',s:3,r:'10–12',rest:75,w:'85',note:'Lower behind head'},
+    {n:'Cable Fly + Pushdown SS',s:3,r:'12 ea',rest:60,note:'Superset'}
+  ],
+  Fri:[
+    {n:'Conventional Deadlift',s:4,r:'3–5',rest:240,w:'275',note:'RPE 8-9'},
+    {n:'Chest-Supported T-Bar Row',s:4,r:'8–12',rest:120,w:'90',note:'No lower back fatigue'},
+    {n:'Straight-Arm Lat Pulldown',s:3,r:'12–15',rest:75,note:'Pure lat isolation'},
+    {n:'Wide-Grip Lat Pulldown',s:3,r:'10–12',rest:90,note:'Maximize lat stretch'},
+    {n:'Barbell Shrug',s:4,r:'12–15',rest:75,w:'225',note:'Full ROM · pause 1s'},
+    {n:'Face Pull (rope)',s:3,r:'15–20',rest:60,note:'Rear delt health'},
+    {n:'Preacher Curl',s:3,r:'10–12',rest:90,w:'65',note:'No cheating'},
+    {n:'Single-Arm Cable Curl',s:3,r:'12–15',rest:60,note:'Constant tension'},
+    {n:'21s (Barbell)',s:3,r:'21',rest:60,w:'55',note:'7+7+7'}
+  ],
+  Sat:[
+    {n:'Foam roll full body',s:1,r:'15 min',rest:0,note:'Quads, lats, thoracic'},
+    {n:'Hip flexor + thoracic mobility',s:1,r:'15 min',rest:0,note:'Keep these loose'},
+    {n:'Zone 2 walk or light swim',s:1,r:'30–45 min',rest:0,note:'Conversational pace'},
+    {n:'Sleep 8-9 hours tonight',s:1,r:'done',rest:0,note:'GH peaks during deep sleep'}
+  ],
+  Sun:[
+    {n:'Trap Bar / Sumo Deadlift',s:5,r:'3–6',rest:210,w:'255',note:'RPE 8-9'},
+    {n:'Front Squat or Goblet Squat',s:3,r:'6–10',rest:150,w:'135',note:'Upright torso = more quad'},
+    {n:'Nordic Hamstring Curl / GHD',s:3,r:'5–8',rest:120,note:'Best hamstring eccentric'},
+    {n:'Walking Lunge (dumbbell)',s:3,r:'20 steps',rest:90,w:'45',note:'Long stride = more glute · per DB'},
+    {n:'Leg Press (feet high)',s:4,r:'12–15',rest:90,note:'Posterior chain'},
+    {n:'Hip Thrust + Abduction SS',s:3,r:'12+15',rest:75,w:'155',note:'Pre-fatigue then thrust'},
+    {n:'Seated Calf Raise (5s tempo)',s:5,r:'15–20',rest:75,note:'5s up 5s down'},
+    {n:'Tibialis Raise (ATG)',s:3,r:'20–25',rest:45,note:'Bulletproofs shins'}
+  ]
 };
 
 const DEFAULT_MEALS=[
@@ -532,6 +690,8 @@ const DEFAULT_MEALS=[
   {id:'m5',label:'Meal 5 — Before Bed',time:'8–9pm',cal:'~200 cal',items:['1.5 scoops whey protein in water','Optional: 30g oats if still hungry']}
 ];
 const DEFAULT_SUPPS=['Creatine 5g — with Meal 4','Fish oil 2-3g EPA+DHA — with Meal 4','Vitamin D3 4,000 IU + K2 — with any meal','Magnesium glycinate 300-400mg — before bed','Zinc 25-30mg — with Meal 5'];
+
+// Grocery: cat is now one of the GR_CATS values
 const GROCERY_BASE=[
   {id:'gb01',name:'Lean ground beef',qty:'~400g/day',cat:'🥩 Protein'},{id:'gb02',name:'Whole eggs',qty:'2/day',cat:'🥩 Protein'},{id:'gb03',name:'Whey protein powder',qty:'3+ scoops/day',cat:'🥩 Protein'},
   {id:'gb04',name:'White rice',qty:'240g dry/day',cat:'🍚 Carbs'},{id:'gb05',name:'Oats',qty:'70g dry/day',cat:'🍚 Carbs'},{id:'gb06',name:'Banana',qty:'1/day',cat:'🍚 Carbs'},{id:'gb07',name:'Blueberries',qty:'handful/day',cat:'🍚 Carbs'},
@@ -541,20 +701,62 @@ const GROCERY_BASE=[
 
 // ── STATE ─────────────────────────────────────────────────────────────────
 let EX=JSON.parse(JSON.stringify(DEFAULT_EX)),MEALS=JSON.parse(JSON.stringify(DEFAULT_MEALS)),SUPPS=[...DEFAULT_SUPPS];
-let st={},ws={},wtr={},op={am:false,pc:false,sp:false,h2o:false},mealOp={},exop={};
-let mode='workout',day=DAYS[(new Date().getDay()+6)%7],editingMeal=null,saveT;
+let st={},ws={},wtr={},op={am:false,pc:false,sp:false,h2o:false,ph:false},mealOp={},exop={};
+let mode='workout',day=DAYS[(new Date().getDay()+1)%7],editingMeal=null,saveT;
 let groceryChecked={},groceryCustom=[];
 let syncSessionId=null,coachSessionId=null,isCoachView=false,lastSyncTime=null;
 let audioCtx=null,swReg=null,wakeLock=null;
 let restEndTime=0,restTotalSecs=0,restInterval=null,restExName='';
-// Calendar: calChecked['2026-06-26']=true means that day is logged
-let calChecked={};
-// Track which calendar month we're viewing (offset from program start month)
-let calMonthOffset=0;
-// Popup tracking
+let calChecked={},calMonthOffset=0;
 let pendingPopupDate=null;
+// Progress photos state
+let currentPhotoCaptureData=null,viewingPhotoId=null;
 
-// ── DATE HELPERS ──────────────────────────────────────────────────────────
+// ── INDEXEDDB FOR PHOTOS ──────────────────────────────────────────────────
+let photoDB=null;
+function openPhotoDB(){
+  return new Promise((res,rej)=>{
+    const req=indexedDB.open('unit-photos-v1',1);
+    req.onupgradeneeded=e=>{
+      const db=e.target.result;
+      if(!db.objectStoreNames.contains('photos')){
+        const store=db.createObjectStore('photos',{keyPath:'id'});
+        store.createIndex('date','date',{unique:false});
+      }
+    };
+    req.onsuccess=e=>{photoDB=e.target.result;res(photoDB);};
+    req.onerror=e=>rej(e);
+  });
+}
+async function savePhoto(dataUrl,note,dateStr){
+  if(!photoDB)await openPhotoDB();
+  return new Promise((res,rej)=>{
+    const tx=photoDB.transaction('photos','readwrite');
+    const id='ph-'+Date.now();
+    tx.objectStore('photos').put({id,dataUrl,note,date:dateStr,ts:Date.now()});
+    tx.oncomplete=()=>res(id);
+    tx.onerror=e=>rej(e);
+  });
+}
+async function getAllPhotos(){
+  if(!photoDB)await openPhotoDB();
+  return new Promise((res,rej)=>{
+    const tx=photoDB.transaction('photos','readonly');
+    const req=tx.objectStore('photos').getAll();
+    req.onsuccess=e=>res((e.target.result||[]).sort((a,b)=>b.ts-a.ts));
+    req.onerror=e=>rej(e);
+  });
+}
+async function deletePhoto(id){
+  if(!photoDB)await openPhotoDB();
+  return new Promise((res,rej)=>{
+    const tx=photoDB.transaction('photos','readwrite');
+    tx.objectStore('photos').delete(id);
+    tx.oncomplete=res;tx.onerror=rej;
+  });
+}
+
+// ── DATE HELPERS ───────────────────────────────────────────────────────────
 function todayStr(){const n=new Date();return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');}
 function dateToStr(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function strToDate(s){const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d);}
@@ -567,22 +769,12 @@ function loadCal(){try{const r=localStorage.getItem('unit-cal-v1');if(r)calCheck
 function saveLastSeen(){try{localStorage.setItem('unit-last-seen',todayStr());}catch(e){}}
 function loadLastSeen(){try{return localStorage.getItem('unit-last-seen')||null;}catch(e){return null;}}
 
-// ── DAY POPUP LOGIC ────────────────────────────────────────────────────────
+// ── DAY POPUP ──────────────────────────────────────────────────────────────
 function checkAndShowPopup(){
-  const today=todayStr();
-  const lastSeen=loadLastSeen();
-  if(!lastSeen)return; // first ever open, no popup
-  if(lastSeen===today)return; // same day, no popup
-
-  // Find yesterday (one day before today)
+  const today=todayStr(),lastSeen=loadLastSeen();
+  if(!lastSeen||lastSeen===today)return;
   const yesterday=addDays(today,-1);
-  const startDate=PROGRAM_START;
-
-  // Only show if yesterday is within program (on or after start)
-  if(daysBetween(startDate,yesterday)<0)return;
-  // Only if not already logged
-  if(calChecked[yesterday])return;
-
+  if(daysBetween(PROGRAM_START,yesterday)<0||calChecked[yesterday])return;
   pendingPopupDate=yesterday;
   const d=strToDate(yesterday);
   const dow=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()];
@@ -592,55 +784,34 @@ function checkAndShowPopup(){
   document.getElementById('popup-sub').textContent='Did you complete your routine on '+fmt+'? Keep the streak alive.';
   document.getElementById('day-popup').classList.add('active');
 }
-
 function dismissPopup(markDone){
   document.getElementById('day-popup').classList.remove('active');
-  if(markDone&&pendingPopupDate){
-    calChecked[pendingPopupDate]=true;
-    saveCal();
-    showToast('✓ '+pendingPopupDate+' logged!');
-    if(mode==='calendar')render();
-  }
-  pendingPopupDate=null;
-  saveLastSeen();
+  if(markDone&&pendingPopupDate){calChecked[pendingPopupDate]=true;saveCal();showToast('✓ '+pendingPopupDate+' logged!');if(mode==='calendar')render();}
+  pendingPopupDate=null;saveLastSeen();
 }
 
 // ── LIVE CLOCK ─────────────────────────────────────────────────────────────
 function updateClock(){
-  const now=new Date();
-  const h=String(now.getHours()).padStart(2,'0'),m=String(now.getMinutes()).padStart(2,'0'),s=String(now.getSeconds()).padStart(2,'0');
+  const now=new Date(),h=String(now.getHours()).padStart(2,'0'),m=String(now.getMinutes()).padStart(2,'0'),s=String(now.getSeconds()).padStart(2,'0');
   const te=document.getElementById('clock-time'),de=document.getElementById('clock-date');
   if(te)te.textContent=h+':'+m+':'+s;
-  if(de){const opts={weekday:'short',month:'short',day:'numeric'};de.textContent=now.toLocaleDateString('en-US',opts);}
+  if(de)de.textContent=now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
 }
 
-// ── CALENDAR STATS ─────────────────────────────────────────────────────────
+// ── CALENDAR ───────────────────────────────────────────────────────────────
 function calStreaks(){
-  const today=todayStr();
-  const start=PROGRAM_START;
-  const total=daysBetween(start,today)+1; // days elapsed incl today
-  let current=0,longest=0,run=0;
-  for(let i=0;i<total;i++){
-    const d=addDays(start,i);
-    if(calChecked[d]){run++;if(run>longest)longest=run;}else run=0;
-  }
-  // current = streak ending today or yesterday
+  const today=todayStr(),start=PROGRAM_START;
+  const total=daysBetween(start,today)+1;
+  let longest=0,run=0;
+  for(let i=0;i<total;i++){const d=addDays(start,i);if(calChecked[d]){run++;if(run>longest)longest=run;}else run=0;}
   let cr=0;
-  for(let i=total-1;i>=0;i--){
-    const d=addDays(start,i);
-    if(calChecked[d])cr++;else break;
-  }
+  for(let i=total-1;i>=0;i--){const d=addDays(start,i);if(calChecked[d])cr++;else break;}
   const done=Object.keys(calChecked).filter(k=>calChecked[k]&&daysBetween(start,k)>=0).length;
   return{current:cr,longest,done,total};
 }
-
 function calMonthData(year,month){
-  // Returns array of {dateStr,dayNum,inProgram,isToday,isFuture,checked}
   const start=PROGRAM_START,today=todayStr();
-  const firstDay=new Date(year,month,1);
-  const lastDay=new Date(year,month+1,0);
-  const cells=[];
-  // Pad start (Mon=0)
+  const firstDay=new Date(year,month,1),lastDay=new Date(year,month+1,0),cells=[];
   const startDow=(firstDay.getDay()+6)%7;
   for(let i=0;i<startDow;i++)cells.push({empty:true});
   for(let d=1;d<=lastDay.getDate();d++){
@@ -650,128 +821,121 @@ function calMonthData(year,month){
   }
   return cells;
 }
-
 function calYearMonthStats(){
-  const start=PROGRAM_START;
-  const sd=strToDate(start);
-  const months=[];
+  const start=PROGRAM_START,sd=strToDate(start),months=[];
   for(let i=0;i<12;i++){
-    const y=sd.getFullYear(),m=sd.getMonth()+i;
-    const yr=y+Math.floor(m/12),mo=m%12;
-    const first=new Date(yr,mo,1),last=new Date(yr,mo+1,0);
+    const y=sd.getFullYear(),m=sd.getMonth()+i,yr=y+Math.floor(m/12),mo=m%12;
+    const last=new Date(yr,mo+1,0);
     let total=0,done=0;
-    for(let d=1;d<=last.getDate();d++){
-      const ds=yr+'-'+String(mo+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
-      if(daysBetween(start,ds)>=0){total++;if(calChecked[ds])done++;}
-    }
-    const pct=total?Math.round(done/total*100):0;
-    const lbl=first.toLocaleDateString('en-US',{month:'short'});
-    months.push({yr,mo,lbl,total,done,pct});
+    for(let d=1;d<=last.getDate();d++){const ds=yr+'-'+String(mo+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');if(daysBetween(start,ds)>=0){total++;if(calChecked[ds])done++;}}
+    months.push({yr,mo,lbl:new Date(yr,mo,1).toLocaleDateString('en-US',{month:'short'}),total,done,pct:total?Math.round(done/total*100):0});
   }
   return months;
 }
+function toggleCalDay(dateStr){calChecked[dateStr]=!calChecked[dateStr];saveCal();render();if(navigator.vibrate)navigator.vibrate(10);showToast(calChecked[dateStr]?'✓ Day logged!':'Day unlogged');}
 
-// ── CALENDAR RENDER ────────────────────────────────────────────────────────
 function renderCalendar(){
-  const start=PROGRAM_START;
-  const sd=strToDate(start);
-  const baseY=sd.getFullYear(),baseM=sd.getMonth();
+  const start=PROGRAM_START,sd=strToDate(start),baseY=sd.getFullYear(),baseM=sd.getMonth();
   const viewM=(baseM+calMonthOffset)%12,viewY=baseY+Math.floor((baseM+calMonthOffset)/12);
-  const cells=calMonthData(viewY,viewM);
-  const stats=calStreaks();
+  const cells=calMonthData(viewY,viewM),stats=calStreaks();
   const monthName=new Date(viewY,viewM,1).toLocaleDateString('en-US',{month:'long',year:'numeric'});
   const yearMonths=calYearMonthStats();
-
   const dayLabels=['Mo','Tu','We','Th','Fr','Sa','Su'];
   let h=`<div class="cal-mode">`;
-
-  // Streak cards
-  h+=`<div class="cal-streak-row">
-    <div class="cal-streak-card"><div class="cal-streak-num">${stats.current}</div><div class="cal-streak-lbl">Day Streak</div></div>
-    <div class="cal-streak-card"><div class="cal-streak-num">${stats.done}</div><div class="cal-streak-lbl">Days Done</div></div>
-    <div class="cal-streak-card"><div class="cal-streak-num">${stats.longest}</div><div class="cal-streak-lbl">Best Streak</div></div>
-    <div class="cal-streak-card"><div class="cal-streak-num">${stats.total>0?Math.round(stats.done/stats.total*100):0}%</div><div class="cal-streak-lbl">Completion</div></div>
-  </div>`;
-
-  // Month nav
-  h+=`<div class="cal-header">
-    <div class="cal-month-title">${monthName}</div>
-    <div class="cal-nav">
-      <button class="cal-nav-btn" onclick="calMonthOffset=Math.max(0,calMonthOffset-1);render()" ${calMonthOffset===0?'disabled style="opacity:.3;pointer-events:none"':''}>← Prev</button>
-      <button class="cal-nav-btn" onclick="calMonthOffset=Math.min(11,calMonthOffset+1);render()" ${calMonthOffset>=11?'disabled style="opacity:.3;pointer-events:none"':''}>Next →</button>
-    </div>
-  </div>`;
-
-  // Day labels
+  h+=`<div class="cal-streak-row"><div class="cal-streak-card"><div class="cal-streak-num">${stats.current}</div><div class="cal-streak-lbl">Day Streak</div></div><div class="cal-streak-card"><div class="cal-streak-num">${stats.done}</div><div class="cal-streak-lbl">Days Done</div></div><div class="cal-streak-card"><div class="cal-streak-num">${stats.longest}</div><div class="cal-streak-lbl">Best Streak</div></div><div class="cal-streak-card"><div class="cal-streak-num">${stats.total>0?Math.round(stats.done/stats.total*100):0}%</div><div class="cal-streak-lbl">Completion</div></div></div>`;
+  h+=`<div class="cal-header"><div class="cal-month-title">${monthName}</div><div class="cal-nav"><button class="cal-nav-btn" onclick="calMonthOffset=Math.max(0,calMonthOffset-1);render()" ${calMonthOffset===0?'disabled style="opacity:.3;pointer-events:none"':''}>← Prev</button><button class="cal-nav-btn" onclick="calMonthOffset=Math.min(11,calMonthOffset+1);render()" ${calMonthOffset>=11?'disabled style="opacity:.3;pointer-events:none"':''}>Next →</button></div></div>`;
   h+=`<div class="cal-grid">`;
   dayLabels.forEach(l=>h+=`<div class="cal-day-lbl">${l}</div>`);
-
-  // Cells
   cells.forEach(c=>{
     if(c.empty){h+=`<div class="cal-cell empty"></div>`;return;}
-    const start2=PROGRAM_START;
-    const daysIn=daysBetween(start2,c.dateStr);
-    // heat level for checked: more weeks in = more intense
+    const daysIn=daysBetween(PROGRAM_START,c.dateStr);
     let hClass='';
-    if(c.checked){
-      const week=Math.floor(daysIn/7);
-      if(week<13)hClass=' h1';
-      else if(week<26)hClass=' h2';
-      else if(week<39)hClass=' h3';
-      else hClass=' h4';
-    }
+    if(c.checked){const week=Math.floor(daysIn/7);if(week<13)hClass=' h1';else if(week<26)hClass=' h2';else if(week<39)hClass=' h3';else hClass=' h4';}
     let cls='cal-cell';
-    if(!c.inProgram)cls+=' before-start';
-    if(c.isFuture)cls+=' future';
-    if(c.isToday)cls+=' today-cell';
-    if(c.checked)cls+=` checked${hClass}`;
+    if(!c.inProgram)cls+=' before-start';if(c.isFuture)cls+=' future';if(c.isToday)cls+=' today-cell';if(c.checked)cls+=` checked${hClass}`;
     const onclick=(c.inProgram&&!c.isFuture&&!isCoachView)?`onclick="toggleCalDay('${c.dateStr}')"`:' ';
     h+=`<div class="${cls}" ${onclick}><span class="cal-cell-num">${c.dayNum}</span></div>`;
   });
   h+=`</div>`;
-
-  // Legend
-  h+=`<div class="cal-legend">
-    <span class="cal-legend-label">Intensity</span>
-    <div class="cal-legend-item"><div class="cal-legend-dot" style="background:rgba(245,166,35,.35)"></div><span class="cal-legend-txt">Wk 1–12</span></div>
-    <div class="cal-legend-item"><div class="cal-legend-dot" style="background:rgba(245,166,35,.55)"></div><span class="cal-legend-txt">Wk 13–25</span></div>
-    <div class="cal-legend-item"><div class="cal-legend-dot" style="background:rgba(245,166,35,.75)"></div><span class="cal-legend-txt">Wk 26–38</span></div>
-    <div class="cal-legend-item"><div class="cal-legend-dot" style="background:rgb(245,166,35)"></div><span class="cal-legend-txt">Wk 39–52</span></div>
-  </div>`;
-
-  // Year overview
-  h+=`<div class="cal-year-title">12-Month Overview</div>`;
-  h+=`<div class="cal-year-grid">`;
-  yearMonths.forEach(ym=>{
-    h+=`<div class="cal-year-month" onclick="calMonthOffset=${yearMonths.indexOf(ym)};render()">
-      <div class="cal-year-month-fill" style="height:${ym.pct}%"></div>
-      <div class="cal-year-month-lbl">${ym.lbl}</div>
-      <div class="cal-year-month-pct">${ym.pct?ym.pct+'%':''}</div>
-    </div>`;
-  });
+  h+=`<div class="cal-legend"><span class="cal-legend-label">Intensity</span><div class="cal-legend-item"><div class="cal-legend-dot" style="background:rgba(245,166,35,.35)"></div><span class="cal-legend-txt">Wk 1–12</span></div><div class="cal-legend-item"><div class="cal-legend-dot" style="background:rgba(245,166,35,.55)"></div><span class="cal-legend-txt">Wk 13–25</span></div><div class="cal-legend-item"><div class="cal-legend-dot" style="background:rgba(245,166,35,.75)"></div><span class="cal-legend-txt">Wk 26–38</span></div><div class="cal-legend-item"><div class="cal-legend-dot" style="background:rgb(245,166,35)"></div><span class="cal-legend-txt">Wk 39–52</span></div></div>`;
+  h+=`<div class="cal-year-title">12-Month Overview</div><div class="cal-year-grid">`;
+  yearMonths.forEach((ym,i)=>{h+=`<div class="cal-year-month" onclick="calMonthOffset=${i};render()"><div class="cal-year-month-fill" style="height:${ym.pct}%"></div><div class="cal-year-month-lbl">${ym.lbl}</div><div class="cal-year-month-pct">${ym.pct?ym.pct+'%':''}</div></div>`;});
   h+=`</div>`;
-
-  // Manual log button for today
   const t=todayStr();
-  h+=`<div style="margin-top:10px;display:flex;gap:8px">
-    <button class="add-btn" style="margin-top:0;flex:1" onclick="toggleCalDay('${t}')">
-      ${calChecked[t]?'✓ Today Logged — Tap to Undo':'+ Log Today as Complete'}
-    </button>
-  </div>`;
-
+  h+=`<div style="margin-top:10px;display:flex;gap:8px"><button class="add-btn" style="margin-top:0;flex:1" onclick="toggleCalDay('${t}')">${calChecked[t]?'✓ Today Logged — Tap to Undo':'+ Log Today as Complete'}</button></div>`;
   h+=`</div>`;
   return h;
 }
 
-function toggleCalDay(dateStr){
-  calChecked[dateStr]=!calChecked[dateStr];
-  saveCal();
-  render();
-  if(navigator.vibrate)navigator.vibrate(10);
-  showToast(calChecked[dateStr]?'✓ Day logged!':'Day unlogged');
+// ── PROGRESS PHOTOS ─────────────────────────────────────────────────────────
+async function renderPhotosSection(){
+  let photos=[];
+  try{photos=await getAllPhotos();}catch(e){}
+  let h=`<div class="photo-capture-wrap">
+    <div class="photo-capture-title">📸 New Progress Photo</div>
+    <img class="photo-preview${currentPhotoCaptureData?' show':''}" id="photo-preview" src="${currentPhotoCaptureData||''}" alt="">
+    <div class="photo-actions">
+      <button class="photo-btn" onclick="triggerPhotoCapture()">📷 Take / Choose Photo</button>
+      ${currentPhotoCaptureData?`<button class="photo-btn" onclick="currentPhotoCaptureData=null;renderPhotoSectionInPlace()">✕ Clear</button>`:''}
+    </div>
+    <textarea class="photo-note-input" id="photo-note-input" placeholder="Add a note — how you feel, weight, body fat, PRs hit today…" rows="3"></textarea>
+    <button class="photo-btn primary" onclick="saveCurrentPhoto()" ${!currentPhotoCaptureData?'disabled style="opacity:.4;pointer-events:none"':''}>Save Photo</button>
+  </div>`;
+
+  if(photos.length>0){
+    h+=`<div style="font-family:'Space Grotesk',sans-serif;font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--text3);margin-bottom:10px;">${photos.length} photo${photos.length!==1?'s':''} saved</div>`;
+    h+=`<div class="photo-gallery">`;
+    photos.forEach(p=>{
+      const dFmt=new Date(p.ts).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+      h+=`<div class="photo-thumb" onclick="openPhotoViewer('${esc(p.id)}')"><img src="${p.dataUrl}" alt=""><div class="photo-thumb-overlay">${dFmt}</div></div>`;
+    });
+    h+=`</div>`;
+  } else {
+    h+=`<div style="text-align:center;padding:24px;color:var(--text3);font-family:'Space Grotesk',sans-serif;font-size:13px;">No photos yet — take your first progress shot above</div>`;
+  }
+  return h;
+}
+function triggerPhotoCapture(){document.getElementById('photo-file-input').click();}
+function handlePhotoFile(e){
+  const file=e.target.files&&e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{currentPhotoCaptureData=ev.target.result;renderPhotoSectionInPlace();};
+  reader.readAsDataURL(file);
+  e.target.value='';
+}
+async function renderPhotoSectionInPlace(){
+  const sec=document.getElementById('photo-sec-body');if(!sec)return;
+  sec.innerHTML=await renderPhotosSection();
+}
+async function saveCurrentPhoto(){
+  if(!currentPhotoCaptureData){showToast('No photo selected');return;}
+  const note=(document.getElementById('photo-note-input')&&document.getElementById('photo-note-input').value)||'';
+  try{
+    await savePhoto(currentPhotoCaptureData,note.trim(),todayStr());
+    currentPhotoCaptureData=null;
+    showToast('📸 Photo saved!');
+    await renderPhotoSectionInPlace();
+    if(navigator.vibrate)navigator.vibrate([30,50,30]);
+  }catch(e){showToast('Error saving photo');}
+}
+async function openPhotoViewer(id){
+  let photos=[];
+  try{photos=await getAllPhotos();}catch(e){}
+  const p=photos.find(x=>x.id===id);if(!p)return;
+  viewingPhotoId=id;
+  document.getElementById('photo-viewer-img').src=p.dataUrl;
+  document.getElementById('photo-viewer-date').textContent=new Date(p.ts).toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  document.getElementById('photo-viewer-note').textContent=p.note||'No note added';
+  document.getElementById('photo-viewer-del').onclick=()=>confirmDeletePhoto(id);
+  document.getElementById('photo-viewer').classList.add('active');
+}
+function closePhotoViewer(){document.getElementById('photo-viewer').classList.remove('active');viewingPhotoId=null;}
+async function confirmDeletePhoto(id){
+  if(!confirm('Delete this photo? This cannot be undone.'))return;
+  try{await deletePhoto(id);closePhotoViewer();await renderPhotoSectionInPlace();showToast('Photo deleted');}catch(e){showToast('Error deleting photo');}
 }
 
-// ── PERSISTENCE ───────────────────────────────────────────────────────────
+// ── PERSISTENCE ────────────────────────────────────────────────────────────
 function save(){try{localStorage.setItem('trk-v7',JSON.stringify({st,ws,wtr,EX,MEALS,SUPPS}));}catch(e){}if(syncSessionId)pushSync();}
 function load(){try{const r=localStorage.getItem('trk-v7');if(r){const d=JSON.parse(r);st=d.st||{};ws=d.ws||{};wtr=d.wtr||{};if(d.EX)EX=d.EX;if(d.MEALS)MEALS=d.MEALS;if(d.SUPPS)SUPPS=d.SUPPS;}}catch(e){}}
 function dSave(){clearTimeout(saveT);saveT=setTimeout(save,600);}
@@ -780,88 +944,24 @@ function loadGrocery(){try{const r=localStorage.getItem('trk-grocery');if(r){con
 function saveSyncPrefs(){try{localStorage.setItem('trk-sync',JSON.stringify({syncSessionId,coachSessionId,isCoachView}));}catch(e){}}
 function loadSyncPrefs(){try{const r=localStorage.getItem('trk-sync');if(r){const d=JSON.parse(r);syncSessionId=d.syncSessionId||null;coachSessionId=d.coachSessionId||null;isCoachView=d.isCoachView||false;}}catch(e){}}
 
-// ── SYNC — Firebase Realtime Database ─────────────────────────────────────
-// Data lives at /sessions/{sessionId}/ in Firebase.
-// Athlete writes; coach subscribes with onValue — zero polling, true realtime.
-
-function genSessionId(){
-  // 6 uppercase alphanumeric chars — 36^6 = ~2B combos, plenty for 100 athletes
-  return Array.from({length:6},()=>'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*32)]).join('');
-}
-
-function sessionRef(id){ return ref(db,'sessions/'+id); }
-
+// ── FIREBASE SYNC ──────────────────────────────────────────────────────────
+function genSessionId(){return Array.from({length:6},()=>'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*32)]).join('');}
+function sessionRef(id){return ref(db,'sessions/'+id);}
 async function pushSync(){
   if(!syncSessionId||isCoachView)return;
-  try{
-    await set(sessionRef(syncSessionId),{
-      st, ws, wtr, day, mode,
-      ts: Date.now()
-    });
-    lastSyncTime=Date.now();
-    setSyncStatus('live','Live');
-  }catch(e){
-    setSyncStatus('err','Sync error');
-    console.warn('Firebase push error',e);
-  }
+  try{await set(sessionRef(syncSessionId),{st,ws,wtr,day,mode,ts:Date.now()});lastSyncTime=Date.now();setSyncStatus('live','Live');}
+  catch(e){setSyncStatus('err','Sync error');}
 }
-
-async function startSync(id){
-  syncSessionId=id; isCoachView=false; coachSessionId=null;
-  saveSyncPrefs();
-  await pushSync();
-  showPill();
-  document.getElementById('sync-btn').classList.add('sync-on');
-}
-
-function stopSync(){
-  if(syncSessionId&&!isCoachView){
-    // Optionally clear the session node so codes don't linger
-    try{ set(sessionRef(syncSessionId),null); }catch(e){}
-  }
-  syncSessionId=null;
-  detachFbListener();
-  saveSyncPrefs();
-  hidePill();
-  document.getElementById('sync-btn').classList.remove('sync-on');
-}
-
-function detachFbListener(){
-  if(fbListenerRef&&fbListener){
-    off(fbListenerRef,'value',fbListener);
-    fbListener=null; fbListenerRef=null;
-  }
-}
-
+async function startSync(id){syncSessionId=id;isCoachView=false;coachSessionId=null;saveSyncPrefs();await pushSync();showPill();document.getElementById('sync-btn').classList.add('sync-on');}
+function stopSync(){if(syncSessionId&&!isCoachView){try{set(sessionRef(syncSessionId),null);}catch(e){}}syncSessionId=null;detachFbListener();saveSyncPrefs();hidePill();document.getElementById('sync-btn').classList.remove('sync-on');}
+function detachFbListener(){if(fbListenerRef&&fbListener){off(fbListenerRef,'value',fbListener);fbListener=null;fbListenerRef=null;}}
 async function startCoachView(id){
-  coachSessionId=id; isCoachView=true; saveSyncPrefs();
-  setSyncStatus('coach','Connecting…'); showPill();
-
-  // First do a one-time read to confirm the session exists
-  try{
-    const snap=await get(sessionRef(id));
-    if(!snap.exists()){
-      showToast('Session not found — check the code');
-      coachSessionId=null; isCoachView=false; saveSyncPrefs(); hidePill();
-      return;
-    }
-    applyRemoteData(snap.val());
-  }catch(e){
-    showToast('Connection error — try again');
-    coachSessionId=null; isCoachView=false; saveSyncPrefs(); hidePill();
-    return;
-  }
-
-  // Now attach a live listener — fires instantly on every athlete write
+  coachSessionId=id;isCoachView=true;saveSyncPrefs();setSyncStatus('coach','Connecting…');showPill();
+  try{const snap=await get(sessionRef(id));if(!snap.exists()){showToast('Session not found');coachSessionId=null;isCoachView=false;saveSyncPrefs();hidePill();return;}applyRemoteData(snap.val());}
+  catch(e){showToast('Connection error');coachSessionId=null;isCoachView=false;saveSyncPrefs();hidePill();return;}
   detachFbListener();
   fbListenerRef=sessionRef(id);
-  fbListener=onValue(fbListenerRef,(snap)=>{
-    if(!snap.exists())return;
-    applyRemoteData(snap.val());
-    lastSyncTime=Date.now();
-    updatePillTime();
-  });
-
+  fbListener=onValue(fbListenerRef,(snap)=>{if(!snap.exists())return;applyRemoteData(snap.val());lastSyncTime=Date.now();updatePillTime();});
   document.getElementById('coach-banner').classList.add('show');
   document.getElementById('coach-banner-id').textContent='Code: '+id;
   document.getElementById('sync-btn').classList.add('sync-on');
@@ -869,105 +969,45 @@ async function startCoachView(id){
   document.getElementById('mode-bar').style.opacity='.5';
   setSyncStatus('coach','Coach view — live');
 }
-
 function exitCoachView(){
-  detachFbListener();
-  coachSessionId=null; isCoachView=false; saveSyncPrefs();
-  document.getElementById('coach-banner').classList.remove('show');
-  hidePill();
+  detachFbListener();coachSessionId=null;isCoachView=false;saveSyncPrefs();
+  document.getElementById('coach-banner').classList.remove('show');hidePill();
   document.getElementById('sync-btn').classList.remove('sync-on');
-  document.getElementById('mode-bar').style.pointerEvents='';
-  document.getElementById('mode-bar').style.opacity='';
-  load(); render();
-  showToast('Exited coach view');
+  document.getElementById('mode-bar').style.pointerEvents='';document.getElementById('mode-bar').style.opacity='';
+  load();render();showToast('Exited coach view');
 }
-
 function applyRemoteData(data){
-  if(!data)return;
-  st=data.st||{}; ws=data.ws||{}; wtr=data.wtr||{};
-  if(data.day)day=data.day;
-  if(data.mode)mode=data.mode;
-  ['workout','nutrition','calendar'].forEach(m=>{
-    const el=document.getElementById('mb-'+m);
-    if(el)el.classList.toggle('active',mode===m);
-  });
+  if(!data)return;st=data.st||{};ws=data.ws||{};wtr=data.wtr||{};
+  if(data.day)day=data.day;if(data.mode)mode=data.mode;
+  ['workout','nutrition','calendar'].forEach(m=>{const el=document.getElementById('mb-'+m);if(el)el.classList.toggle('active',mode===m);});
   render();
 }
 
-// ── SYNC PILL UI ──────────────────────────────────────────────────────────
+// ── SYNC PILL ──────────────────────────────────────────────────────────────
 function showPill(){const pill=document.getElementById('sync-pill'),hdr=document.getElementById('main-header');if(!pill||!hdr)return;pill.style.top=(hdr.getBoundingClientRect().bottom+8)+'px';pill.classList.add('show');}
 function hidePill(){const pill=document.getElementById('sync-pill');if(pill)pill.classList.remove('show');}
 function setSyncStatus(type,label){const dot=document.getElementById('sync-dot'),lbl=document.getElementById('sync-label');if(!dot||!lbl)return;dot.className='sync-dot'+(type==='live'?' live':type==='coach'?' coach':type==='err'?' err':'');lbl.textContent=label;}
 function updatePillTime(){if(!lastSyncTime)return;const s=Math.floor((Date.now()-lastSyncTime)/1000);const el=document.getElementById('sync-time');if(el)el.textContent=s<3?'· just now':s<60?'· '+s+'s ago':'';}
 function repositionPill(){const pill=document.getElementById('sync-pill');if(pill&&pill.classList.contains('show'))showPill();}
 
-// ── SYNC MODAL ────────────────────────────────────────────────────────────
+// ── SYNC MODAL ─────────────────────────────────────────────────────────────
 function openSyncModal(){
   let html='';
   if(isCoachView){
-    html=`<p style="font-family:'Space Grotesk',sans-serif;font-size:14px;color:var(--text2);margin-bottom:18px">
-      Watching session <strong style="color:var(--purple);font-family:'JetBrains Mono',monospace">${coachSessionId}</strong> live via Firebase.
-    </p>
-    <div class="modal-actions">
-      <button class="modal-btn" onclick="closeSyncModalForce()">Close</button>
-      <button class="modal-btn primary" style="background:var(--red);border-color:var(--red)" onclick="exitCoachView();closeSyncModalForce()">Exit Coach View</button>
-    </div>`;
+    html=`<p style="font-family:'Space Grotesk',sans-serif;font-size:14px;color:var(--text2);margin-bottom:18px">Watching session <strong style="color:var(--purple);font-family:'JetBrains Mono',monospace">${coachSessionId}</strong> live.</p><div class="modal-actions"><button class="modal-btn" onclick="closeSyncModalForce()">Close</button><button class="modal-btn primary" style="background:var(--red);border-color:var(--red)" onclick="exitCoachView();closeSyncModalForce()">Exit Coach View</button></div>`;
   } else {
-    const activeBlock = syncSessionId
-      ? `<p style="font-family:'Space Grotesk',sans-serif;font-size:13px;color:var(--text3);text-align:center;margin-bottom:8px">Your active session</p>
-         <div class="session-code">${syncSessionId}</div>
-         <p style="font-family:'Space Grotesk',sans-serif;font-size:12px;color:var(--text3);text-align:center;margin-bottom:18px">
-           Share this with your coach. Every set updates instantly via Firebase — no polling.
-         </p>
-         <div class="modal-actions">
-           <button class="modal-btn" onclick="if(navigator.clipboard)navigator.clipboard.writeText('${syncSessionId}').then(()=>showToast('Code copied!'))">Copy Code</button>
-           <button class="modal-btn" style="color:var(--red);border-color:rgba(232,52,74,.2)" onclick="stopSync();closeSyncModalForce();render()">Stop Session</button>
-         </div>`
-      : `<div class="sync-step"><div class="sync-step-num">1</div><div class="sync-step-text">Tap <strong>Start Session</strong> — you get a unique 6-character code.</div></div>
-         <div class="sync-step"><div class="sync-step-num">2</div><div class="sync-step-text">Text or show the code to your coach.</div></div>
-         <div class="sync-step"><div class="sync-step-num">3</div><div class="sync-step-text">Coach enters it in the <strong>Coach tab</strong> — sees every rep and set update instantly via Firebase Realtime Database.</div></div>
-         <div class="modal-actions" style="margin-top:18px">
-           <button class="modal-btn" onclick="closeSyncModalForce()">Cancel</button>
-           <button class="modal-btn primary" onclick="(async()=>{const id=genSessionId();closeSyncModalForce();await startSync(id);render();showToast('Session live — code: '+id)})()">Start Session</button>
-         </div>`;
-
-    html=`<div style="display:flex;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:3px;margin-bottom:18px">
-      <button class="mode-btn active" id="sm-a" onclick="switchSyncTab('a')" style="flex:1">Athlete</button>
-      <button class="mode-btn" id="sm-c" onclick="switchSyncTab('c')" style="flex:1">Coach</button>
-    </div>
-    <div id="st-a">${activeBlock}</div>
-    <div id="st-c" style="display:none">
-      <p style="font-family:'Space Grotesk',sans-serif;font-size:13px;color:var(--text2);margin-bottom:12px">Enter the athlete's 6-character code:</p>
-      <div class="join-input-row">
-        <input class="join-code-input" id="join-code" maxlength="6" placeholder="ABC123" autocomplete="off"
-          oninput="this.value=this.value.toUpperCase()"
-          onkeydown="if(event.key==='Enter'){event.preventDefault();document.querySelector('#st-c .modal-btn.primary').click()}">
-      </div>
-      <div class="modal-actions">
-        <button class="modal-btn" onclick="closeSyncModalForce()">Cancel</button>
-        <button class="modal-btn primary" onclick="(async()=>{
-          const c=document.getElementById('join-code').value.trim().toUpperCase();
-          if(c.length<4){showToast('Enter a valid code');return;}
-          closeSyncModalForce();
-          await startCoachView(c);
-        })()">Watch Live</button>
-      </div>
-    </div>`;
+    const activeBlock=syncSessionId?`<p style="font-family:'Space Grotesk',sans-serif;font-size:13px;color:var(--text3);text-align:center;margin-bottom:8px">Your active session</p><div class="session-code">${syncSessionId}</div><div class="modal-actions"><button class="modal-btn" onclick="if(navigator.clipboard)navigator.clipboard.writeText('${syncSessionId}').then(()=>showToast('Code copied!'))">Copy Code</button><button class="modal-btn" style="color:var(--red);border-color:rgba(232,52,74,.2)" onclick="stopSync();closeSyncModalForce();render()">Stop Session</button></div>`:
+    `<div class="sync-step"><div class="sync-step-num">1</div><div class="sync-step-text">Tap <strong>Start Session</strong> — you get a unique 6-character code.</div></div><div class="sync-step"><div class="sync-step-num">2</div><div class="sync-step-text">Share the code with your coach.</div></div><div class="sync-step"><div class="sync-step-num">3</div><div class="sync-step-text">Coach enters it in the <strong>Coach tab</strong> — sees every rep update instantly.</div></div><div class="modal-actions" style="margin-top:18px"><button class="modal-btn" onclick="closeSyncModalForce()">Cancel</button><button class="modal-btn primary" onclick="(async()=>{const id=genSessionId();closeSyncModalForce();await startSync(id);render();showToast('Session live — code: '+id)})()">Start Session</button></div>`;
+    html=`<div style="display:flex;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:3px;margin-bottom:18px"><button class="mode-btn active" id="sm-a" onclick="switchSyncTab('a')" style="flex:1">Athlete</button><button class="mode-btn" id="sm-c" onclick="switchSyncTab('c')" style="flex:1">Coach</button></div><div id="st-a">${activeBlock}</div><div id="st-c" style="display:none"><p style="font-family:'Space Grotesk',sans-serif;font-size:13px;color:var(--text2);margin-bottom:12px">Enter the athlete's 6-character code:</p><div class="join-input-row"><input class="join-code-input" id="join-code" maxlength="6" placeholder="ABC123" autocomplete="off" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter'){event.preventDefault();document.querySelector('#st-c .modal-btn.primary').click()}"></div><div class="modal-actions"><button class="modal-btn" onclick="closeSyncModalForce()">Cancel</button><button class="modal-btn primary" onclick="(async()=>{const c=document.getElementById('join-code').value.trim().toUpperCase();if(c.length<4){showToast('Enter a valid code');return;}closeSyncModalForce();await startCoachView(c);})()">Watch Live</button></div></div>`;
   }
   document.getElementById('sync-modal-body').innerHTML=html;
   document.getElementById('sync-backdrop').classList.add('active');
 }
-function switchSyncTab(t){
-  document.getElementById('st-a').style.display=t==='a'?'':'none';
-  document.getElementById('st-c').style.display=t==='c'?'':'none';
-  document.getElementById('sm-a').classList.toggle('active',t==='a');
-  document.getElementById('sm-c').classList.toggle('active',t==='c');
-  if(t==='c')setTimeout(()=>{const f=document.getElementById('join-code');if(f)f.focus();},300);
-}
+function switchSyncTab(t){document.getElementById('st-a').style.display=t==='a'?'':'none';document.getElementById('st-c').style.display=t==='c'?'':'none';document.getElementById('sm-a').classList.toggle('active',t==='a');document.getElementById('sm-c').classList.toggle('active',t==='c');if(t==='c')setTimeout(()=>{const f=document.getElementById('join-code');if(f)f.focus();},300);}
 function closeSyncModal(e){if(e.target.id==='sync-backdrop')closeSyncModalForce();}
 function closeSyncModalForce(){document.getElementById('sync-backdrop').classList.remove('active');}
 
-// ── AUDIO + SERVICE WORKER ────────────────────────────────────────────────
+// ── AUDIO ──────────────────────────────────────────────────────────────────
 function initAudio(){if(audioCtx)return;try{audioCtx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}}
 function playAlarm(){try{if(!audioCtx)initAudio();if(!audioCtx||audioCtx.state==='closed')return;if(audioCtx.state==='suspended')audioCtx.resume();const now=audioCtx.currentTime;const mc=()=>{const s=audioCtx.createWaveShaper();const c=new Float32Array(512);for(let i=0;i<512;i++){const x=i*2/511-1;c[i]=Math.tanh(x*4)*.7;}s.curve=c;return s;};[{t:0,f:880,d:.14},{t:.18,f:1046,d:.14},{t:.36,f:1319,d:.22},{t:.72,f:880,d:.14},{t:.9,f:1046,d:.14},{t:1.08,f:1319,d:.3}].forEach(({t,f,d})=>{const o=audioCtx.createOscillator(),g=audioCtx.createGain(),c=mc();o.type='square';o.frequency.value=f;g.gain.setValueAtTime(0,now+t);g.gain.linearRampToValueAtTime(.55,now+t+.01);g.gain.setValueAtTime(.55,now+t+d*.75);g.gain.exponentialRampToValueAtTime(.001,now+t+d);o.connect(c);c.connect(g);g.connect(audioCtx.destination);o.start(now+t);o.stop(now+t+d+.05);});}catch(e){}}
 function unlockAudio(){initAudio();if(audioCtx&&audioCtx.state==='suspended')audioCtx.resume();}
@@ -978,9 +1018,8 @@ async function rqNP(){if(!('Notification'in window))return false;if(Notification
 function postSW(d){if(!swReg)return;const s=swReg.active||swReg.waiting||swReg.installing;if(s)try{s.postMessage(d);}catch(e){}}
 async function reqWL(){try{if('wakeLock'in navigator)wakeLock=await navigator.wakeLock.request('screen');}catch(e){}}
 async function relWL(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&restEndTime>Date.now()){reqWL();updateTimer();}});
 
-// ── TIMER ─────────────────────────────────────────────────────────────────
+// ── TIMER ──────────────────────────────────────────────────────────────────
 function showFST(){document.getElementById('fs-timer').classList.add('active');document.body.style.overflow='hidden';}
 function hideFST(){document.getElementById('fs-timer').classList.remove('active');document.body.style.overflow='';}
 async function startRestTimer(secs,name){if(!secs)return;clearInterval(restInterval);restEndTime=Date.now()+secs*1000;restTotalSecs=secs;restExName=name;try{localStorage.setItem('trk-timer',JSON.stringify({end:restEndTime,total:restTotalSecs,ex:restExName}));}catch(e){}showFST();reqWL();updateTimer();restInterval=setInterval(tick,250);const g=await rqNP();if(g)postSW({type:'SCHEDULE',ms:secs*1000,ex:name+' — next set'});}
@@ -995,31 +1034,96 @@ function fmtRest(s){if(!s)return'';if(s>=60){const m=s/60;return m===Math.floor(
 let toastT;
 function showToast(msg){const el=document.getElementById('toast');if(!el)return;el.textContent=msg;el.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('show'),2400);}
 
-// ── GROCERY ───────────────────────────────────────────────────────────────
+// ── GROCERY - enhanced with category selection & ordering ─────────────────
+function allGroceryItems(){
+  // Combine base + custom into one array, grouped by cat in GR_CATS order
+  return [...GROCERY_BASE,...groceryCustom];
+}
 function toggleGroceryItem(id){groceryChecked[id]=!groceryChecked[id];saveGrocery();renderGroceryBody();updateCartBadge();if(navigator.vibrate)navigator.vibrate(10);}
 function removeGroceryCustom(id){groceryCustom=groceryCustom.filter(x=>x.id!==id);delete groceryChecked[id];saveGrocery();renderGroceryBody();updateCartBadge();}
-function addGroceryCustom(){const ni=document.getElementById('gr-new-name'),qi=document.getElementById('gr-new-qty');const name=(ni&&ni.value||'').trim(),qty=(qi&&qi.value||'').trim();if(!name){showToast('Enter item name');return;}groceryCustom.push({id:'gc-'+Date.now(),name,qty,cat:'✏️ Custom'});saveGrocery();renderGroceryBody();updateCartBadge();if(ni)ni.value='';if(qi)qi.value='';}
+function moveGroceryCustom(id,dir){
+  // Only custom items are movable within their category
+  const idx=groceryCustom.findIndex(x=>x.id===id);if(idx<0)return;
+  const cat=groceryCustom[idx].cat;
+  const catItems=groceryCustom.map((x,i)=>({...x,_i:i})).filter(x=>x.cat===cat);
+  const catIdx=catItems.findIndex(x=>x.id===id);
+  const newCatIdx=catIdx+dir;
+  if(newCatIdx<0||newCatIdx>=catItems.length)return;
+  // Swap in main array
+  const aI=catItems[catIdx]._i,bI=catItems[newCatIdx]._i;
+  [groceryCustom[aI],groceryCustom[bI]]=[groceryCustom[bI],groceryCustom[aI]];
+  saveGrocery();renderGroceryBody();
+}
+function addGroceryCustom(){
+  const ni=document.getElementById('gr-new-name'),qi=document.getElementById('gr-new-qty'),ci=document.getElementById('gr-new-cat');
+  const name=(ni&&ni.value||'').trim(),qty=(qi&&qi.value||'').trim(),cat=(ci&&ci.value)||'✏️ Custom';
+  if(!name){showToast('Enter item name');return;}
+  groceryCustom.push({id:'gc-'+Date.now(),name,qty,cat});
+  saveGrocery();renderGroceryBody();updateCartBadge();
+  if(ni)ni.value='';if(qi)qi.value='';
+}
 function clearGroceryChecked(){if(!confirm('Uncheck all items?'))return;groceryChecked={};saveGrocery();renderGroceryBody();updateCartBadge();showToast('List cleared');}
-function updateCartBadge(){const all=[...GROCERY_BASE,...groceryCustom],rem=all.filter(x=>!groceryChecked[x.id]).length,b=document.getElementById('cart-badge');if(!b)return;b.textContent=rem;rem>0?b.classList.add('show'):b.classList.remove('show');}
+function updateCartBadge(){const all=allGroceryItems(),rem=all.filter(x=>!groceryChecked[x.id]).length,b=document.getElementById('cart-badge');if(!b)return;b.textContent=rem;rem>0?b.classList.add('show'):b.classList.remove('show');}
 function openGrocery(){renderGroceryBody();document.getElementById('gr-backdrop').classList.add('active');}
 function closeGrocery(e){if(e.target.id==='gr-backdrop')document.getElementById('gr-backdrop').classList.remove('active');}
 function closeGroceryForce(){document.getElementById('gr-backdrop').classList.remove('active');}
-function renderGroceryBody(){const all=[...GROCERY_BASE,...groceryCustom],bought=all.filter(x=>groceryChecked[x.id]).length,cats=[...new Set(all.map(x=>x.cat))];let html=`<div class="gr-progress"><span>${bought}</span>/${all.length} items in cart</div>`;cats.forEach(cat=>{html+=`<div class="gr-cat-hdr">${esc(cat)}</div>`;all.filter(x=>x.cat===cat).forEach(item=>{const done=!!groceryChecked[item.id],isCust=!!groceryCustom.find(x=>x.id===item.id);html+=`<div class="gr-item" onclick="toggleGroceryItem('${esc(item.id)}')"><div class="cb${done?' done':''}"><div class="ck"></div></div><div class="gr-item-info"><div class="gr-item-name${done?' done':''}">${esc(item.name)}</div>${item.qty?`<div class="gr-item-qty">${esc(item.qty)}</div>`:''}</div>${isCust?`<button class="gr-item-rm" onclick="event.stopPropagation();removeGroceryCustom('${esc(item.id)}')">×</button>`:''}</div>`;});});html+=`<div class="gr-add-row"><input class="gr-add-input" id="gr-new-name" placeholder="Add item…" autocomplete="off" onkeydown="if(event.key==='Enter')document.getElementById('gr-new-qty').focus()"><input class="gr-qty-input" id="gr-new-qty" placeholder="Qty" autocomplete="off" onkeydown="if(event.key==='Enter')addGroceryCustom()"><button class="gr-add-btn" onclick="addGroceryCustom()">Add</button></div><div class="gr-footer"><button class="gr-footer-btn danger" onclick="clearGroceryChecked()">Uncheck All</button><button class="gr-footer-btn" onclick="closeGroceryForce()">Done</button></div>`;document.getElementById('gr-body').innerHTML=html;}
+function renderGroceryBody(){
+  const all=allGroceryItems(),bought=all.filter(x=>groceryChecked[x.id]).length;
+  let html=`<div class="gr-progress"><span>${bought}</span>/${all.length} items in cart</div>`;
+  // Render by category order
+  GR_CATS.forEach(cat=>{
+    const items=all.filter(x=>x.cat===cat);
+    if(!items.length)return;
+    html+=`<div class="gr-cat-hdr">${esc(cat)}</div>`;
+    items.forEach((item,catIdx)=>{
+      const done=!!groceryChecked[item.id],isCust=!!groceryCustom.find(x=>x.id===item.id);
+      const catCustomItems=groceryCustom.filter(x=>x.cat===cat);
+      const custIdx=catCustomItems.findIndex(x=>x.id===item.id);
+      html+=`<div class="gr-item">
+        <div class="gr-item-check" onclick="toggleGroceryItem('${esc(item.id)}')">
+          <div class="cb${done?' done':''}"><div class="ck"></div></div>
+          <div class="gr-item-info">
+            <div class="gr-item-name${done?' done':''}">${esc(item.name)}</div>
+            ${item.qty?`<div class="gr-item-qty">${esc(item.qty)}</div>`:''}
+          </div>
+        </div>
+        <div class="gr-item-actions">
+          ${isCust?`<button class="gr-move-btn" onclick="moveGroceryCustom('${esc(item.id)}',-1)" ${custIdx===0?'disabled':''}>↑</button><button class="gr-move-btn" onclick="moveGroceryCustom('${esc(item.id)}',1)" ${custIdx===catCustomItems.length-1?'disabled':''}>↓</button><button class="gr-item-rm" onclick="removeGroceryCustom('${esc(item.id)}')">×</button>`:''}
+        </div>
+      </div>`;
+    });
+  });
 
-// ── UTILITY ───────────────────────────────────────────────────────────────
+  // Add item section with category picker
+  const catOptions=GR_CATS.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
+  html+=`<div class="gr-add-section">
+    <div class="gr-add-title">Add Item</div>
+    <select class="gr-cat-select" id="gr-new-cat">${catOptions}</select>
+    <div class="gr-add-row">
+      <input class="gr-add-input" id="gr-new-name" placeholder="Item name…" autocomplete="off" onkeydown="if(event.key==='Enter')document.getElementById('gr-new-qty').focus()">
+      <input class="gr-qty-input" id="gr-new-qty" placeholder="Qty" autocomplete="off" onkeydown="if(event.key==='Enter')addGroceryCustom()">
+      <button class="gr-add-btn" onclick="addGroceryCustom()">Add</button>
+    </div>
+  </div>`;
+
+  html+=`<div class="gr-footer"><button class="gr-footer-btn danger" onclick="clearGroceryChecked()">Uncheck All</button><button class="gr-footer-btn" onclick="closeGroceryForce()">Done</button></div>`;
+  document.getElementById('gr-body').innerHTML=html;
+}
+
+// ── UTILITY ────────────────────────────────────────────────────────────────
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function sk(d,ei,si){return`${d}|${ei}|${si}`;}
 function getSetKeys(d){return EX[d].flatMap((e,ei)=>Array.from({length:e.s},(_,si)=>sk(d,ei,si)));}
 function wkProg(d){const c=[`${d}|am`];if(WK[d].pc)c.push(`${d}|pc`);const sets=getSetKeys(d);const done=c.filter(id=>st[id]).length+sets.filter(k=>ws[k]&&ws[k].done).length;const tot=c.length+sets.length;return{done,total:tot,pct:tot?Math.round(done/tot*100):0};}
 
-// ── ACTIONS ───────────────────────────────────────────────────────────────
+// ── ACTIONS ────────────────────────────────────────────────────────────────
 function check(id){if(isCoachView)return;st[id]=!st[id];save();render();if(navigator.vibrate)navigator.vibrate(10);}
 function toggleSec(k){op[k]=!op[k];render();}
 function toggleMealSec(k){mealOp[k]=!mealOp[k];render();}
 function toggleEx(k){exop[k]=!exop[k];render();}
 function switchDay(d){day=d;editingMeal=null;if(syncSessionId)pushSync();render();window.scrollTo({top:0,behavior:'smooth'});}
 function setMode(m){if(isCoachView&&m!=='calendar')return;mode=m;editingMeal=null;['workout','nutrition','calendar'].forEach(x=>{const el=document.getElementById('mb-'+x);if(el)el.classList.toggle('active',x===m);});if(syncSessionId)pushSync();render();}
-function markSet(k,name,secs){if(isCoachView)return;if(!ws[k])ws[k]={};const i=document.getElementById('inp-'+k),r=document.getElementById('rep-'+k);if(i&&i.value)ws[k].w=i.value;if(r&&r.value)ws[k].r=r.value;ws[k].done=true;save();render();if(navigator.vibrate)navigator.vibrate([20,40,20]);startRestTimer(secs,name);}
+function markSet(k,name,secs){if(isCoachView)return;if(!ws[k])ws[k]={};const i=document.getElementById('inp-'+k),r=document.getElementById('rep-'+k);if(i&&i.value)ws[k].w=i.value;else if(i&&!ws[k].w){ws[k].w=i.getAttribute('value')||'';}if(r&&r.value)ws[k].r=r.value;ws[k].done=true;save();render();if(navigator.vibrate)navigator.vibrate([20,40,20]);startRestTimer(secs,name);}
 function undoSet(k){if(isCoachView)return;if(ws[k])ws[k].done=false;save();render();}
 function wInput(k,v){if(isCoachView)return;if(!ws[k])ws[k]={};ws[k].w=v;dSave();}
 function rInput(k,v){if(isCoachView)return;if(!ws[k])ws[k]={};ws[k].r=v;dSave();}
@@ -1034,6 +1138,14 @@ function toggleEditMeal(mid){if(isCoachView)return;editingMeal=editingMeal===mid
 function addMealItem(mid){if(isCoachView)return;const inp=document.getElementById('meal-add-'+mid);if(!inp)return;const val=inp.value.trim();if(!val){showToast('Enter an item');return;}const m=MEALS.find(x=>x.id===mid);if(!m)return;m.items.push(val);inp.value='';save();render();}
 function removeMealItem(mid,idx){if(isCoachView)return;const m=MEALS.find(x=>x.id===mid);if(!m)return;m.items.splice(idx,1);save();render();}
 function updateMealMeta(mid,field,val){if(isCoachView)return;const m=MEALS.find(x=>x.id===mid);if(!m)return;m[field]=val;dSave();}
+function moveMeal(mid,dir){
+  if(isCoachView)return;
+  const idx=MEALS.findIndex(x=>x.id===mid);
+  const newIdx=idx+dir;
+  if(newIdx<0||newIdx>=MEALS.length)return;
+  [MEALS[idx],MEALS[newIdx]]=[MEALS[newIdx],MEALS[idx]];
+  save();render();if(navigator.vibrate)navigator.vibrate(10);
+}
 function addMeal(){if(isCoachView)return;MEALS.push({id:'m'+Date.now(),label:'New Meal',time:'',cal:'',items:[]});save();render();}
 function removeMeal(mid){if(isCoachView)return;if(!confirm('Remove this meal?'))return;MEALS=MEALS.filter(x=>x.id!==mid);editingMeal=null;save();render();}
 function addSupp(){if(isCoachView)return;const inp=document.getElementById('supp-add-input');if(!inp)return;const val=inp.value.trim();if(!val)return;SUPPS.push(val);inp.value='';save();render();}
@@ -1042,7 +1154,7 @@ function openModal(t,b){document.getElementById('modal-title').textContent=t;doc
 function closeModal(e){if(e.target.id==='modal-backdrop')closeModalForce();}
 function closeModalForce(){document.getElementById('modal-backdrop').classList.remove('active');}
 
-// ── RENDER HELPERS ────────────────────────────────────────────────────────
+// ── RENDER HELPERS ─────────────────────────────────────────────────────────
 function ciHTML(id,label,note){const done=!!st[id];return`<div class="ci" onclick="check('${esc(id)}')"><div class="cb${done?' done':''}"><div class="ck"></div></div><div><div class="ci-text${done?' done':''}">${esc(label)}</div>${note?`<div class="ci-note">${esc(note)}</div>`:''}</div></div>`;}
 function secHTML(key,ic,txt,title,sub,body,ds){const isO=!!op[key],[a,b]=ds.split('/'),allD=a===b&&ds!=='0/0';return`<div class="section${isO?' open-section':''}"><div class="sec-head" onclick="toggleSec('${key}')"><div class="sec-icon ${ic}">${txt}</div><div class="sec-title">${esc(title)}${sub?`<span class="sec-sub">${esc(sub)}</span>`:''}</div><div class="sec-count${allD?' done':''}">${ds}</div><div class="sec-chev${isO?' open':''}">▾</div></div><div class="sec-body${isO?' open':''}">${body}</div></div>`;}
 
@@ -1054,7 +1166,7 @@ function wkHTML(d){
     const ekey=`${d}-${ei}`,isExO=!!exop[ekey];
     if(isRest){const k=sk(d,ei,0),dn=ws[k]&&ws[k].done;return`<div class="ci" onclick="(function(){if(window.isCoachView)return;var k='${esc(k)}';if(!window.ws[k])window.ws[k]={};window.ws[k].done=!window.ws[k].done;window.save();window.render();if(navigator.vibrate)navigator.vibrate(10);})()" style="padding:12px 0"><div class="cb${dn?' done':''}"><div class="ck"></div></div><div><div class="ci-text${dn?' done':''}">${esc(e.n)}</div><div class="ci-note">${esc(e.r)}${e.note?' · '+esc(e.note):''}</div></div></div>`;}
     const sd=Array.from({length:e.s},(_,si)=>ws[sk(d,ei,si)]&&ws[sk(d,ei,si)].done?1:0).reduce((a,b)=>a+b,0),allSD=sd===e.s,rl=fmtRest(e.rest);
-    const sH=Array.from({length:e.s},(_,si)=>{const k=sk(d,ei,si),sv=ws[k]||{};if(sv.done){const lg=[sv.w?sv.w+' lbs':null,sv.r?sv.r+' reps':null].filter(Boolean).join(' × ');return`<div class="set-row"><div class="set-done-icon"></div><div class="set-label sdone">Set ${si+1}</div><div class="set-logged">${lg||'—'}</div>${isCoachView?'':'<button class="set-undo-btn" onclick="undoSet(\''+k+'\')">Undo</button>'}</div>`;}return`<div class="set-row"><div class="set-label">Set<br>${si+1}</div><input class="set-w-input" type="number" id="inp-${k}" min="0" step="5" inputmode="decimal" placeholder="${sv.w||'lbs'}" value="${sv.w||''}" oninput="wInput('${k}',this.value)" onclick="event.stopPropagation()"${isCoachView?' disabled':''}><div class="set-sep">×</div><input class="set-r-input" type="number" id="rep-${k}" min="0" step="1" inputmode="numeric" placeholder="${sv.r||'reps'}" value="${sv.r||''}" oninput="rInput('${k}',this.value)" onclick="event.stopPropagation()"${isCoachView?' disabled':''}><div class="set-spacer"></div>${isCoachView?'':'<button class="set-done-btn" onclick="markSet(\''+k+'\',\''+esc(e.n)+' · Set '+(si+1)+'\','+e.rest+')">Done</button>'}</div>`;}).join('');
+    const sH=Array.from({length:e.s},(_,si)=>{const k=sk(d,ei,si),sv=ws[k]||{};const defW=e.w||'';const curW=sv.w!==undefined?sv.w:defW;if(sv.done){const lg=[curW?curW+' lbs':null,sv.r?sv.r+' reps':null].filter(Boolean).join(' × ');return`<div class="set-row"><div class="set-done-icon"></div><div class="set-label sdone">Set ${si+1}</div><div class="set-logged">${lg||'—'}</div>${isCoachView?'':'<button class="set-undo-btn" onclick="undoSet(\''+k+'\')">Undo</button>'}</div>`;}return`<div class="set-row"><div class="set-label">Set<br>${si+1}</div><input class="set-w-input" type="number" id="inp-${k}" min="0" step="5" inputmode="decimal" placeholder="lbs" value="${curW}" oninput="wInput('${k}',this.value)" onclick="event.stopPropagation()"${isCoachView?' disabled':''}><div class="set-sep">×</div><input class="set-r-input" type="number" id="rep-${k}" min="0" step="1" inputmode="numeric" placeholder="${sv.r||'reps'}" value="${sv.r||''}" oninput="rInput('${k}',this.value)" onclick="event.stopPropagation()"${isCoachView?' disabled':''}><div class="set-spacer"></div>${isCoachView?'':'<button class="set-done-btn" onclick="markSet(\''+k+'\',\''+esc(e.n)+' · Set '+(si+1)+'\','+e.rest+')">Done</button>'}</div>`;}).join('');
     const ctrl=isCoachView?'':(`<div class="set-ctrl-row"><button class="set-ctrl-btn rm" onclick="removeSet('${d}',${ei})" ${e.s<=1?'disabled':''}>− Set</button><button class="set-ctrl-btn add" onclick="addSet('${d}',${ei})">+ Set</button></div><div class="ex-actions"><button class="ex-rm-btn" onclick="removeExercise('${d}',${ei})">Remove Exercise</button></div>`);
     return`<div class="ex-wrap${isExO?' ex-open':''}"><div class="ex-head" onclick="toggleEx('${ekey}')"><div class="ex-num-badge">${ei+1}</div><div class="ex-info"><div class="ex-name">${esc(e.n)}</div><div class="ex-meta">${e.s}×${esc(e.r)}${rl?' · '+rl:''}${e.note?' · '+esc(e.note):''}</div></div><div class="ex-prog${allSD?' full':''}">${sd}/${e.s}</div><div class="ex-chev${isExO?' open':''}">▾</div></div><div class="ex-body${isExO?' open':''}">${sH}${ctrl}</div></div>`;
   }).join('');
@@ -1064,22 +1176,42 @@ function wkHTML(d){
 
 function nutrHTML(d){
   let h=`<div class="macros-strip"><div class="mac"><div class="mac-val">~2,310</div><div class="mac-lbl">Cal</div></div><div class="mac"><div class="mac-val">~205g</div><div class="mac-lbl">Protein</div></div><div class="mac"><div class="mac-val">~190g</div><div class="mac-lbl">Carbs</div></div><div class="mac"><div class="mac-val">~70g</div><div class="mac-lbl">Fat</div></div></div>`;
-  MEALS.forEach((m,mi)=>{const isO=!!mealOp[m.id],isE=editingMeal===m.id&&!isCoachView;let bh='';if(isE){bh+=`<div class="meal-meta-row"><input class="meal-meta-input" style="flex:2" placeholder="Meal name" value="${esc(m.label)}" oninput="updateMealMeta('${m.id}','label',this.value)"><input class="meal-meta-input" style="flex:1" placeholder="Time" value="${esc(m.time)}" oninput="updateMealMeta('${m.id}','time',this.value)"><input class="meal-meta-input" style="width:80px;flex-shrink:0" placeholder="Cal" value="${esc(m.cal)}" oninput="updateMealMeta('${m.id}','cal',this.value)"></div>`;m.items.forEach((item,ii)=>{bh+=`<div class="meal-item-row"><div class="meal-item-text">${esc(item)}</div><button class="meal-item-rm" onclick="removeMealItem('${m.id}',${ii})">×</button></div>`;});bh+=`<div class="meal-add-row"><input class="meal-add-input" id="meal-add-${m.id}" placeholder="Add food item…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();addMealItem('${m.id}');}"><button class="meal-add-btn" onclick="addMealItem('${m.id}')">Add</button></div><div style="display:flex;gap:8px;margin-top:10px;padding-top:8px;border-top:1px solid var(--border)"><button class="modal-btn" style="background:var(--bg3)" onclick="toggleEditMeal('${m.id}')">Done</button><button class="modal-btn" style="color:var(--red);border-color:rgba(232,52,74,.2)" onclick="removeMeal('${m.id}')">Remove</button></div>`;}else{m.items.forEach((item,ii)=>{bh+=ciHTML(`${d}|${m.id}|${ii}`,item,'');});}const dc=m.items.filter((_,ii)=>st[`${d}|${m.id}|${ii}`]).length,allD=dc===m.items.length&&m.items.length>0;h+=`<div class="nutr-section"><div class="nutr-head" onclick="toggleMealSec('${m.id}')"><div class="sec-icon ic-m">M${mi+1}</div><div class="sec-title">${esc(m.label)}<span class="sec-sub">${esc(m.time)}${m.cal?' · '+esc(m.cal):''}</span></div><div class="sec-count${allD?' done':''}">${dc}/${m.items.length}</div>${isCoachView?'':'<button class="edit-meal-btn'+(isE?' active':'')+'" onclick="event.stopPropagation();toggleEditMeal(\''+m.id+'\')">'+(isE?'✓':'Edit')+'</button>'}<div class="sec-chev${isO?' open':''}">▾</div></div><div class="nutr-body${isO?' open':''}">${bh}</div></div>`;});
+
+  MEALS.forEach((m,mi)=>{
+    const isO=!!mealOp[m.id],isE=editingMeal===m.id&&!isCoachView;
+    let bh='';
+    if(isE){
+      bh+=`<div class="meal-meta-row"><input class="meal-meta-input" style="flex:2" placeholder="Meal name" value="${esc(m.label)}" oninput="updateMealMeta('${m.id}','label',this.value)"><input class="meal-meta-input" style="flex:1" placeholder="Time" value="${esc(m.time)}" oninput="updateMealMeta('${m.id}','time',this.value)"><input class="meal-meta-input" style="width:80px;flex-shrink:0" placeholder="Cal" value="${esc(m.cal)}" oninput="updateMealMeta('${m.id}','cal',this.value)"></div>`;
+      m.items.forEach((item,ii)=>{bh+=`<div class="meal-item-row"><div class="meal-item-text">${esc(item)}</div><button class="meal-item-rm" onclick="removeMealItem('${m.id}',${ii})">×</button></div>`;});
+      bh+=`<div class="meal-add-row"><input class="meal-add-input" id="meal-add-${m.id}" placeholder="Add food item…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();addMealItem('${m.id}');}"><button class="meal-add-btn" onclick="addMealItem('${m.id}')">Add</button></div><div style="display:flex;gap:8px;margin-top:10px;padding-top:8px;border-top:1px solid var(--border)"><button class="modal-btn" style="background:var(--bg3)" onclick="toggleEditMeal('${m.id}')">Done</button><button class="modal-btn" style="color:var(--red);border-color:rgba(232,52,74,.2)" onclick="removeMeal('${m.id}')">Remove Meal</button></div>`;
+    } else {
+      m.items.forEach((item,ii)=>{bh+=ciHTML(`${d}|${m.id}|${ii}`,item,'');});
+    }
+    const dc=m.items.filter((_,ii)=>st[`${d}|${m.id}|${ii}`]).length,allD=dc===m.items.length&&m.items.length>0;
+    // Meal reorder buttons
+    const orderBtns=isCoachView?'':(`<div class="meal-order-btns"><button class="meal-order-btn" onclick="event.stopPropagation();moveMeal('${m.id}',-1)" ${mi===0?'disabled':''} title="Move up">↑</button><button class="meal-order-btn" onclick="event.stopPropagation();moveMeal('${m.id}',1)" ${mi===MEALS.length-1?'disabled':''} title="Move down">↓</button></div>`);
+    h+=`<div class="nutr-section"><div class="nutr-head" onclick="toggleMealSec('${m.id}')"><div class="sec-icon ic-m">M${mi+1}</div><div class="sec-title">${esc(m.label)}<span class="sec-sub">${esc(m.time)}${m.cal?' · '+esc(m.cal):''}</span></div><div class="sec-count${allD?' done':''}">${dc}/${m.items.length}</div>${orderBtns}${isCoachView?'':'<button class="edit-meal-btn'+(isE?' active':'')+'" onclick="event.stopPropagation();toggleEditMeal(\''+m.id+'\')">'+(isE?'✓':'Edit')+'</button>'}<div class="sec-chev${isO?' open':''}">▾</div></div><div class="nutr-body${isO?' open':''}">${bh}</div></div>`;
+  });
+
   if(!isCoachView)h+=`<button class="add-btn" onclick="addMeal()"><svg viewBox="0 0 14 14"><line x1="7" y1="2" x2="7" y2="12"/><line x1="2" y1="7" x2="12" y2="7"/></svg>Add Meal</button>`;
-  const spD=SUPPS.filter((_,i)=>st[`${d}|sp|${i}`]).length;let sb=SUPPS.map((x,i)=>`<div style="display:flex;align-items:center;gap:6px">${ciHTML(`${d}|sp|${i}`,x,'')}${isCoachView?'':'<button class="meal-item-rm" onclick="event.stopPropagation();removeSupp('+i+')" style="margin-top:-12px;flex-shrink:0">×</button>'}</div>`).join('');
+
+  const spD=SUPPS.filter((_,i)=>st[`${d}|sp|${i}`]).length;
+  let sb=SUPPS.map((x,i)=>`<div style="display:flex;align-items:center;gap:6px">${ciHTML(`${d}|sp|${i}`,x,'')}${isCoachView?'':'<button class="meal-item-rm" onclick="event.stopPropagation();removeSupp('+i+')" style="margin-top:-12px;flex-shrink:0">×</button>'}</div>`).join('');
   if(!isCoachView)sb+=`<div class="meal-add-row"><input class="meal-add-input" id="supp-add-input" placeholder="Add supplement…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();addSupp();}"><button class="meal-add-btn" onclick="addSupp()">Add</button></div>`;
   h+=secHTML('sp','ic-sp','SP','Supplements','Daily protocol',sb,`${spD}/${SUPPS.length}`);
+
   const wd=wtr[d]||0,drops=[1,2,3,4,5,6,7,8].map(n=>`<div class="drop${wd>=n?' filled':''}" onclick="addWater('${d}',${n})"><div class="drop-inner"></div></div>`).join('');
   h+=`<div class="section${op.h2o?' open-section':''}"><div class="sec-head" onclick="toggleSec('h2o')"><div class="sec-icon ic-h2o">H₂O</div><div class="sec-title">Water</div><div class="sec-count${wd>=8?' done':''}">${wd}/8</div><div class="sec-chev${op.h2o?' open':''}">▾</div></div>${op.h2o?`<div class="water-body"><div class="water-lbl">Target — 4 litres · 8 glasses</div><div class="drops">${drops}<div class="water-count">${wd}/8</div></div></div>`:''}</div>`;
   return h;
 }
 
-// ── RENDER ────────────────────────────────────────────────────────────────
-function render(){
+// ── RENDER ─────────────────────────────────────────────────────────────────
+async function render(){
   const d=day,w=WK[d],p=wkProg(d);
   document.getElementById('prog-fill').style.width=p.pct+'%';
   document.getElementById('prog-pct').textContent=p.pct+'%';
-  document.getElementById('day-tabs').innerHTML=DAYS.map(dy=>`<div class="day-tab${dy===d?' active':''}" onclick="switchDay('${dy}')">${dy}</div>`).join('');
+  const realTodayTab=DAYS[(new Date().getDay()+1)%7];
+  document.getElementById('day-tabs').innerHTML=DAYS.map(dy=>{const isActive=dy===d;const isTodayTab=dy===realTodayTab;return`<div class="day-tab${isActive?' active':''}" onclick="switchDay('${dy}')" style="${!isActive&&isTodayTab?'border-color:rgba(245,166,35,.35);color:var(--amber);':''}">${dy}${isTodayTab?'<span style="display:block;font-size:6px;letter-spacing:.04em;opacity:.8;margin-top:-1px">TODAY</span>':''}</div>`;}).join('');
 
   let h='';
   if(mode==='calendar'){
@@ -1090,66 +1222,79 @@ function render(){
       h+=secHTML('am','ic-am','AM','Morning Cardio',w.am,ciHTML(`${d}|am`,w.am,w.ams),st[`${d}|am`]?'1/1':'0/1');
       h+=wkHTML(d);
       if(w.pc)h+=secHTML('pc','ic-pc','PC','Post-Workout Cardio',w.pc,ciHTML(`${d}|pc`,w.pc,w.pcs),st[`${d}|pc`]?'1/1':'0/1');
+
+      // Progress Photos section (workout mode)
+      const isPhO=!!op.ph;
+      const phBody=`<div id="photo-sec-body">Loading…</div>`;
+      h+=`<div class="section${isPhO?' open-section':''}"><div class="sec-head" onclick="toggleSec('ph')"><div class="sec-icon ic-ph">📸</div><div class="sec-title">Progress Photos<span class="sec-sub">Tap to log your physique</span></div><div class="sec-count"></div><div class="sec-chev${isPhO?' open':''}">▾</div></div><div class="sec-body${isPhO?' open':''}">${isPhO?phBody:''}</div></div>`;
     } else {
       h+=nutrHTML(d);
     }
   }
   document.getElementById('content').innerHTML=h;
 
-  document.getElementById('week-bar').innerHTML=DAYS.map(dy=>{const pp=wkProg(dy);return`<div class="wd" onclick="switchDay('${dy}')"><div class="wd-lbl${dy===d?' today':''}">${dy}</div><div class="wd-ring${dy===d?' today-ring':''}"><div class="wd-fill" style="height:${pp.pct}%"></div><div class="wd-pct">${pp.pct}</div></div></div>`;}).join('');
+  // Populate photos async if section is open
+  if(mode==='workout'&&op.ph){
+    const secBody=document.getElementById('photo-sec-body');
+    if(secBody){renderPhotosSection().then(html=>{const el=document.getElementById('photo-sec-body');if(el)el.innerHTML=html;});}
+  }
+
+  const realToday=DAYS[(new Date().getDay()+1)%7];
+  document.getElementById('week-bar').innerHTML=DAYS.map(dy=>{const pp=wkProg(dy);const isToday=dy===realToday;const isSel=dy===d;return`<div class="wd" onclick="switchDay('${dy}')"><div class="wd-lbl${isToday?' today':''}">${dy}${isToday?'<br><span style="font-size:6px;letter-spacing:.04em;color:var(--amber);display:block;line-height:1">NOW</span>':''}</div><div class="wd-ring${isSel?' today-ring':''}"><div class="wd-fill" style="height:${pp.pct}%"></div><div class="wd-pct">${pp.pct}</div></div></div>`;}).join('');
   updateCartBadge();
   if(syncSessionId&&!isCoachView)document.getElementById('sync-btn').classList.add('sync-on');
-  // Sync active mode buttons
   ['workout','nutrition','calendar'].forEach(m=>{const el=document.getElementById('mb-'+m);if(el)el.classList.toggle('active',mode===m);});
   repositionPill();
 }
 
-// ── EXPOSE TO GLOBAL SCOPE (needed because type="module" is scoped) ────────
+// ── GLOBAL EXPORTS ─────────────────────────────────────────────────────────
 const _fns={
   check,toggleSec,toggleMealSec,toggleEx,switchDay,setMode,
   markSet,undoSet,wInput,rInput,addWater,resetDay,
   addSet,removeSet,removeExercise,openAddExercise,confirmAddExercise,
-  toggleEditMeal,addMealItem,removeMealItem,updateMealMeta,addMeal,removeMeal,
+  toggleEditMeal,addMealItem,removeMealItem,updateMealMeta,moveMeal,addMeal,removeMeal,
   addSupp,removeSupp,openModal,closeModal,closeModalForce,
   openSyncModal,closeSyncModal,closeSyncModalForce,switchSyncTab,
   startSync,stopSync,startCoachView,exitCoachView,genSessionId,
   openGrocery,closeGrocery,closeGroceryForce,
-  toggleGroceryItem,removeGroceryCustom,addGroceryCustom,clearGroceryChecked,
+  toggleGroceryItem,removeGroceryCustom,addGroceryCustom,clearGroceryChecked,moveGroceryCustom,
   toggleCalDay,dismissPopup,
   skipTimer,adjustTimer,
-  showToast, save, render
+  triggerPhotoCapture,handlePhotoFile,saveCurrentPhoto,openPhotoViewer,closePhotoViewer,confirmDeletePhoto,
+  showToast,save,render
 };
 Object.assign(window,_fns);
-// Live references for inline handlers that read mutable state
 Object.defineProperty(window,'isCoachView',{get:()=>isCoachView});
 Object.defineProperty(window,'ws',{get:()=>ws});
+Object.defineProperty(window,'currentPhotoCaptureData',{get:()=>currentPhotoCaptureData,set:(v)=>{currentPhotoCaptureData=v;}});
+Object.defineProperty(window,'calMonthOffset',{get:()=>calMonthOffset,set:(v)=>{calMonthOffset=v;}});
+Object.defineProperty(window,'op',{get:()=>op});
 
-// ── INIT ──────────────────────────────────────────────────────────────────
+// ── INIT ───────────────────────────────────────────────────────────────────
 setInterval(updateClock,1000);
 setInterval(updatePillTime,3000);
 updateClock();
 window.addEventListener('resize',repositionPill);
-load(); loadGrocery(); loadSyncPrefs(); loadCal();
+load();loadGrocery();loadSyncPrefs();loadCal();
+openPhotoDB().catch(()=>{});
 
-// Resume sync state if page was refreshed mid-session
-if(syncSessionId&&!isCoachView){
-  showPill();
-  setSyncStatus('live','Live');
-  document.getElementById('sync-btn').classList.add('sync-on');
-  pushSync();
-}
-if(isCoachView&&coachSessionId){
-  startCoachView(coachSessionId);
-}
+if(syncSessionId&&!isCoachView){showPill();setSyncStatus('live','Live');document.getElementById('sync-btn').classList.add('sync-on');pushSync();}
+if(isCoachView&&coachSessionId){startCoachView(coachSessionId);}
 
 render();
 restoreTimer();
 setupSW();
 
-// Show daily popup after render
-setTimeout(()=>{ checkAndShowPopup(); }, 800);
-// Save today as last seen (after popup check)
-setTimeout(()=>{ saveLastSeen(); }, 1500);
+// ── LOADING SCREEN DISMISS ─────────────────────────────────────────────────
+// Dismiss after animation completes (~2.5s) or once DOM is ready, whichever is later
+setTimeout(()=>{
+  const loader=document.getElementById('loader');
+  if(loader)loader.classList.add('hidden');
+  setTimeout(()=>{if(loader)loader.style.display='none';},700);
+},2400);
+
+setTimeout(()=>{ checkAndShowPopup(); },3200);
+setTimeout(()=>{ saveLastSeen(); },3800);
 </script>
 </body>
 </html>
