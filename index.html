@@ -497,6 +497,51 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;back
 /* Guest overlay — blocks all interaction */
 #guest-overlay{position:fixed;inset:0;z-index:150;pointer-events:auto;cursor:not-allowed;display:none}
 #guest-overlay.show{display:block}
+/* ═══════════════════════════════════════════════
+   ONBOARDING WIZARD
+═══════════════════════════════════════════════ */
+#onboarding{position:fixed;inset:0;z-index:9996;background:#040810;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 24px;opacity:0;pointer-events:none;transition:opacity .4s var(--ease);overflow-y:auto}
+#onboarding.active{opacity:1;pointer-events:auto}
+.ob-wrap{width:100%;max-width:420px}
+.ob-step{display:none;animation:expand .35s var(--ease-out)}
+.ob-step.active{display:block}
+.ob-logo{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;letter-spacing:.25em;color:var(--amber);margin-bottom:4px}
+.ob-logo span{color:var(--text3);font-weight:300}
+.ob-progress{display:flex;gap:6px;margin-bottom:32px;margin-top:12px}
+.ob-dot{flex:1;height:2px;border-radius:1px;background:var(--border2);transition:background .3s}
+.ob-dot.done{background:var(--amber)}
+.ob-dot.active{background:var(--amber);opacity:.5}
+.ob-heading{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;letter-spacing:.05em;color:var(--text);margin-bottom:6px;line-height:1.2}
+.ob-sub{font-family:'Space Grotesk',sans-serif;font-size:13px;color:var(--text3);margin-bottom:28px;line-height:1.6}
+.ob-choices{display:flex;flex-direction:column;gap:10px;margin-bottom:28px}
+.ob-choice{background:var(--bg2);border:1.5px solid var(--border2);border-radius:12px;padding:16px 18px;cursor:pointer;display:flex;align-items:center;gap:14px;transition:all .18s var(--ease);-webkit-user-select:none;user-select:none}
+.ob-choice:active{transform:scale(.97)}
+.ob-choice.selected{border-color:var(--amber);background:var(--amber-dim)}
+.ob-choice-icon{font-size:22px;flex-shrink:0;width:36px;text-align:center}
+.ob-choice-text{flex:1}
+.ob-choice-title{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:600;color:var(--text);margin-bottom:2px}
+.ob-choice-desc{font-family:'Space Grotesk',sans-serif;font-size:11px;color:var(--text3)}
+.ob-check{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--border3);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .2s;background:var(--bg3)}
+.ob-choice.selected .ob-check{background:var(--amber);border-color:var(--amber);color:#000;font-size:11px}
+.ob-choice.selected .ob-check::after{content:'✓'}
+/* Day grid picker */
+.ob-days{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:28px}
+.ob-day{aspect-ratio:1;border-radius:8px;border:1.5px solid var(--border2);background:var(--bg2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-family:'Space Grotesk',sans-serif;font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text3);transition:all .18s;-webkit-user-select:none;user-select:none}
+.ob-day:active{transform:scale(.9)}
+.ob-day.selected{background:var(--amber);border-color:var(--amber);color:#000}
+/* Split options */
+.ob-splits{display:flex;flex-direction:column;gap:8px;margin-bottom:28px}
+/* Number picker for cardio days */
+.ob-num-row{display:flex;gap:8px;margin-bottom:28px;flex-wrap:wrap}
+.ob-num{width:44px;height:44px;border-radius:8px;border:1.5px solid var(--border2);background:var(--bg2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:600;color:var(--text3);transition:all .18s;-webkit-user-select:none;user-select:none}
+.ob-num:active{transform:scale(.9)}
+.ob-num.selected{background:var(--amber);border-color:var(--amber);color:#000}
+.ob-btn{width:100%;padding:16px;border-radius:12px;border:none;background:var(--amber);font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#000;cursor:pointer;transition:all .15s;min-height:52px;box-shadow:0 0 20px var(--amber-glow)}
+.ob-btn:active{background:var(--amber-soft);transform:scale(.97)}
+.ob-btn:disabled{opacity:.35;pointer-events:none;box-shadow:none}
+.ob-skip{display:block;text-align:center;margin-top:14px;font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);cursor:pointer;transition:color .15s;background:none;border:none;width:100%}
+.ob-skip:active{color:var(--text)}
+
 /* Auth loading overlay */
 #auth-loading{position:fixed;inset:0;z-index:9999;background:rgba(4,8,16,.95);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;opacity:0;pointer-events:none;transition:opacity .25s var(--ease)}
 #auth-loading.show{opacity:1;pointer-events:auto}
@@ -599,6 +644,128 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;back
   <div class="auth-loading-logo">UNIT<span>.</span></div>
   <div class="auth-loading-spinner"></div>
   <div class="auth-loading-msg" id="auth-loading-msg">Signing in…</div>
+</div>
+
+<!-- ONBOARDING WIZARD -->
+<div id="onboarding">
+  <div class="ob-wrap">
+    <div class="ob-logo">UNIT<span>.</span></div>
+    <div class="ob-progress">
+      <div class="ob-dot active" id="ob-p0"></div>
+      <div class="ob-dot" id="ob-p1"></div>
+      <div class="ob-dot" id="ob-p2"></div>
+      <div class="ob-dot" id="ob-p3"></div>
+    </div>
+
+    <!-- Step 0: Do you do cardio? -->
+    <div class="ob-step active" id="ob-step-0">
+      <div class="ob-heading">Do you do cardio? 🏃</div>
+      <div class="ob-sub">We'll set up your daily schedule accordingly. You can always change this later.</div>
+      <div class="ob-choices" id="ob-cardio-choice">
+        <div class="ob-choice" onclick="obSelectCardio('yes',this)">
+          <div class="ob-choice-icon">✅</div>
+          <div class="ob-choice-text">
+            <div class="ob-choice-title">Yes, I do cardio</div>
+            <div class="ob-choice-desc">Add cardio slots to my daily routine</div>
+          </div>
+          <div class="ob-check"></div>
+        </div>
+        <div class="ob-choice" onclick="obSelectCardio('no',this)">
+          <div class="ob-choice-icon">🚫</div>
+          <div class="ob-choice-text">
+            <div class="ob-choice-title">No cardio for me</div>
+            <div class="ob-choice-desc">Keep my dashboard weights & exercises only</div>
+          </div>
+          <div class="ob-check"></div>
+        </div>
+      </div>
+      <button class="ob-btn" id="ob-btn-0" disabled onclick="obNext(0)">Continue →</button>
+    </div>
+
+    <!-- Step 1: How many days cardio? (only shown if cardio=yes) -->
+    <div class="ob-step" id="ob-step-1">
+      <div class="ob-heading">How many days? 📅</div>
+      <div class="ob-sub">How many days per week do you do cardio?</div>
+      <div class="ob-num-row" id="ob-cardio-days">
+        <div class="ob-num" onclick="obSelectNum('cardio-days',1,this)">1</div>
+        <div class="ob-num" onclick="obSelectNum('cardio-days',2,this)">2</div>
+        <div class="ob-num" onclick="obSelectNum('cardio-days',3,this)">3</div>
+        <div class="ob-num" onclick="obSelectNum('cardio-days',4,this)">4</div>
+        <div class="ob-num" onclick="obSelectNum('cardio-days',5,this)">5</div>
+        <div class="ob-num" onclick="obSelectNum('cardio-days',6,this)">6</div>
+        <div class="ob-num" onclick="obSelectNum('cardio-days',7,this)">7</div>
+      </div>
+      <button class="ob-btn" id="ob-btn-1" disabled onclick="obNext(1)">Continue →</button>
+      <button class="ob-skip" onclick="obNext(1,true)">Skip this step</button>
+    </div>
+
+    <!-- Step 2: Training days -->
+    <div class="ob-step" id="ob-step-2">
+      <div class="ob-heading">Your training days 💪</div>
+      <div class="ob-sub">Which days do you train? Tap to select. Rest days will be marked as active recovery.</div>
+      <div class="ob-days" id="ob-train-days">
+        <div class="ob-day" data-day="Mon" onclick="obToggleDay(this)">Mon</div>
+        <div class="ob-day" data-day="Tue" onclick="obToggleDay(this)">Tue</div>
+        <div class="ob-day" data-day="Wed" onclick="obToggleDay(this)">Wed</div>
+        <div class="ob-day" data-day="Thu" onclick="obToggleDay(this)">Thu</div>
+        <div class="ob-day" data-day="Fri" onclick="obToggleDay(this)">Fri</div>
+        <div class="ob-day" data-day="Sat" onclick="obToggleDay(this)">Sat</div>
+        <div class="ob-day" data-day="Sun" onclick="obToggleDay(this)">Sun</div>
+      </div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text3);margin-bottom:16px;text-align:center" id="ob-days-count">Select your training days</div>
+      <button class="ob-btn" id="ob-btn-2" disabled onclick="obNext(2)">Continue →</button>
+      <button class="ob-skip" onclick="obNext(2,true)">Skip — I'll set this up later</button>
+    </div>
+
+    <!-- Step 3: Workout split -->
+    <div class="ob-step" id="ob-step-3">
+      <div class="ob-heading">Your workout split 🏋️</div>
+      <div class="ob-sub">What kind of training structure do you follow? This sets up your exercise template.</div>
+      <div class="ob-splits" id="ob-split-choice">
+        <div class="ob-choice" onclick="obSelectSplit('ppl',this)">
+          <div class="ob-choice-icon">🔄</div>
+          <div class="ob-choice-text">
+            <div class="ob-choice-title">Push / Pull / Legs</div>
+            <div class="ob-choice-desc">Classic PPL — chest/shoulders/tris, back/bis, legs</div>
+          </div>
+          <div class="ob-check"></div>
+        </div>
+        <div class="ob-choice" onclick="obSelectSplit('upper-lower',this)">
+          <div class="ob-choice-icon">⚖️</div>
+          <div class="ob-choice-text">
+            <div class="ob-choice-title">Upper / Lower</div>
+            <div class="ob-choice-desc">Upper body days alternated with lower body days</div>
+          </div>
+          <div class="ob-check"></div>
+        </div>
+        <div class="ob-choice" onclick="obSelectSplit('full-body',this)">
+          <div class="ob-choice-icon">🌐</div>
+          <div class="ob-choice-text">
+            <div class="ob-choice-title">Full Body</div>
+            <div class="ob-choice-desc">Train everything each session</div>
+          </div>
+          <div class="ob-check"></div>
+        </div>
+        <div class="ob-choice" onclick="obSelectSplit('bro',this)">
+          <div class="ob-choice-icon">💪</div>
+          <div class="ob-choice-text">
+            <div class="ob-choice-title">Bro Split</div>
+            <div class="ob-choice-desc">One muscle group per day — chest day, arm day…</div>
+          </div>
+          <div class="ob-check"></div>
+        </div>
+        <div class="ob-choice" onclick="obSelectSplit('custom',this)">
+          <div class="ob-choice-icon">✏️</div>
+          <div class="ob-choice-text">
+            <div class="ob-choice-title">I'll build my own</div>
+            <div class="ob-choice-desc">Start with empty days and fill them in yourself</div>
+          </div>
+          <div class="ob-check"></div>
+        </div>
+      </div>
+      <button class="ob-btn" id="ob-btn-3" disabled onclick="obFinish()">Let's go →</button>
+    </div>
+  </div>
 </div>
 
 <!-- SESSION MODE SELECTOR -->
@@ -1736,19 +1903,41 @@ function friendlyAuthError(e){
 }
 
 async function initNewUserData(uid,profile){
-  let dataEX,dataMEALS,dataSUPPS;
-  // Admin account gets the full pre-populated program
+  let dataEX,dataMEALS,dataSUPPS,userCardio={},userWKOverride=null;
   if(profile.username===ADMIN_USERNAME||profile.email===ADMIN_EMAIL){
+    // Admin gets the full pre-populated program, skip onboarding
     dataEX=JSON.parse(JSON.stringify(DEFAULT_EX));
     dataMEALS=JSON.parse(JSON.stringify(DEFAULT_MEALS));
     dataSUPPS=[...DEFAULT_SUPPS];
   } else {
-    // New users start with empty program — they build their own
+    // New user — run onboarding wizard first
+    hideAuthLoading();
+    const ob=await showOnboarding();
+    showAuthLoading('Setting up your program…');
+    // Build empty EX for all days
     dataEX={Sat:[],Sun:[],Mon:[],Tue:[],Wed:[],Thu:[],Fri:[]};
     dataMEALS=[];
     dataSUPPS=[];
+    // Store onboarding answers in CARDIO field (we repurpose it as user prefs)
+    userCardio={
+      doesCardio:ob.cardio==='yes',
+      cardioDays:ob.cardioDays||0,
+      trainDays:ob.trainDays||[],
+      split:ob.split||'custom',
+      _isOnboardingData:true
+    };
+    // Save WK override preferences so the app can adapt
+    if(ob.trainDays&&ob.trainDays.length>0){
+      userWKOverride=buildUserWK(ob);
+    }
   }
-  const data={st:{},ws:{},wtr:{},EX:dataEX,MEALS:dataMEALS,SUPPS:dataSUPPS,CARDIO:{},ts:Date.now()};
+  const data={
+    st:{},ws:{},wtr:{},
+    EX:dataEX,MEALS:dataMEALS,SUPPS:dataSUPPS,
+    CARDIO:userCardio,
+    userPrefs:userWKOverride?{wkOverride:userWKOverride,onboarded:true}:{onboarded:true},
+    ts:Date.now()
+  };
   await fbSet(userDataRef(uid),data);
 }
 
@@ -1855,6 +2044,125 @@ function updateHeaderName(){
   // Show logout button only when signed in
   const lb=document.getElementById('logout-btn');
   if(lb)lb.style.display=currentUser?'':'none';
+}
+
+// ── ONBOARDING WIZARD ────────────────────────────────────────────────────
+let obData={cardio:'',cardioDays:0,trainDays:[],split:''};
+let obResolve=null; // promise resolver — wizard returns when done
+
+function showOnboarding(){
+  return new Promise(res=>{
+    obResolve=res;
+    obData={cardio:'',cardioDays:0,trainDays:[],split:''};
+    // Reset all steps
+    document.querySelectorAll('.ob-step').forEach(s=>s.classList.remove('active'));
+    document.querySelectorAll('.ob-choice').forEach(c=>c.classList.remove('selected'));
+    document.querySelectorAll('.ob-num').forEach(n=>n.classList.remove('selected'));
+    document.querySelectorAll('.ob-day').forEach(d=>d.classList.remove('selected'));
+    ['ob-btn-0','ob-btn-1','ob-btn-2','ob-btn-3'].forEach(id=>{const b=document.getElementById(id);if(b)b.disabled=true;});
+    document.getElementById('ob-step-0').classList.add('active');
+    obUpdateProgress(0);
+    const ob=document.getElementById('onboarding');
+    if(ob)ob.classList.add('active');
+  });
+}
+function hideOnboarding(){
+  const ob=document.getElementById('onboarding');
+  if(ob)ob.classList.remove('active');
+}
+function obUpdateProgress(step){
+  const totalSteps=obData.cardio==='no'?3:4; // skip cardio-days step if no cardio
+  for(let i=0;i<4;i++){
+    const d=document.getElementById('ob-p'+i);
+    if(!d)continue;
+    d.classList.remove('done','active');
+    if(i<step)d.classList.add('done');
+    else if(i===step)d.classList.add('active');
+  }
+}
+function obSelectCardio(val,el){
+  obData.cardio=val;
+  document.querySelectorAll('#ob-cardio-choice .ob-choice').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected');
+  const btn=document.getElementById('ob-btn-0');if(btn)btn.disabled=false;
+}
+function obSelectNum(key,val,el){
+  obData[key.replace('-','')]=val; // cardioDays
+  document.querySelectorAll('#ob-cardio-days .ob-num').forEach(n=>n.classList.remove('selected'));
+  el.classList.add('selected');
+  const btn=document.getElementById('ob-btn-1');if(btn)btn.disabled=false;
+}
+function obToggleDay(el){
+  const day=el.dataset.day;
+  el.classList.toggle('selected');
+  obData.trainDays=Array.from(document.querySelectorAll('#ob-train-days .ob-day.selected')).map(d=>d.dataset.day);
+  const count=obData.trainDays.length;
+  const countEl=document.getElementById('ob-days-count');
+  if(countEl)countEl.textContent=count===0?'Select your training days':count+' day'+(count!==1?'s':'')+' selected';
+  const btn=document.getElementById('ob-btn-2');if(btn)btn.disabled=count===0;
+}
+function obSelectSplit(val,el){
+  obData.split=val;
+  document.querySelectorAll('#ob-split-choice .ob-choice').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected');
+  const btn=document.getElementById('ob-btn-3');if(btn)btn.disabled=false;
+}
+function obNext(currentStep,skip=false){
+  if(currentStep===0){
+    if(obData.cardio==='no'){
+      // Skip cardio days step
+      obData.cardioDays=0;
+      obGoToStep(2);obUpdateProgress(1);
+    } else {
+      obGoToStep(1);obUpdateProgress(1);
+    }
+  } else if(currentStep===1){
+    obGoToStep(2);obUpdateProgress(2);
+  } else if(currentStep===2){
+    if(skip)obData.trainDays=[];
+    obGoToStep(3);obUpdateProgress(3);
+  }
+}
+function obGoToStep(n){
+  document.querySelectorAll('.ob-step').forEach(s=>s.classList.remove('active'));
+  const s=document.getElementById('ob-step-'+n);
+  if(s)s.classList.add('active');
+}
+async function obFinish(){
+  hideOnboarding();
+  if(obResolve){obResolve(obData);obResolve=null;}
+}
+
+// Build WK override based on onboarding answers
+function buildUserWK(obData){
+  // Returns a WK-like object customised to the user's choices
+  const trainSet=new Set(obData.trainDays);
+  const DAYS_ORDER=['Sat','Sun','Mon','Tue','Wed','Thu','Fri'];
+  const splitLabels={
+    'ppl':['Push','Pull','Legs','Push','Pull','Legs','Push'],
+    'upper-lower':['Upper','Lower','Upper','Lower','Upper','Lower','Upper'],
+    'full-body':['Full Body','Full Body','Full Body','Full Body','Full Body','Full Body','Full Body'],
+    'bro':['Chest','Back','Shoulders','Arms','Legs','Chest','Back'],
+    'custom':['Workout','Workout','Workout','Workout','Workout','Workout','Workout']
+  };
+  const labels=splitLabels[obData.split]||splitLabels.custom;
+  const wk={};
+  let splitIdx=0;
+  DAYS_ORDER.forEach(day=>{
+    if(trainSet.has(day)||obData.trainDays.length===0){
+      const lbl=labels[splitIdx++%labels.length];
+      wk[day]={
+        full:lbl+' — Workout',badge:'Volume',bc:'bvol',
+        am:obData.cardio==='yes'?'Morning cardio':'',
+        ams:obData.cardio==='yes'?'Duration and intensity up to you':'',
+        pc:obData.cardio==='yes'?'Post-workout cardio':null,
+        pcs:obData.cardio==='yes'?'Cool down when done':null
+      };
+    } else {
+      wk[day]={full:'Active Recovery',badge:'Rest',bc:'brst',am:'Light movement or rest',ams:'Listen to your body',pc:null,pcs:null};
+    }
+  });
+  return wk;
 }
 
 // ── SESSION MODE SELECTOR LOGIC ──────────────────────────────────────────
@@ -2241,7 +2549,8 @@ const _fns={
   toggleCalDay,dismissPopup,
   skipTimer,adjustTimer,startTimerLocal,
   triggerPhotoCapture,handlePhotoFile,saveCurrentPhoto,openPhotoViewer,closePhotoViewer,confirmDeletePhoto,
-  showToast,save,render,confirmSignOut,showAuthLoading,hideAuthLoading,markGuestDayDone
+  showToast,save,render,confirmSignOut,showAuthLoading,hideAuthLoading,markGuestDayDone,
+  showOnboarding,hideOnboarding,obSelectCardio,obSelectSplit,obSelectNum,obToggleDay,obNext,obFinish,obGoToStep
 };
 Object.assign(window,_fns);
 Object.defineProperty(window,'isCoachView',{get:()=>isCoachView});
@@ -2262,24 +2571,11 @@ openPhotoDB().catch(()=>{});
 // ── AUTH INIT — everything flows through onAuthStateChanged ──────────────
 // Bootstrap admin account — runs silently, only creates if not already existing
 async function bootstrapAdmin(){
+  // Just check if admin account exists — no prefilling forms
   if(!auth||!db)return;
   try{
-    // Try to sign in as admin to check if account exists
-    // We don't have the password here so just check the username node
     const snap=await fbGet(userByUsernameRef(ADMIN_USERNAME));
-    if(snap&&snap.exists())return; // already set up
-    // Account not bootstrapped yet — user must create it via Create Account tab
-    // Pre-fill the create account form with admin details
-    const sf=document.getElementById('su-first');
-    const sl=document.getElementById('su-last');
-    const se=document.getElementById('su-email');
-    const sp=document.getElementById('su-phone');
-    const su=document.getElementById('su-user');
-    if(sf)sf.value='Haytha';
-    if(sl)sl.value='Mahir';
-    if(se)se.value='haitamahir@gmail.com';
-    if(sp)sp.value='7788144529';
-    if(su)su.value='haitamahir';
+    // Nothing to do — form stays empty for the user to fill in manually
   }catch(e){}
 }
 
