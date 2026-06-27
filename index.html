@@ -500,7 +500,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;back
 /* ═══════════════════════════════════════════════
    ONBOARDING WIZARD
 ═══════════════════════════════════════════════ */
-#onboarding{position:fixed;inset:0;z-index:9996;background:#040810;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 24px;opacity:0;pointer-events:none;transition:opacity .4s var(--ease);overflow-y:auto}
+#onboarding{position:fixed;inset:0;z-index:9998;background:#040810;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 24px;opacity:0;pointer-events:none;transition:opacity .4s var(--ease);overflow-y:auto}
 #onboarding.active{opacity:1;pointer-events:auto}
 .ob-wrap{width:100%;max-width:420px}
 .ob-step{display:none;animation:expand .35s var(--ease-out)}
@@ -1971,8 +1971,11 @@ async function initNewUserData(uid,profile){
     dataMEALS=JSON.parse(JSON.stringify(DEFAULT_MEALS));
     dataSUPPS=[...DEFAULT_SUPPS];
   } else {
-    // New user — hide loading, show onboarding wizard
+    // New user — hide loading AND auth screen, then show onboarding
     hideAuthLoading();
+    // Hide auth screen so onboarding is visible on top
+    const authEl=document.getElementById('auth-screen');
+    if(authEl){authEl.classList.remove('active');authEl.style.display='none';}
     const ob=await showOnboarding();
     // Loading will be shown again by doSignup after this resolves
     // Build empty EX for all days
@@ -2140,7 +2143,7 @@ function hideOnboarding(){
 }
 function obUpdateProgress(stepKey){
   // Steps in order (some skipped depending on answers)
-  const allKeys=obData.cardio==='no'?['0','2','3']:['0','1','1b','2','3'];
+  const allKeys=(obData.cardio==='no')?['0','2','3']:['0','1','1b','2','3'];
   const dotIds=['ob-p0','ob-p1','ob-p1b','ob-p2','ob-p3'];
   const stepIdx=allKeys.indexOf(String(stepKey));
   // Map active steps to dot positions
