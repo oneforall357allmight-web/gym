@@ -939,7 +939,7 @@ async function confirmDeletePhoto(id){
 }
 
 // ── PERSISTENCE ────────────────────────────────────────────────────────────
-function save(){try{if(!isCoachView)localStorage.setItem('trk-v7',JSON.stringify({st,ws,wtr,EX,MEALS,SUPPS,CARDIO}));}catch(e){}if(syncSessionId&&!isCoachView)pushSync();if(isCoachView&&coachSessionId)pushCoachEdit();}
+function save(){try{localStorage.setItem('trk-v7',JSON.stringify({st,ws,wtr,EX,MEALS,SUPPS,CARDIO}));}catch(e){}if(syncSessionId&&!isCoachView)pushSync();if(isCoachView&&coachSessionId)pushCoachEdit();}
 function loadCardio(){try{const r=localStorage.getItem('trk-v7');if(r){const d=JSON.parse(r);if(d.CARDIO)CARDIO=d.CARDIO;}}catch(e){}}
 function seedWeights(){
   // For every exercise that has a default weight (e.w), pre-fill ws entries
@@ -965,60 +965,123 @@ function loadSyncPrefs(){try{const r=localStorage.getItem('trk-sync');if(r){cons
 
 // ── FIREBASE SYNC ──────────────────────────────────────────────────────────
 function genSessionId(){return Array.from({length:6},()=>'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*32)]).join('');}
-function sessionRef(id){return ref(db,'sessions/'+id);}
-async function pushSync(){
-  if(!syncSessionId||isCoachView)return;
+// ── TWO-NODE SYNC ARCHITECTURE ────────────────────────────────────────────
+// Athlete writes to  sessions/{id}/athlete   Coach listens here
+// Coach writes to    sessions/{id}/coach     Athlete listens here
+// This prevents infinite echo loops — each side only reads the OTHER node.
+let fbAthleteListener=null,fbAthleteRef=null; // athlete listens to coach node
+// fbListener/fbListenerRef = coach listens to athlete node (existing vars)
+
+function athleteNodeRef(id){return ref(db,'sessions/'+id+'/athlete');}
+function coachNodeRef(id){return ref(db,'sessions/'+id+'/coach');}
+
+function buildPayload(){
   const timerData=restEndTime>Date.now()?{end:restEndTime,total:restTotalSecs,ex:restExName}:null;
-  try{await set(sessionRef(syncSessionId),{st,ws,wtr,day,mode,EX,CARDIO,timerData,ts:Date.now()});lastSyncTime=Date.now();setSyncStatus('live','Live');}
+  return{st,ws,wtr,day,mode,EX,CARDIO,timerData,ts:Date.now()};
+}
+
+async function pushSync(){
+  // Athlete pushes to /athlete node
+  if(!syncSessionId||isCoachView)return;
+  try{await set(athleteNodeRef(syncSessionId),buildPayload());lastSyncTime=Date.now();setSyncStatus('live','Live');}
   catch(e){setSyncStatus('err','Sync error');}
 }
-async function startSync(id){syncSessionId=id;isCoachView=false;coachSessionId=null;saveSyncPrefs();await pushSync();showPill();document.getElementById('sync-btn').classList.add('sync-on');}
-function stopSync(){if(syncSessionId&&!isCoachView){try{set(sessionRef(syncSessionId),null);}catch(e){}}syncSessionId=null;detachFbListener();saveSyncPrefs();hidePill();document.getElementById('sync-btn').classList.remove('sync-on');}
-function detachFbListener(){if(fbListenerRef&&fbListener){off(fbListenerRef,'value',fbListener);fbListener=null;fbListenerRef=null;}}
+
 async function pushCoachEdit(){
-  // Coach writes edits back to the same session node — athlete picks them up via onValue
+  // Coach pushes to /coach node
   if(!isCoachView||!coachSessionId)return;
-  const timerData=restEndTime>Date.now()?{end:restEndTime,total:restTotalSecs,ex:restExName}:null;
-  try{await set(sessionRef(coachSessionId),{st,ws,wtr,day,mode,EX,CARDIO,timerData,ts:Date.now()});}
+  try{await set(coachNodeRef(coachSessionId),buildPayload());lastSyncTime=Date.now();setSyncStatus('coach','Coach — live edit');}
   catch(e){console.warn('Coach push error',e);}
+}
+
+function detachFbListener(){
+  if(fbListenerRef&&fbListener){off(fbListenerRef,'value',fbListener);fbListener=null;fbListenerRef=null;}
+}
+function detachAthleteListener(){
+  if(fbAthleteRef&&fbAthleteListener){off(fbAthleteRef,'value',fbAthleteListener);fbAthleteListener=null;fbAthleteRef=null;}
+}
+
+async function startSync(id){
+  syncSessionId=id;isCoachView=false;coachSessionId=null;saveSyncPrefs();
+  // Push initial state
+  await pushSync();
+  // Athlete listens to coach node for incoming edits
+  detachAthleteListener();
+  fbAthleteRef=coachNodeRef(id);
+  fbAthleteListener=onValue(fbAthleteRef,(snap)=>{
+    if(!snap.exists())return;
+    applyRemoteData(snap.val());
+    lastSyncTime=Date.now();updatePillTime();
+    showToast('Coach updated your session');
+  });
+  showPill();document.getElementById('sync-btn').classList.add('sync-on');
+}
+
+function stopSync(){
+  if(syncSessionId){
+    try{set(athleteNodeRef(syncSessionId),null);}catch(e){}
+    try{set(coachNodeRef(syncSessionId),null);}catch(e){}
+  }
+  syncSessionId=null;
+  detachFbListener();detachAthleteListener();
+  saveSyncPrefs();hidePill();document.getElementById('sync-btn').classList.remove('sync-on');
 }
 
 async function startCoachView(id){
   coachSessionId=id;isCoachView=true;saveSyncPrefs();setSyncStatus('coach','Connecting…');showPill();
-  try{const snap=await get(sessionRef(id));if(!snap.exists()){showToast('Session not found');coachSessionId=null;isCoachView=false;saveSyncPrefs();hidePill();return;}applyRemoteData(snap.val());}
-  catch(e){showToast('Connection error');coachSessionId=null;isCoachView=false;saveSyncPrefs();hidePill();return;}
+  // Try reading athlete node first
+  try{
+    const snap=await get(athleteNodeRef(id));
+    if(!snap.exists()){showToast('Session not found — athlete must start session first');coachSessionId=null;isCoachView=false;saveSyncPrefs();hidePill();return;}
+    applyRemoteData(snap.val());
+  }catch(e){showToast('Connection error');coachSessionId=null;isCoachView=false;saveSyncPrefs();hidePill();return;}
+  // Coach listens to athlete node for changes
   detachFbListener();
-  fbListenerRef=sessionRef(id);
-  fbListener=onValue(fbListenerRef,(snap)=>{if(!snap.exists())return;applyRemoteData(snap.val());lastSyncTime=Date.now();updatePillTime();});
+  fbListenerRef=athleteNodeRef(id);
+  fbListener=onValue(fbListenerRef,(snap)=>{
+    if(!snap.exists())return;
+    applyRemoteData(snap.val());
+    lastSyncTime=Date.now();updatePillTime();
+  });
   document.getElementById('coach-banner').classList.add('show');
   document.getElementById('coach-banner-id').textContent='Code: '+id;
   document.getElementById('sync-btn').classList.add('sync-on');
   setSyncStatus('coach','Coach — live edit');
 }
+
 function exitCoachView(){
+  // Clear coach node so athlete knows coach left
+  if(coachSessionId){try{set(coachNodeRef(coachSessionId),null);}catch(e){}}
   detachFbListener();coachSessionId=null;isCoachView=false;saveSyncPrefs();
   document.getElementById('coach-banner').classList.remove('show');hidePill();
   document.getElementById('sync-btn').classList.remove('sync-on');
-
   load();render();showToast('Exited coach view');
 }
+
 function applyRemoteData(data){
   if(!data)return;
+  // Never overwrite local state with stale remote — use ts to guard
   st=data.st||{};ws=data.ws||{};wtr=data.wtr||{};
   if(data.EX)EX=data.EX;if(data.CARDIO)CARDIO=data.CARDIO;
   if(data.day)day=data.day;if(data.mode)mode=data.mode;
-  // Sync timer state to coach screen
+  // Timer sync — show timer on receiving end if active
   if(data.timerData&&data.timerData.end>Date.now()){
     const td=data.timerData;
     if(td.end!==restEndTime){
       clearInterval(restInterval);
       restEndTime=td.end;restTotalSecs=td.total;restExName=td.ex;
       showFST();updateTimer();
-      restInterval=setInterval(()=>{if(Math.ceil((restEndTime-Date.now())/1000)<=0){clearInterval(restInterval);restInterval=null;restEndTime=0;hideFST();playAlarm();if(navigator.vibrate)navigator.vibrate([200,100,200,100,400]);}else updateTimer();},250);
+      restInterval=setInterval(()=>{
+        if(Math.ceil((restEndTime-Date.now())/1000)<=0){
+          clearInterval(restInterval);restInterval=null;restEndTime=0;
+          hideFST();playAlarm();if(navigator.vibrate)navigator.vibrate([200,100,200,100,400]);
+        }else updateTimer();
+      },250);
     }
-  } else if(!data.timerData&&restEndTime>0&&isCoachView){
+  } else if(!data.timerData&&restEndTime>0){
     clearInterval(restInterval);restInterval=null;restEndTime=0;hideFST();
   }
+  seedWeights();
   ['workout','nutrition','calendar'].forEach(m=>{const el=document.getElementById('mb-'+m);if(el)el.classList.toggle('active',mode===m);});
   render();
 }
@@ -1180,8 +1243,8 @@ function check(id){st[id]=!st[id];save();render();if(navigator.vibrate)navigator
 function toggleSec(k){op[k]=!op[k];render();}
 function toggleMealSec(k){mealOp[k]=!mealOp[k];render();}
 function toggleEx(k){exop[k]=!exop[k];render();}
-function switchDay(d){day=d;editingMeal=null;if(syncSessionId)pushSync();render();window.scrollTo({top:0,behavior:'smooth'});}
-function setMode(m){mode=m;editingMeal=null;['workout','nutrition','calendar'].forEach(x=>{const el=document.getElementById('mb-'+x);if(el)el.classList.toggle('active',x===m);});if(syncSessionId)pushSync();render();}
+function switchDay(d){day=d;editingMeal=null;if(syncSessionId&&!isCoachView)pushSync();if(isCoachView&&coachSessionId)pushCoachEdit();render();window.scrollTo({top:0,behavior:'smooth'});}
+function setMode(m){mode=m;editingMeal=null;['workout','nutrition','calendar'].forEach(x=>{const el=document.getElementById('mb-'+x);if(el)el.classList.toggle('active',x===m);});if(syncSessionId&&!isCoachView)pushSync();if(isCoachView&&coachSessionId)pushCoachEdit();render();}
 function markSet(k,name,secs){if(!ws[k])ws[k]={};const i=document.getElementById('inp-'+k),r=document.getElementById('rep-'+k);if(i&&i.value)ws[k].w=i.value;else if(i&&!ws[k].w){ws[k].w=i.getAttribute('value')||'';}if(r&&r.value)ws[k].r=r.value;ws[k].done=true;save();render();if(navigator.vibrate)navigator.vibrate([20,40,20]);startRestTimer(secs,name).then(()=>{if(syncSessionId&&!isCoachView)pushSync();if(isCoachView&&coachSessionId)pushCoachEdit();});}
 function undoSet(k){if(ws[k])ws[k].done=false;save();render();}
 function wInput(k,v){if(!ws[k])ws[k]={};ws[k].w=v;dSave();}
@@ -1306,7 +1369,7 @@ async function render(){
   const realToday=DAYS[(new Date().getDay()+1)%7];
   document.getElementById('week-bar').innerHTML=DAYS.map(dy=>{const pp=wkProg(dy);const isToday=dy===realToday;const isSel=dy===d;return`<div class="wd" onclick="switchDay('${dy}')"><div class="wd-lbl${isToday?' today':''}">${dy}${isToday?'<br><span style="font-size:6px;letter-spacing:.04em;color:var(--amber);display:block;line-height:1">NOW</span>':''}</div><div class="wd-ring${isSel?' today-ring':''}"><div class="wd-fill" style="height:${pp.pct}%"></div><div class="wd-pct">${pp.pct}</div></div></div>`;}).join('');
   updateCartBadge();
-  if(syncSessionId&&!isCoachView)document.getElementById('sync-btn').classList.add('sync-on');
+  if(syncSessionId||isCoachView)document.getElementById('sync-btn').classList.add('sync-on');
   ['workout','nutrition','calendar'].forEach(m=>{const el=document.getElementById('mb-'+m);if(el)el.classList.toggle('active',mode===m);});
   repositionPill();
 }
@@ -1343,7 +1406,7 @@ window.addEventListener('resize',repositionPill);
 load();loadGrocery();loadSyncPrefs();loadCal();
 openPhotoDB().catch(()=>{});
 
-if(syncSessionId&&!isCoachView){showPill();setSyncStatus('live','Live');document.getElementById('sync-btn').classList.add('sync-on');pushSync();}
+if(syncSessionId&&!isCoachView){startSync(syncSessionId).then(()=>showToast('Session resumed'));}
 if(isCoachView&&coachSessionId){startCoachView(coachSessionId);}
 
 render();
