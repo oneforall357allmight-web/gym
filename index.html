@@ -994,14 +994,67 @@ let fbAthleteListener=null,fbAthleteRef=null; // athlete listens to coach node
 
 function athleteNodeRef(id){return db?ref(db,'sessions/'+id+'/athlete'):null;}
 function coachNodeRef(id){return db?ref(db,'sessions/'+id+'/coach'):null;}
+function timerNodeRef(id){return db?ref(db,'sessions/'+(id||'')+'/timer'):null;}
+
+// ── DEDICATED TIMER SYNC ──────────────────────────────────────────────────
+// Timer state is pushed to /timer separately from all other data.
+// Both athlete and coach listen to /timer and react immediately.
+let timerSyncId=null; // the active session id (athlete: syncSessionId, coach: coachSessionId)
+let fbTimerListener=null,fbTimerRef=null;
+
+function getTimerSyncId(){return syncSessionId||coachSessionId||null;}
+
+function pushTimerState(){
+  const id=getTimerSyncId();
+  if(!id||!db)return;
+  const node=timerNodeRef(id);
+  const data=restEndTime>Date.now()
+    ?{end:restEndTime,total:restTotalSecs,ex:restExName,ts:Date.now()}
+    :{cleared:true,ts:Date.now()};
+  fbSet(node,data).catch(()=>{});
+}
+
+function attachTimerListener(id){
+  if(fbTimerRef&&fbTimerListener){
+    try{if(db)off(fbTimerRef,'value',fbTimerListener);}catch(e){}
+    fbTimerListener=null;fbTimerRef=null;
+  }
+  if(!id||!db)return;
+  fbTimerRef=timerNodeRef(id);
+  fbTimerListener=fbOnValue(fbTimerRef,(snap)=>{
+    if(!snap||!snap.exists())return;
+    const td=snap.val();
+    if(!td)return;
+    if(td.cleared){
+      // Other side cleared the timer
+      if(restEndTime>0){clearInterval(restInterval);restInterval=null;restEndTime=0;hideFST();}
+      return;
+    }
+    if(!td.end||td.end<=Date.now())return;
+    // Only start if this is a new or different timer
+    if(Math.abs((td.end||0)-(restEndTime||0))>800){
+      restEndTime=td.end;
+      restTotalSecs=td.total||Math.ceil((td.end-Date.now())/1000);
+      restExName=td.ex||'Rest';
+      startTimerLocal();
+    }
+  });
+}
+
+function detachTimerListener(){
+  if(fbTimerRef&&fbTimerListener){
+    try{if(db)off(fbTimerRef,'value',fbTimerListener);}catch(e){}
+    fbTimerListener=null;fbTimerRef=null;
+  }
+}
 
 async function fbSet(nodeRef,data){if(!db||!nodeRef)return;try{await set(nodeRef,data);}catch(e){console.warn('fbSet error',e);}}
 async function fbGet(nodeRef){if(!db||!nodeRef)return null;try{return await get(nodeRef);}catch(e){return null;}}
 function fbOnValue(nodeRef,cb){if(!db||!nodeRef)return ()=>{};return onValue(nodeRef,cb);}
 
 function buildPayload(){
-  const timerData=restEndTime>Date.now()?{end:restEndTime,total:restTotalSecs,ex:restExName}:null;
-  return{st,ws,wtr,day,mode,EX,CARDIO,timerData,ts:Date.now()};
+  // timerData is synced on its own /timer node — NOT included here to avoid race conditions
+  return{st,ws,wtr,day,mode,EX,CARDIO,ts:Date.now()};
 }
 
 async function pushSync(){
@@ -1038,6 +1091,7 @@ async function startSync(id){
     lastSyncTime=Date.now();updatePillTime();
     showToast('Coach updated your session');
   });
+  attachTimerListener(id);
   showPill();document.getElementById('sync-btn').classList.add('sync-on');
 }
 
@@ -1052,7 +1106,7 @@ async function stopSync(){
     },1500);
   }
   syncSessionId=null;
-  detachFbListener();detachAthleteListener();
+  detachFbListener();detachAthleteListener();detachTimerListener();
   saveSyncPrefs();hidePill();document.getElementById('sync-btn').classList.remove('sync-on');
   showToast('Session ended');
 }
@@ -1080,6 +1134,7 @@ async function startCoachView(id){
     applyRemoteData(data);
     lastSyncTime=Date.now();updatePillTime();
   });
+  attachTimerListener(id);
   document.getElementById('coach-banner').classList.add('show');
   document.getElementById('coach-banner-id').textContent='Code: '+id;
   document.getElementById('sync-btn').classList.add('sync-on');
@@ -1089,7 +1144,7 @@ async function startCoachView(id){
 function exitCoachView(){
   // Clear coach node so athlete knows coach left
   if(coachSessionId){try{fbSet(coachNodeRef(coachSessionId),null);}catch(e){}}
-  detachFbListener();coachSessionId=null;isCoachView=false;saveSyncPrefs();
+  detachFbListener();detachTimerListener();coachSessionId=null;isCoachView=false;saveSyncPrefs();
   document.getElementById('coach-banner').classList.remove('show');hidePill();
   document.getElementById('sync-btn').classList.remove('sync-on');
   load();render();showToast('Exited coach view');
@@ -1102,26 +1157,7 @@ function applyRemoteData(data){
   if(data.EX)EX=data.EX;if(data.CARDIO)CARDIO=data.CARDIO;
   if(data.day)day=data.day;if(data.mode)mode=data.mode;
   // Timer sync — show timer on receiving end if active
-  if(data.timerData&&data.timerData.end>Date.now()){
-    const td=data.timerData;
-    const isNewTimer=Math.abs(td.end-(restEndTime||0))>500;
-    if(isNewTimer){
-      // Always update all three state vars together before starting
-      restEndTime=td.end;
-      restTotalSecs=td.total||Math.ceil((td.end-Date.now())/1000);
-      restExName=td.ex||'Rest';
-      startTimerLocal();
-    } else {
-      // Same timer already running — just keep restTotalSecs in sync in case it was adjusted
-      restTotalSecs=td.total||restTotalSecs;
-    }
-    // Ensure timer screen is visible
-    if(!document.getElementById('fs-timer').classList.contains('active')){
-      showFST();updateTimer();
-    }
-  } else if(!data.timerData&&restEndTime>0){
-    clearInterval(restInterval);restInterval=null;restEndTime=0;hideFST();
-  }
+  // Timer state is handled by dedicated /timer listener — nothing to do here
   seedWeights();
   ['workout','nutrition','calendar'].forEach(m=>{const el=document.getElementById('mb-'+m);if(el)el.classList.toggle('active',mode===m);});
   render();
@@ -1182,15 +1218,13 @@ async function startRestTimer(secs,name){
   startTimerLocal();
 }
 function tick(){if(Math.ceil((restEndTime-Date.now())/1000)<=0)finishTimer();else updateTimer();}
-function finishTimer(){clearInterval(restInterval);restInterval=null;restEndTime=0;try{localStorage.removeItem('trk-timer');}catch(e){}const fst=document.getElementById('fs-timer');fst.classList.add('finish');setTimeout(()=>fst.classList.remove('finish'),700);hideFST();relWL();postSW({type:'CANCEL'});playAlarm();if(navigator.vibrate)navigator.vibrate([200,100,200,100,400,100,300]);showToast('Rest done — next set!');}
+function finishTimer(){clearInterval(restInterval);restInterval=null;restEndTime=0;try{localStorage.removeItem('trk-timer');}catch(e){}pushTimerState();const fst=document.getElementById('fs-timer');fst.classList.add('finish');setTimeout(()=>fst.classList.remove('finish'),700);hideFST();relWL();postSW({type:'CANCEL'});playAlarm();if(navigator.vibrate)navigator.vibrate([200,100,200,100,400,100,300]);showToast('Rest done — next set!');}
 function updateTimer(){if(!restEndTime)return;const left=Math.max(0,Math.ceil((restEndTime-Date.now())/1000)),m=Math.floor(left/60),s=left%60;const te=document.getElementById('fs-time'),ee=document.getElementById('fs-ex-name'),fe=document.getElementById('fs-ring-fill'),ge=document.getElementById('fs-ring-glow'),ne=document.getElementById('fs-next');if(te)te.textContent=m+':'+(s<10?'0':'')+s;if(ee)ee.textContent=restExName;const total=restTotalSecs||Math.ceil((restEndTime-Date.now())/1000)||1;const off=RING_CIRC*(1-left/total),w=left<=10;if(fe){fe.style.strokeDashoffset=off;fe.style.stroke=w?'#E8344A':'var(--amber)';fe.style.filter=w?'drop-shadow(0 0 8px rgba(232,52,74,.6))':'drop-shadow(0 0 10px rgba(245,166,35,.7))';}if(ge){ge.style.strokeDashoffset=off;ge.style.stroke=w?'#E8344A':'var(--amber)';}if(te)te.style.color=w?'var(--red)':'var(--amber)';if(ne)ne.textContent=Math.floor(total/60)+':'+String(total%60).padStart(2,'0')+' rest period';}
 function skipTimer(){
   clearInterval(restInterval);restInterval=null;restEndTime=0;
   try{localStorage.removeItem('trk-timer');}catch(e){}
   hideFST();relWL();postSW({type:'CANCEL'});
-  // Tell other side timer was skipped
-  if(syncSessionId&&!isCoachView)pushSync();
-  if(isCoachView&&coachSessionId)pushCoachEdit();
+  pushTimerState(); // pushes {cleared:true} to /timer — other side hides timer
 }
 function adjustTimer(delta){
   if(!restEndTime)return;
@@ -1200,9 +1234,7 @@ function adjustTimer(delta){
   try{localStorage.setItem('trk-timer',JSON.stringify({end:restEndTime,total:restTotalSecs,ex:restExName}));}catch(e){}
   updateTimer();
   if(navigator.vibrate)navigator.vibrate(15);
-  // Sync adjusted time to other side immediately
-  if(syncSessionId&&!isCoachView)pushSync();
-  if(isCoachView&&coachSessionId)pushCoachEdit();
+  pushTimerState(); // sync adjusted time to other side via /timer node
 }
 function restoreTimer(){try{const r=localStorage.getItem('trk-timer');if(!r)return;const{end,total,ex}=JSON.parse(r);if(end>Date.now()){restEndTime=end;restTotalSecs=total;restExName=ex;showFST();reqWL();updateTimer();restInterval=setInterval(tick,250);}else localStorage.removeItem('trk-timer');}catch(e){}}
 function fmtRest(s){if(!s)return'';if(s>=60){const m=s/60;return m===Math.floor(m)?m+'m rest':Math.floor(m)+'.5m rest';}return s+'s rest';}
@@ -1329,24 +1361,17 @@ async function markSet(k,name,secs){
   if(navigator.vibrate)navigator.vibrate([20,40,20]);
   // Save the set state first so the push includes ws[k].done=true
   try{localStorage.setItem('trk-v8',JSON.stringify({st,ws,wtr,EX,MEALS,SUPPS,CARDIO}));}catch(e){}
+  // Push set data to Firebase
+  if(syncSessionId&&!isCoachView)pushSync();
+  if(isCoachView&&coachSessionId)pushCoachEdit();
+  render();
   if(secs>0){
-    // Set timer state vars — restTotalSecs MUST equal secs (the set's rest period)
+    // Set timer vars and push to dedicated /timer node simultaneously
     restEndTime=Date.now()+secs*1000;
     restTotalSecs=secs;
     restExName=name;
-    // Push complete payload (includes ws done + timerData) to Firebase FIRST
-    // so receiver gets the exact end timestamp before any local lag
-    if(syncSessionId&&!isCoachView)await pushSync();
-    if(isCoachView&&coachSessionId)await pushCoachEdit();
-    // Start local countdown — uses the already-set restEndTime/restTotalSecs
-    startTimerLocal();
-    // re-render after timer starts (so done icon shows)
-    render();
-  } else {
-    // No rest — just push and render
-    if(syncSessionId&&!isCoachView)pushSync();
-    if(isCoachView&&coachSessionId)pushCoachEdit();
-    render();
+    pushTimerState();   // pushes to /timer — other side's listener fires immediately
+    startTimerLocal();  // start locally with the same end timestamp
   }
 }
 function undoSet(k){if(ws[k])ws[k].done=false;save();render();}
@@ -1503,7 +1528,7 @@ const _fns={
   toggleEditMeal,addMealItem,removeMealItem,updateMealMeta,moveMeal,addMeal,removeMeal,
   addSupp,removeSupp,openModal,closeModal,closeModalForce,
   openSyncModal,closeSyncModal,closeSyncModalForce,switchSyncTab,
-  startSync,stopSync,startCoachView,exitCoachView,genSessionId,
+  startSync,stopSync,startCoachView,exitCoachView,genSessionId,pushTimerState,
   openGrocery,closeGrocery,closeGroceryForce,
   toggleGroceryItem,removeGroceryCustom,addGroceryCustom,clearGroceryChecked,moveGroceryCustom,
   toggleCalDay,dismissPopup,
