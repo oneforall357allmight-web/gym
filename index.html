@@ -1017,14 +1017,20 @@ async function startSync(id){
   showPill();document.getElementById('sync-btn').classList.add('sync-on');
 }
 
-function stopSync(){
+async function stopSync(){
   if(syncSessionId){
-    try{set(athleteNodeRef(syncSessionId),null);}catch(e){}
-    try{set(coachNodeRef(syncSessionId),null);}catch(e){}
+    // Write a session-ended marker so coach listener fires and kicks them out
+    try{await set(athleteNodeRef(syncSessionId),{ended:true,ts:Date.now()});}catch(e){}
+    // Small delay so coach receives it, then wipe
+    setTimeout(async()=>{
+      try{set(athleteNodeRef(syncSessionId),null);}catch(e){}
+      try{set(coachNodeRef(syncSessionId),null);}catch(e){}
+    },1500);
   }
   syncSessionId=null;
   detachFbListener();detachAthleteListener();
   saveSyncPrefs();hidePill();document.getElementById('sync-btn').classList.remove('sync-on');
+  showToast('Session ended');
 }
 
 async function startCoachView(id){
@@ -1040,7 +1046,14 @@ async function startCoachView(id){
   fbListenerRef=athleteNodeRef(id);
   fbListener=onValue(fbListenerRef,(snap)=>{
     if(!snap.exists())return;
-    applyRemoteData(snap.val());
+    const data=snap.val();
+    // Athlete ended the session — kick coach out
+    if(data&&data.ended){
+      showToast('Athlete ended the session');
+      exitCoachView();
+      return;
+    }
+    applyRemoteData(data);
     lastSyncTime=Date.now();updatePillTime();
   });
   document.getElementById('coach-banner').classList.add('show');
@@ -1245,7 +1258,21 @@ function toggleMealSec(k){mealOp[k]=!mealOp[k];render();}
 function toggleEx(k){exop[k]=!exop[k];render();}
 function switchDay(d){day=d;editingMeal=null;if(syncSessionId&&!isCoachView)pushSync();if(isCoachView&&coachSessionId)pushCoachEdit();render();window.scrollTo({top:0,behavior:'smooth'});}
 function setMode(m){mode=m;editingMeal=null;['workout','nutrition','calendar'].forEach(x=>{const el=document.getElementById('mb-'+x);if(el)el.classList.toggle('active',x===m);});if(syncSessionId&&!isCoachView)pushSync();if(isCoachView&&coachSessionId)pushCoachEdit();render();}
-function markSet(k,name,secs){if(!ws[k])ws[k]={};const i=document.getElementById('inp-'+k),r=document.getElementById('rep-'+k);if(i&&i.value)ws[k].w=i.value;else if(i&&!ws[k].w){ws[k].w=i.getAttribute('value')||'';}if(r&&r.value)ws[k].r=r.value;ws[k].done=true;save();render();if(navigator.vibrate)navigator.vibrate([20,40,20]);startRestTimer(secs,name).then(()=>{if(syncSessionId&&!isCoachView)pushSync();if(isCoachView&&coachSessionId)pushCoachEdit();});}
+async function markSet(k,name,secs){
+  if(!ws[k])ws[k]={};
+  const i=document.getElementById('inp-'+k),r=document.getElementById('rep-'+k);
+  if(i&&i.value)ws[k].w=i.value;
+  else if(i&&!ws[k].w)ws[k].w=i.getAttribute('value')||'';
+  if(r&&r.value)ws[k].r=r.value;
+  ws[k].done=true;
+  save();render();
+  if(navigator.vibrate)navigator.vibrate([20,40,20]);
+  if(secs>0){
+    await startRestTimer(secs,name);
+  }
+  if(syncSessionId&&!isCoachView)pushSync();
+  if(isCoachView&&coachSessionId)pushCoachEdit();
+}
 function undoSet(k){if(ws[k])ws[k].done=false;save();render();}
 function wInput(k,v){if(!ws[k])ws[k]={};ws[k].w=v;dSave();}
 function rInput(k,v){if(!ws[k])ws[k]={};ws[k].r=v;dSave();}
@@ -1287,7 +1314,22 @@ function wkHTML(d){
     const ekey=`${d}-${ei}`,isExO=!!exop[ekey];
     if(isRest){const k=sk(d,ei,0),dn=ws[k]&&ws[k].done;return`<div class="ci" onclick="(function(){if(window.isCoachView)return;var k='${esc(k)}';if(!window.ws[k])window.ws[k]={};window.ws[k].done=!window.ws[k].done;window.save();window.render();if(navigator.vibrate)navigator.vibrate(10);})()" style="padding:12px 0"><div class="cb${dn?' done':''}"><div class="ck"></div></div><div><div class="ci-text${dn?' done':''}">${esc(e.n)}</div><div class="ci-note">${esc(e.r)}${e.note?' · '+esc(e.note):''}</div></div></div>`;}
     const sd=Array.from({length:e.s},(_,si)=>ws[sk(d,ei,si)]&&ws[sk(d,ei,si)].done?1:0).reduce((a,b)=>a+b,0),allSD=sd===e.s,rl=fmtRest(e.rest);
-    const sH=Array.from({length:e.s},(_,si)=>{const k=sk(d,ei,si),sv=ws[k]||{};const defW=e.w||'';const curW=sv.w!==undefined?sv.w:defW;if(sv.done){const lg=[curW?curW+' lbs':null,sv.r?sv.r+' reps':null].filter(Boolean).join(' × ');return`<div class="set-row"><div class="set-done-icon"></div><div class="set-label sdone">Set ${si+1}</div><div class="set-logged">${lg||'—'}</div><button class="set-undo-btn" onclick="undoSet(\''+k+'\')">Undo</button></div>`;}return`<div class="set-row"><div class="set-label">Set<br>${si+1}</div><input class="set-w-input" type="number" id="inp-${k}" min="0" step="5" inputmode="decimal" placeholder="lbs" value="${curW}" oninput="wInput('${k}',this.value)" onclick="event.stopPropagation()"><div class="set-sep">×</div><input class="set-r-input" type="number" id="rep-${k}" min="0" step="1" inputmode="numeric" placeholder="${sv.r||'reps'}" value="${sv.r||''}" oninput="rInput('${k}',this.value)" onclick="event.stopPropagation()"><div class="set-spacer"></div><button class="set-done-btn" onclick="markSet(\''+k+'\',\''+esc(e.n)+' · Set '+(si+1)+'\','+e.rest+')">Done</button></div>`;}).join('');
+    const sH=Array.from({length:e.s},(_,si)=>{
+      const k=sk(d,ei,si),sv=ws[k]||{};
+      const defW=e.w||'';const curW=sv.w!==undefined?sv.w:defW;
+      const setLabel=esc(e.n)+' · Set '+(si+1);
+      if(sv.done){
+        const lg=[curW?curW+' lbs':null,sv.r?sv.r+' reps':null].filter(Boolean).join(' × ');
+        return'<div class="set-row"><div class="set-done-icon"></div><div class="set-label sdone">Set '+(si+1)+'</div><div class="set-logged">'+(lg||'—')+'</div><button class="set-undo-btn" data-k="'+k+'" onclick="undoSet(this.dataset.k)">Undo</button></div>';
+      }
+      return'<div class="set-row"><div class="set-label">Set<br>'+(si+1)+'</div>'
+        +'<input class="set-w-input" type="number" id="inp-'+k+'" min="0" step="5" inputmode="decimal" placeholder="lbs" value="'+curW+'" oninput="wInput(this.id.replace('inp-',''),this.value)" onclick="event.stopPropagation()">'
+        +'<div class="set-sep">×</div>'
+        +'<input class="set-r-input" type="number" id="rep-'+k+'" min="0" step="1" inputmode="numeric" placeholder="'+(sv.r||'reps')+'" value="'+(sv.r||'')+'" oninput="rInput(this.id.replace('rep-',''),this.value)" onclick="event.stopPropagation()">'
+        +'<div class="set-spacer"></div>'
+        +'<button class="set-done-btn" data-k="'+k+'" data-name="'+setLabel+'" data-rest="'+e.rest+'" onclick="markSet(this.dataset.k,this.dataset.name,+this.dataset.rest)">Done</button>'
+        +'</div>';
+    }).join('');
     const ctrl=`<div class="set-ctrl-row"><button class="set-ctrl-btn rm" onclick="removeSet('${d}',${ei})" ${e.s<=1?'disabled':''}>− Set</button><button class="set-ctrl-btn add" onclick="addSet('${d}',${ei})">+ Set</button></div><div class="ex-actions"><button class="ex-rm-btn" onclick="removeExercise('${d}',${ei})">Remove Exercise</button></div>`;
     return`<div class="ex-wrap${isExO?' ex-open':''}"><div class="ex-head" onclick="toggleEx('${ekey}')"><div class="ex-num-badge">${ei+1}</div><div class="ex-info"><div class="ex-name">${esc(e.n)}</div><div class="ex-meta">${e.s}×${esc(e.r)}${rl?' · '+rl:''}${e.note?' · '+esc(e.note):''}</div></div><div class="ex-prog${allSD?' full':''}">${sd}/${e.s}</div><div class="ex-chev${isExO?' open':''}">▾</div></div><div class="ex-body${isExO?' open':''}">${sH}${ctrl}</div></div>`;
   }).join('');
