@@ -1814,10 +1814,14 @@ function renderGroceryBody(){
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function sk(d,ei,si){return`${d}|${ei}|${si}`;}
 function getSetKeys(d){return EX[d].flatMap((e,ei)=>Array.from({length:e.s},(_,si)=>sk(d,ei,si)));}
-function wkProg(d){if(!WK[d]||!EX[d])return{done:0,total:0,pct:0};const c=[`${d}|am`];if(WK[d].pc)c.push(`${d}|pc`);const sets=getSetKeys(d);const done=c.filter(id=>st[id]).length+sets.filter(k=>ws[k]&&ws[k].done).length;const tot=c.length+sets.length;return{done,total:tot,pct:tot?Math.round(done/tot*100):0};}
+function wkProg(d){if(!WK[d]||!EX[d])return{done:0,total:0,pct:0};const c=[];if(getCardio(d,'am'))c.push(`${d}|am`);if(getCardio(d,'pc'))c.push(`${d}|pc`);const sets=getSetKeys(d);const done=c.filter(id=>st[id]).length+sets.filter(k=>ws[k]&&ws[k].done).length;const tot=c.length+sets.length;return{done,total:tot,pct:tot?Math.round(done/tot*100):0};}
 
 // ── ACTIONS ────────────────────────────────────────────────────────────────
-function getCardio(d,field){return(CARDIO[d]&&CARDIO[d][field]!==undefined)?CARDIO[d][field]:WK[d][field];}
+function getCardio(d,field){
+  if(CARDIO[d]&&CARDIO[d][field]!==undefined)return CARDIO[d][field];
+  // Only fall back to WK default if no CARDIO override at all for this day
+  return(CARDIO[d]&&CARDIO[d]._onboarding!==undefined)?'':WK[d]?WK[d][field]:'';
+}
 function setCardio(d,field,val){if(!CARDIO[d])CARDIO[d]={};CARDIO[d][field]=val;save();}
 function openEditCardio(d,type){
   // type = 'am' or 'pc'
@@ -1964,7 +1968,7 @@ function friendlyAuthError(e){
 }
 
 async function initNewUserData(uid,profile){
-  let dataEX,dataMEALS,dataSUPPS,userCardio={},userWKOverride=null;
+  let dataEX,dataMEALS,dataSUPPS,userCardio={};
   if(profile.username===ADMIN_USERNAME||profile.email===ADMIN_EMAIL){
     // Admin gets the full pre-populated program, skip onboarding
     dataEX=JSON.parse(JSON.stringify(DEFAULT_EX));
@@ -1973,34 +1977,33 @@ async function initNewUserData(uid,profile){
   } else {
     // New user — hide loading AND auth screen, then show onboarding
     hideAuthLoading();
-    // Hide auth screen so onboarding is visible on top
     const authEl=document.getElementById('auth-screen');
     if(authEl){authEl.classList.remove('active');authEl.style.display='none';}
     const ob=await showOnboarding();
-    // Loading will be shown again by doSignup after this resolves
-    // Build empty EX for all days
+
+    // All days start empty — no exercises
     dataEX={Sat:[],Sun:[],Mon:[],Tue:[],Wed:[],Thu:[],Fri:[]};
     dataMEALS=[];
     dataSUPPS=[];
-    // Store onboarding answers in CARDIO field (we repurpose it as user prefs)
-    userCardio={
+
+    // Build CARDIO overrides from onboarding: places cardio on the right days,
+    // empties it on rest days, respects timing preference (morning/after/both/separate)
+    userCardio=buildUserCARDIO(ob);
+
+    // Store onboarding meta so we can reference it later
+    userCardio._onboarding={
       doesCardio:ob.cardio==='yes',
       cardioDays:ob.cardioDays||0,
       cardioTiming:ob.cardioTiming||'morning',
       trainDays:ob.trainDays||[],
-      split:ob.split||'custom',
-      _isOnboardingData:true
+      split:ob.split||'custom'
     };
-    // Save WK override preferences so the app can adapt
-    if(ob.trainDays&&ob.trainDays.length>0){
-      userWKOverride=buildUserWK(ob);
-    }
   }
   const data={
     st:{},ws:{},wtr:{},
     EX:dataEX,MEALS:dataMEALS,SUPPS:dataSUPPS,
     CARDIO:userCardio,
-    userPrefs:userWKOverride?{wkOverride:userWKOverride,onboarded:true}:{onboarded:true},
+    userPrefs:{onboarded:true},
     ts:Date.now()
   };
   try{
@@ -2225,35 +2228,49 @@ async function obFinish(){
 }
 
 // Build WK override based on onboarding answers
-function buildUserWK(obData){
-  // Returns a WK-like object customised to the user's choices
-  const trainSet=new Set(obData.trainDays);
-  const DAYS_ORDER=['Sat','Sun','Mon','Tue','Wed','Thu','Fri'];
-  const splitLabels={
-    'ppl':['Push','Pull','Legs','Push','Pull','Legs','Push'],
-    'upper-lower':['Upper','Lower','Upper','Lower','Upper','Lower','Upper'],
-    'full-body':['Full Body','Full Body','Full Body','Full Body','Full Body','Full Body','Full Body'],
-    'bro':['Chest','Back','Shoulders','Arms','Legs','Chest','Back'],
-    'custom':['Workout','Workout','Workout','Workout','Workout','Workout','Workout']
-  };
-  const labels=splitLabels[obData.split]||splitLabels.custom;
-  const wk={};
-  let splitIdx=0;
-  DAYS_ORDER.forEach(day=>{
-    if(trainSet.has(day)||obData.trainDays.length===0){
-      const lbl=labels[splitIdx++%labels.length];
-      wk[day]={
-        full:lbl+' — Workout',badge:'Volume',bc:'bvol',
-        am:obData.cardio==='yes'?'Morning cardio':'',
-        ams:obData.cardio==='yes'?'Duration and intensity up to you':'',
-        pc:obData.cardio==='yes'?'Post-workout cardio':null,
-        pcs:obData.cardio==='yes'?'Cool down when done':null
-      };
+function buildUserCARDIO(ob){
+  // Builds the CARDIO override object based on onboarding answers.
+  // CARDIO[day].am/ams/pc/pcs overrides WK[day] via getCardio().
+  // Days with no cardio get empty strings so the cardio section is hidden.
+  const DAYS_ALL=['Sat','Sun','Mon','Tue','Wed','Thu','Fri'];
+  const trainSet=new Set(ob.trainDays||[]);
+  const doesCardio=ob.cardio==='yes';
+  const timing=ob.cardioTiming||'morning'; // 'morning'|'after'|'both'|'separate'
+  const cardio={};
+
+  DAYS_ALL.forEach(day=>{
+    const isTrainDay=trainSet.size===0||trainSet.has(day);
+
+    if(!doesCardio){
+      // No cardio at all — wipe cardio slots on every day
+      cardio[day]={am:'',ams:'',pc:null,pcs:null};
+      return;
+    }
+
+    if(isTrainDay){
+      // Training day — add cardio based on timing preference
+      if(timing==='morning'){
+        cardio[day]={am:'Morning cardio',ams:'Duration and intensity up to you',pc:null,pcs:null};
+      } else if(timing==='after'){
+        cardio[day]={am:'',ams:'',pc:'Post-workout cardio',pcs:'Cool down when done'};
+      } else if(timing==='both'){
+        cardio[day]={am:'Morning cardio',ams:'Fasted or light — your call',pc:'Post-workout cardio',pcs:'Cool down when done'};
+      } else {
+        // 'separate' — cardio on its own days, not on training days
+        cardio[day]={am:'',ams:'',pc:null,pcs:null};
+      }
     } else {
-      wk[day]={full:'Active Recovery',badge:'Rest',bc:'brst',am:'Light movement or rest',ams:'Listen to your body',pc:null,pcs:null};
+      // Rest/non-training day
+      if(timing==='separate'){
+        // This is a dedicated cardio day
+        cardio[day]={am:'Cardio day',ams:'Duration and intensity up to you',pc:null,pcs:null};
+      } else {
+        // Not a training day, not a cardio day — empty
+        cardio[day]={am:'',ams:'',pc:null,pcs:null};
+      }
     }
   });
-  return wk;
+  return cardio;
 }
 
 // ── SESSION MODE SELECTOR LOGIC ──────────────────────────────────────────
@@ -2590,8 +2607,10 @@ async function render(){
     h=`<div class="reset-row"><button class="reset-btn" onclick="resetDay('${d}')">Reset ${d}</button></div>`;
     if(mode==='workout'){
       const amName=getCardio(d,'am'),amNote=getCardio(d,'ams');
-      const amBody=ciHTML(`${d}|am`,amName,amNote)+`<button class="add-btn" style="margin-top:4px;border-style:solid;border-color:var(--border);font-size:10px;padding:8px" onclick="openEditCardio('${d}','am')">✏️ Edit Cardio</button>`;
-      h+=secHTML('am','ic-am','AM','Morning Cardio',amName,amBody,st[`${d}|am`]?'1/1':'0/1');
+      if(amName){
+        const amBody=ciHTML(`${d}|am`,amName,amNote)+`<button class="add-btn" style="margin-top:4px;border-style:solid;border-color:var(--border);font-size:10px;padding:8px" onclick="openEditCardio('${d}','am')">✏️ Edit Cardio</button>`;
+        h+=secHTML('am','ic-am','AM','Morning Cardio',amName,amBody,st[`${d}|am`]?'1/1':'0/1');
+      }
       h+=wkHTML(d);
       if(w.pc||getCardio(d,'pc')){
         const pcName=getCardio(d,'pc'),pcNote=getCardio(d,'pcs');
