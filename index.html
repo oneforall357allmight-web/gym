@@ -940,8 +940,8 @@ async function confirmDeletePhoto(id){
 }
 
 // ── PERSISTENCE ────────────────────────────────────────────────────────────
-function save(){try{localStorage.setItem('trk-v7',JSON.stringify({st,ws,wtr,EX,MEALS,SUPPS,CARDIO}));}catch(e){}if(syncSessionId&&!isCoachView)pushSync();if(isCoachView&&coachSessionId)pushCoachEdit();}
-function loadCardio(){try{const r=localStorage.getItem('trk-v7');if(r){const d=JSON.parse(r);if(d.CARDIO)CARDIO=d.CARDIO;}}catch(e){}}
+function save(){try{localStorage.setItem('trk-v8',JSON.stringify({st,ws,wtr,EX,MEALS,SUPPS,CARDIO}));}catch(e){}if(syncSessionId&&!isCoachView)pushSync();if(isCoachView&&coachSessionId)pushCoachEdit();}
+function loadCardio(){try{const r=localStorage.getItem('trk-v8');if(r){const d=JSON.parse(r);if(d.CARDIO)CARDIO=d.CARDIO;}}catch(e){}}
 function seedWeights(){
   // For every exercise that has a default weight (e.w), pre-fill ws entries
   // that haven't been manually set or logged yet — so inputs show the weight on first open.
@@ -957,7 +957,26 @@ function seedWeights(){
     });
   });
 }
-function load(){try{const r=localStorage.getItem('trk-v7');if(r){const d=JSON.parse(r);st=d.st||{};ws=d.ws||{};wtr=d.wtr||{};if(d.EX)EX=d.EX;if(d.MEALS)MEALS=d.MEALS;if(d.SUPPS)SUPPS=d.SUPPS;if(d.CARDIO)CARDIO=d.CARDIO;}}catch(e){}seedWeights();}
+function load(){
+  try{
+    const r=localStorage.getItem('trk-v8');
+    if(r){
+      const d=JSON.parse(r);
+      st=d.st||{};ws=d.ws||{};wtr=d.wtr||{};
+      // Only restore EX if it has valid day keys matching current DAYS
+      if(d.EX&&DAYS.every(day=>Array.isArray(d.EX[day]))){
+        EX=d.EX;
+      } else if(d.EX){
+        // EX has wrong keys (old schedule) — migrate workout state but use fresh exercises
+        console.warn('EX day keys mismatch — using defaults');
+      }
+      if(d.MEALS&&d.MEALS.length)MEALS=d.MEALS;
+      if(d.SUPPS&&d.SUPPS.length)SUPPS=d.SUPPS;
+      if(d.CARDIO)CARDIO=d.CARDIO;
+    }
+  }catch(e){console.warn('load error',e);}
+  seedWeights();
+}
 function dSave(){clearTimeout(saveT);saveT=setTimeout(save,600);}
 function saveGrocery(){try{localStorage.setItem('trk-grocery',JSON.stringify({checked:groceryChecked,custom:groceryCustom}));}catch(e){}}
 function loadGrocery(){try{const r=localStorage.getItem('trk-grocery');if(r){const d=JSON.parse(r);groceryChecked=d.checked||{};groceryCustom=d.custom||[];}}catch(e){}}
@@ -1235,7 +1254,7 @@ function renderGroceryBody(){
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function sk(d,ei,si){return`${d}|${ei}|${si}`;}
 function getSetKeys(d){return EX[d].flatMap((e,ei)=>Array.from({length:e.s},(_,si)=>sk(d,ei,si)));}
-function wkProg(d){const c=[`${d}|am`];if(WK[d].pc)c.push(`${d}|pc`);const sets=getSetKeys(d);const done=c.filter(id=>st[id]).length+sets.filter(k=>ws[k]&&ws[k].done).length;const tot=c.length+sets.length;return{done,total:tot,pct:tot?Math.round(done/tot*100):0};}
+function wkProg(d){if(!WK[d]||!EX[d])return{done:0,total:0,pct:0};const c=[`${d}|am`];if(WK[d].pc)c.push(`${d}|pc`);const sets=getSetKeys(d);const done=c.filter(id=>st[id]).length+sets.filter(k=>ws[k]&&ws[k].done).length;const tot=c.length+sets.length;return{done,total:tot,pct:tot?Math.round(done/tot*100):0};}
 
 // ── ACTIONS ────────────────────────────────────────────────────────────────
 function getCardio(d,field){return(CARDIO[d]&&CARDIO[d][field]!==undefined)?CARDIO[d][field]:WK[d][field];}
@@ -1328,9 +1347,9 @@ function wkHTML(d){
         return'<div class="set-row"><div class="set-done-icon"></div><div class="set-label sdone">Set '+(si+1)+'</div><div class="set-logged">'+(lg||'—')+'</div><button class="set-undo-btn" data-k="'+k+'" onclick="undoSet(this.dataset.k)">Undo</button></div>';
       }
       return'<div class="set-row"><div class="set-label">Set<br>'+(si+1)+'</div>'
-        +'<input class="set-w-input" type="number" id="inp-'+k+'" min="0" step="5" inputmode="decimal" placeholder="lbs" value="'+curW+'" oninput="wInput(this.id.replace('inp-',''),this.value)" onclick="event.stopPropagation()">'
+        +'<input class="set-w-input" type="number" id="inp-'+k+'" min="0" step="5" inputmode="decimal" placeholder="lbs" value="'+curW+'" oninput="wInput(this.dataset.k,this.value)" data-k="'+k+'" onclick="event.stopPropagation()">'
         +'<div class="set-sep">×</div>'
-        +'<input class="set-r-input" type="number" id="rep-'+k+'" min="0" step="1" inputmode="numeric" placeholder="'+(sv.r||'reps')+'" value="'+(sv.r||'')+'" oninput="rInput(this.id.replace('rep-',''),this.value)" onclick="event.stopPropagation()">'
+        +'<input class="set-r-input" type="number" id="rep-'+k+'" min="0" step="1" inputmode="numeric" placeholder="'+(sv.r||'reps')+'" value="'+(sv.r||'')+'" oninput="rInput(this.dataset.k,this.value)" data-k="'+k+'" onclick="event.stopPropagation()">'
         +'<div class="set-spacer"></div>'
         +'<button class="set-done-btn" data-k="'+k+'" data-name="'+setLabel+'" data-rest="'+e.rest+'" onclick="markSet(this.dataset.k,this.dataset.name,+this.dataset.rest)">Done</button>'
         +'</div>';
@@ -1375,6 +1394,8 @@ function nutrHTML(d){
 
 // ── RENDER ─────────────────────────────────────────────────────────────────
 async function render(){
+  // Safety: if current day has no WK entry, fall back to first valid day
+  if(!WK[day]||!EX[day])day=DAYS.find(x=>WK[x]&&EX[x])||DAYS[0];
   const d=day,w=WK[d],p=wkProg(d);
   document.getElementById('prog-fill').style.width=p.pct+'%';
   document.getElementById('prog-pct').textContent=p.pct+'%';
