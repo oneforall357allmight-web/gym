@@ -515,6 +515,44 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;back
       </div>
     </div>
   </div>
+  <!-- Co-Train role picker sub-screen -->
+  <div id="ms-cotrain-role" style="display:none;width:100%;max-width:360px">
+    <button class="ms-back" onclick="showMsMain()">← Back</button>
+    <div class="ms-code-title" style="margin-bottom:8px">Co-Train</div>
+    <div class="ms-code-sub" style="margin-bottom:28px">Are you hosting the session or joining someone else's?</div>
+    <div class="ms-cards">
+      <div class="ms-card cotrain" onclick="selectCoTrainRole('host')">
+        <div class="ms-card-icon">📡</div>
+        <div class="ms-card-text">
+          <div class="ms-card-title">I'm the Host</div>
+          <div class="ms-card-desc">Start a session and share your code. Your partner watches your workout live.</div>
+        </div>
+        <div class="ms-card-arrow">›</div>
+      </div>
+      <div class="ms-card" style="border-color:var(--border2)" onclick="selectCoTrainRole('guest')">
+        <div class="ms-card-icon">👀</div>
+        <div class="ms-card-text">
+          <div class="ms-card-title">I'm Joining</div>
+          <div class="ms-card-desc">Enter the host's code to watch their workout session live.</div>
+        </div>
+        <div class="ms-card-arrow">›</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Co-Train guest code entry sub-screen -->
+  <div id="ms-cotrain-join" style="display:none;width:100%;max-width:360px">
+    <button class="ms-back" onclick="showCoTrainRole()">← Back</button>
+    <div class="ms-code-wrap">
+      <div class="ms-code-title">Join Session</div>
+      <div class="ms-code-sub">Enter the host's 6-character session code to watch their workout live.</div>
+      <input class="ms-code-input" id="ms-guest-code-input" maxlength="6" placeholder="ABC123" autocomplete="off"
+        oninput="this.value=this.value.toUpperCase();document.getElementById('ms-guest-submit').disabled=this.value.length<4"
+        onkeydown="if(event.key==='Enter'&&this.value.length>=4)document.getElementById('ms-guest-submit').click()">
+      <button class="ms-submit-btn" id="ms-guest-submit" disabled onclick="enterGuestMode()">Join Session →</button>
+    </div>
+  </div>
+
   <!-- Coach code entry sub-screen -->
   <div id="ms-coach-entry" style="display:none;width:100%;max-width:360px">
     <button class="ms-back" onclick="showMsMain()">← Back</button>
@@ -1457,6 +1495,38 @@ function hideModeSelector(){
 function showMsMain(){
   document.getElementById('ms-main').style.display='';
   document.getElementById('ms-coach-entry').style.display='none';
+  document.getElementById('ms-cotrain-role').style.display='none';
+  document.getElementById('ms-cotrain-join').style.display='none';
+}
+function showCoTrainRole(){
+  document.getElementById('ms-cotrain-role').style.display='';
+  document.getElementById('ms-cotrain-join').style.display='none';
+}
+async function selectCoTrainRole(role){
+  if(role==='host'){
+    // Start immediately as host
+    hideModeSelector();
+    sessionMode='cotrain';
+    try{localStorage.setItem('unit-session-mode','cotrain');}catch(e){}
+    const id=genSessionId();
+    await startCoTrainHost(id);
+    render();
+    showCoTrainCodeToast(id);
+  } else {
+    // Show code entry for guest
+    document.getElementById('ms-cotrain-role').style.display='none';
+    document.getElementById('ms-cotrain-join').style.display='';
+    setTimeout(()=>{const f=document.getElementById('ms-guest-code-input');if(f)f.focus();},300);
+  }
+}
+async function enterGuestMode(){
+  const code=(document.getElementById('ms-guest-code-input')||{}).value||'';
+  const id=code.trim().toUpperCase();
+  if(id.length<4){showToast('Enter a valid code');return;}
+  hideModeSelector();
+  sessionMode='cotrain';
+  try{localStorage.setItem('unit-session-mode','cotrain');}catch(e){}
+  await startGuestView(id);
 }
 async function selectMode(m){
   sessionMode=m;
@@ -1468,12 +1538,9 @@ async function selectMode(m){
     if(sb)sb.style.display='none';
     render();
   } else if(m==='cotrain'){
-    // Host: start a co-train session immediately, show code
-    hideModeSelector();
-    const id=genSessionId();
-    await startCoTrainHost(id);
-    render();
-    showCoTrainCodeToast(id);
+    // Show role picker — host or joining
+    document.getElementById('ms-main').style.display='none';
+    document.getElementById('ms-cotrain-role').style.display='';
   } else if(m==='coach'){
     // Show code entry
     document.getElementById('ms-main').style.display='none';
@@ -1764,7 +1831,7 @@ async function render(){
 
 // ── GLOBAL EXPORTS ─────────────────────────────────────────────────────────
 const _fns={
-  selectMode,enterCoachMode,showMsMain,exitGuestView,startGuestView,stopCoTrainHost,showCoTrainCodeToast,
+  selectMode,enterCoachMode,showMsMain,showCoTrainRole,selectCoTrainRole,enterGuestMode,exitGuestView,startGuestView,stopCoTrainHost,showCoTrainCodeToast,
   getCardio,setCardio,openEditCardio,confirmEditCardio,
   check,toggleSec,toggleMealSec,toggleEx,switchDay,setMode,
   markSet,undoSet,wInput,rInput,addWater,resetDay,
