@@ -2367,23 +2367,18 @@ async function loadUserData(uid){
     const psnap=await fbGet(userProfileRef(uid));
     if(psnap&&psnap.exists())userProfile=psnap.val();
   }catch(e){console.warn('loadUserData error',e);}
-  // Admin (haitamahir) — always restore full program if exercises are missing
+  // Admin (haitamahir) — ALWAYS restore full program unconditionally
   if(currentUser&&userProfile&&userProfile.username===ADMIN_USERNAME){
-    const totalEx=DAYS.reduce((sum,d)=>sum+(EX[d]?EX[d].length:0),0);
-    const needsRestore=totalEx===0; // any empty dashboard triggers restore
-    if(needsRestore){
-      EX=JSON.parse(JSON.stringify(DEFAULT_EX));
-      MEALS=JSON.parse(JSON.stringify(DEFAULT_MEALS));
-      SUPPS=[...DEFAULT_SUPPS];
-      CARDIO={};
-      DAYS.forEach(d=>{
-        if(WK[d]&&WK[d].am)CARDIO[d]={am:WK[d].am,ams:WK[d].ams||'',pc:WK[d].pc||null,pcs:WK[d].pcs||null};
-      });
-      USER_PREFS={split:'ppl',trainDays:['Sat','Sun','Mon','Wed','Thu','Fri'],doesCardio:true,cardioTiming:'both'}; // Tue=rest
-      MACROS={cal:'2310',protein:'205',carbs:'190',fat:'70'};
-      await saveUserData();
-      showToast('Program restored — welcome back Haytha!');
-    }
+    EX=JSON.parse(JSON.stringify(DEFAULT_EX));
+    MEALS=JSON.parse(JSON.stringify(DEFAULT_MEALS));
+    SUPPS=[...DEFAULT_SUPPS];
+    CARDIO={};
+    DAYS.forEach(d=>{
+      if(WK[d]&&WK[d].am)CARDIO[d]={am:WK[d].am,ams:WK[d].ams||'',pc:WK[d].pc||null,pcs:WK[d].pcs||null};
+    });
+    USER_PREFS={split:'ppl',trainDays:['Sat','Sun','Mon','Wed','Thu','Fri'],doesCardio:true,cardioTiming:'both'};
+    MACROS={cal:'2310',protein:'205',carbs:'190',fat:'70'};
+    await saveUserData();
   }
   seedWeights();
 }
