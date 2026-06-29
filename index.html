@@ -2031,11 +2031,13 @@ function wkProg(d){if(!WK[d]||!EX[d])return{done:0,total:0,pct:0};const c=[];if(
 
 // ── ACTIONS ────────────────────────────────────────────────────────────────
 function getCardio(d,field){
-  // If explicitly set in CARDIO, use that
+  // If explicitly set in CARDIO for this day, always honour it
   if(CARDIO[d]&&CARDIO[d][field]!==undefined)return CARDIO[d][field];
-  // If user said no cardio in prefs, suppress all cardio
+  // Rest days: no cardio unless explicitly added via CARDIO[d]
+  if(isRestDay(d))return field==='pc'?null:'';
+  // User turned off cardio entirely
   if(USER_PREFS.doesCardio===false)return field==='pc'?null:'';
-  // Fall back to WK defaults
+  // Training day with cardio enabled — fall back to WK defaults
   return WK[d]?WK[d][field]:'';
 }
 function setCardio(d,field,val){if(!CARDIO[d])CARDIO[d]={};CARDIO[d][field]=val;save();}
@@ -2923,7 +2925,21 @@ function ciHTML(id,label,note){const done=!!st[id];return`<div class="ci" onclic
 function secHTML(key,ic,txt,title,sub,body,ds){const isO=!!op[key],[a,b]=ds.split('/'),allD=a===b&&ds!=='0/0';return`<div class="section${isO?' open-section':''}"><div class="sec-head" onclick="toggleSec('${key}')"><div class="sec-icon ${ic}">${txt}</div><div class="sec-title">${esc(title)}${sub?`<span class="sec-sub">${esc(sub)}</span>`:''}</div><div class="sec-count${allD?' done':''}">${ds}</div><div class="sec-chev${isO?' open':''}">▾</div></div><div class="sec-body${isO?' open':''}">${body}</div></div>`;}
 
 function wkHTML(d){
-  const exs=EX[d],isRest=WK[d].badge==='Rest';
+  const exs=EX[d];
+  // isRest: use USER_PREFS if set, otherwise WK badge
+  const isRest=isRestDay(d)&&exs.length===0;
+  // Day label: use USER_PREFS split info if available, else WK
+  const splitLabels={'ppl':['Push','Pull','Legs'],'upper-lower':['Upper','Lower'],'full-body':['Full Body'],'bro':['Chest','Back','Shoulders','Arms','Legs'],'custom':['Workout']};
+  function getDayLabel(){
+    const split=USER_PREFS.split;
+    if(!split||split==='custom'||!USER_PREFS.trainDays.length)return WK[d]?WK[d].full:'Workout';
+    const trainDays=USER_PREFS.trainDays;
+    const idx=trainDays.indexOf(d);
+    if(idx<0)return 'Active Recovery';
+    const labels=splitLabels[split]||['Workout'];
+    return labels[idx%labels.length]+' — Workout';
+  }
+  const dayLabel=getDayLabel();
   const tot=isRest?exs.length:exs.reduce((a,e)=>a+e.s,0);
   const done=isRest?exs.filter((_,ei)=>ws[sk(d,ei,0)]&&ws[sk(d,ei,0)].done).length:exs.reduce((a,e,ei)=>a+Array.from({length:e.s},(_,si)=>ws[sk(d,ei,si)]&&ws[sk(d,ei,si)].done?1:0).reduce((x,y)=>x+y,0),0);
   const exsH=exs.map((e,ei)=>{
@@ -2950,7 +2966,7 @@ function wkHTML(d){
     return`<div class="ex-wrap${isExO?' ex-open':''}"><div class="ex-head" onclick="toggleEx('${ekey}')"><div class="ex-num-badge">${ei+1}</div><div class="ex-info"><div class="ex-name">${esc(e.n)}</div><div class="ex-meta">${e.s}×${esc(e.r)}${rl?' · '+rl:''}${e.note?' · '+esc(e.note):''}</div></div><div class="ex-prog${allSD?' full':''}">${sd}/${e.s}</div><div class="ex-chev${isExO?' open':''}">▾</div></div><div class="ex-body${isExO?' open':''}">${sH}${ctrl}</div></div>`;
   }).join('');
   const addBtn=`<button class="add-btn" onclick="openAddExercise('${d}')"><svg viewBox="0 0 14 14"><line x1="7" y1="2" x2="7" y2="12"/><line x1="2" y1="7" x2="12" y2="7"/></svg>Add Exercise</button>`;
-  return`<div class="section open-section"><div class="sec-head" onclick="toggleSec('wk')"><div class="sec-icon ic-wk">WK</div><div class="sec-title">${isRest?'Recovery Tasks':'Workout'}<span class="sec-sub">${esc(WK[d].full)}</span></div><div class="sec-count${done===tot?' done':''}">${done}/${tot}</div><div class="sec-chev open">▾</div></div><div class="sec-body open">${exsH}${addBtn}</div></div>`;
+  return`<div class="section open-section"><div class="sec-head" onclick="toggleSec('wk')"><div class="sec-icon ic-wk">WK</div><div class="sec-title">${isRest?'Recovery Tasks':'Workout'}<span class="sec-sub">${esc(dayLabel)}</span></div><div class="sec-count${done===tot?' done':''}">${done}/${tot}</div><div class="sec-chev open">▾</div></div><div class="sec-body open">${exsH}${addBtn}</div></div>`;
 }
 
 function saveMacro(field,val){MACROS[field]=val;dSave();}
