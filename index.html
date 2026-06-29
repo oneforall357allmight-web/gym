@@ -1320,10 +1320,10 @@ const EX_LIBRARY={
 
 // Get library exercises for a given day based on user's split and the day label
 function getLibraryForDay(d){
-  if(!userProfile)return null;
-  const prefs=(CARDIO[d]&&CARDIO[d]._onboarding)||null;
-  if(!prefs)return null; // admin or no onboarding — no library filter
-  const split=prefs.split||'custom';
+  // Use USER_PREFS (works for all users) then fall back to CARDIO._onboarding (legacy)
+  const legacyOb=(CARDIO[d]&&CARDIO[d]._onboarding)||null;
+  const split=USER_PREFS.split||legacyOb?.split||'';
+  if(!split||split==='custom')return{label:'All Exercises',exs:[...new Set([...EX_LIBRARY.push,...EX_LIBRARY.pull,...EX_LIBRARY.legs,...EX_LIBRARY.upper,...EX_LIBRARY['full-body']])]};
   const dayLabel=(WK[d]&&WK[d].full)||'';
   if(split==='ppl'){
     if(dayLabel.toLowerCase().includes('push'))return{label:'Push',exs:EX_LIBRARY.push};
@@ -1347,7 +1347,7 @@ function getLibraryForDay(d){
     // Fallback — show everything
     return{label:'All',exs:[...EX_LIBRARY.chest,...EX_LIBRARY.back,...EX_LIBRARY.shoulders,...EX_LIBRARY.arms,...EX_LIBRARY.bro_legs]};
   }
-  return null; // custom — no library suggestion
+  return{label:'All Exercises',exs:[...new Set([...EX_LIBRARY.push,...EX_LIBRARY.pull,...EX_LIBRARY.legs])]};
 }
 
 // Grocery: cat is now one of the GR_CATS values
@@ -1364,6 +1364,9 @@ const EMPTY_EX={Sat:[],Sun:[],Mon:[],Tue:[],Wed:[],Thu:[],Fri:[]};
 let EX=JSON.parse(JSON.stringify(EMPTY_EX)),MEALS=[],SUPPS=[];
 // User macros — editable, saved with data. Default 0 for new users.
 let MACROS={cal:'',protein:'',carbs:'',fat:''};
+// User training preferences — loaded from Firebase, independent of CARDIO
+// Format: {split:'ppl', trainDays:['Mon','Wed','Fri'], doesCardio:true, cardioTiming:'morning'}
+let USER_PREFS={split:'',trainDays:[],doesCardio:false,cardioTiming:'morning'};
 // Editable cardio: overrides WK[d].am/ams/pc/pcs per day
 let CARDIO={};  // {Mon:{am:'...',ams:'...',pc:'...',pcs:'...'}, ...}
 let st={},ws={},wtr={},op={am:false,pc:false,sp:false,h2o:false,ph:false},mealOp={},exop={};
@@ -1607,7 +1610,7 @@ async function confirmDeletePhoto(id){
 }
 
 // ── PERSISTENCE ────────────────────────────────────────────────────────────
-function save(){try{localStorage.setItem('trk-v8',JSON.stringify({st,ws,wtr,EX,MEALS,SUPPS,CARDIO,MACROS}));}catch(e){}if(currentUser)dCloudSave();if(syncSessionId&&!isCoachView)pushSync();if(isCoachView&&coachSessionId)pushCoachEdit();}
+function save(){try{localStorage.setItem('trk-v8',JSON.stringify({st,ws,wtr,EX,MEALS,SUPPS,CARDIO,MACROS,userPrefs:USER_PREFS}));}catch(e){}if(currentUser)dCloudSave();if(syncSessionId&&!isCoachView)pushSync();if(isCoachView&&coachSessionId)pushCoachEdit();}
 function loadCardio(){try{const r=localStorage.getItem('trk-v8');if(r){const d=JSON.parse(r);if(d.CARDIO)CARDIO=d.CARDIO;}}catch(e){}}
 function seedWeights(){
   // For every exercise that has a default weight (e.w), pre-fill ws entries
@@ -1641,6 +1644,7 @@ function load(){
       if(d.SUPPS&&d.SUPPS.length)SUPPS=d.SUPPS;
       if(d.CARDIO)CARDIO=d.CARDIO;
       if(d.MACROS)MACROS=d.MACROS;
+      if(d.userPrefs){const p=d.userPrefs;if(p.split)USER_PREFS.split=p.split;if(p.trainDays)USER_PREFS.trainDays=p.trainDays;if(typeof p.doesCardio==='boolean')USER_PREFS.doesCardio=p.doesCardio;if(p.cardioTiming)USER_PREFS.cardioTiming=p.cardioTiming;}
     }
   }catch(e){console.warn('load error',e);}
   seedWeights();
@@ -1996,20 +2000,19 @@ function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').repl
 function sk(d,ei,si){return`${d}|${ei}|${si}`;}
 function getSetKeys(d){return EX[d].flatMap((e,ei)=>Array.from({length:e.s},(_,si)=>sk(d,ei,si)));}
 function isRestDay(d){
-  // For admin/no-onboarding: use WK badge
-  const ob=(CARDIO[d]&&CARDIO[d]._onboarding)||null;
-  if(!ob)return WK[d]&&WK[d].badge==='Rest';
-  // For onboarded users: rest if day not in trainDays AND trainDays was actually set
-  const trainDays=ob.trainDays||[];
-  if(trainDays.length===0)return false; // no restriction set
+  // Use USER_PREFS.trainDays if set, then legacy _onboarding, then WK badge
+  const trainDays=USER_PREFS.trainDays&&USER_PREFS.trainDays.length>0
+    ? USER_PREFS.trainDays
+    : ((CARDIO[d]&&CARDIO[d]._onboarding&&CARDIO[d]._onboarding.trainDays)||[]);
+  if(trainDays.length===0)return WK[d]&&WK[d].badge==='Rest'; // fall back to WK schedule
   return!trainDays.includes(d);
 }
 function activateRestDay(d){
-  // User wants to train today despite it being a rest day — remove the rest flag for today
-  if(!CARDIO[d])CARDIO[d]={};
-  // Patch the onboarding trainDays to include this day
-  if(CARDIO[d]._onboarding){
-    CARDIO[d]._onboarding={...CARDIO[d]._onboarding,trainDays:[...((CARDIO[d]._onboarding.trainDays)||[]),d]};
+  // Add day to USER_PREFS.trainDays
+  if(!USER_PREFS.trainDays.includes(d))USER_PREFS.trainDays=[...USER_PREFS.trainDays,d];
+  // Also patch legacy _onboarding if present
+  if(CARDIO[d]&&CARDIO[d]._onboarding){
+    CARDIO[d]._onboarding={...CARDIO[d]._onboarding,trainDays:USER_PREFS.trainDays};
   }
   save();render();showToast(d+' added to your training days!');
 }
@@ -2017,8 +2020,10 @@ function addCardioToRestDay(d,type){
   if(!CARDIO[d])CARDIO[d]={};
   if(type==='am'){CARDIO[d].am='Morning cardio';CARDIO[d].ams='Duration and intensity up to you';}
   else{CARDIO[d].pc='Post-workout cardio';CARDIO[d].pcs='Cool down when done';}
+  // Add to USER_PREFS.trainDays so it persists
+  if(!USER_PREFS.trainDays.includes(d))USER_PREFS.trainDays=[...USER_PREFS.trainDays,d];
   if(CARDIO[d]._onboarding){
-    CARDIO[d]._onboarding={...CARDIO[d]._onboarding,trainDays:[...((CARDIO[d]._onboarding.trainDays)||[]),d]};
+    CARDIO[d]._onboarding={...CARDIO[d]._onboarding,trainDays:USER_PREFS.trainDays};
   }
   save();render();showToast('Cardio added to '+d);
 }
@@ -2026,9 +2031,12 @@ function wkProg(d){if(!WK[d]||!EX[d])return{done:0,total:0,pct:0};const c=[];if(
 
 // ── ACTIONS ────────────────────────────────────────────────────────────────
 function getCardio(d,field){
+  // If explicitly set in CARDIO, use that
   if(CARDIO[d]&&CARDIO[d][field]!==undefined)return CARDIO[d][field];
-  // Only fall back to WK default if no CARDIO override at all for this day
-  return(CARDIO[d]&&CARDIO[d]._onboarding!==undefined)?'':WK[d]?WK[d][field]:'';
+  // If user said no cardio in prefs, suppress all cardio
+  if(USER_PREFS.doesCardio===false)return field==='pc'?null:'';
+  // Fall back to WK defaults
+  return WK[d]?WK[d][field]:'';
 }
 function setCardio(d,field,val){if(!CARDIO[d])CARDIO[d]={};CARDIO[d][field]=val;save();}
 function openEditCardio(d,type){
@@ -2087,6 +2095,58 @@ function hideAuthLoading(){
   const el=document.getElementById('auth-loading');
   if(el)el.classList.remove('show');
 }
+function openTrainingPrefsModal(){
+  const splits=[
+    {val:'ppl',label:'Push / Pull / Legs',icon:'🔄'},
+    {val:'upper-lower',label:'Upper / Lower',icon:'⚖️'},
+    {val:'full-body',label:'Full Body',icon:'🌐'},
+    {val:'bro',label:'Bro Split',icon:'💪'},
+    {val:'custom',label:'No specific split',icon:'✏️'}
+  ];
+  const allDays=['Sat','Sun','Mon','Tue','Wed','Thu','Fri'];
+  const splitBtns=splits.map(s=>`<button onclick="tpSelectSplit('${s.val}',this)" class="modal-btn${USER_PREFS.split===s.val?' primary':''}" style="margin-bottom:6px;text-align:left;display:flex;align-items:center;gap:10px;padding:12px 14px"><span style="font-size:18px">${s.icon}</span>${s.label}</button>`).join('');
+  const dayBtns=allDays.map(d=>`<div onclick="tpToggleDay('${d}',this)" data-day="${d}" style="flex:1;min-width:36px;height:40px;border-radius:8px;border:1.5px solid ${USER_PREFS.trainDays.includes(d)?'var(--amber)':'var(--border2)'};background:${USER_PREFS.trainDays.includes(d)?'var(--amber)':'var(--bg3)'};color:${USER_PREFS.trainDays.includes(d)?'#000':'var(--text3)'};display:flex;align-items:center;justify-content:center;cursor:pointer;font-family:'Space Grotesk',sans-serif;font-size:10px;font-weight:700;transition:all .15s">${d}</div>`).join('');
+  const body=`
+    <div class="modal-field"><label class="modal-label">Your Split</label>${splitBtns}</div>
+    <div class="modal-field"><label class="modal-label">Training Days</label>
+      <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:4px" id="tp-days">${dayBtns}</div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text3);margin-top:6px" id="tp-days-count">${USER_PREFS.trainDays.length?USER_PREFS.trainDays.length+' days selected':'All days (no restriction)'}</div>
+    </div>
+    <div class="modal-field"><label class="modal-label">Do you do cardio?</label>
+      <div style="display:flex;gap:8px">
+        <button onclick="tpSetCardio(true,this)" class="modal-btn${USER_PREFS.doesCardio===true?' primary':''}" id="tp-cardio-yes">Yes</button>
+        <button onclick="tpSetCardio(false,this)" class="modal-btn${USER_PREFS.doesCardio===false?' primary':''}" id="tp-cardio-no">No</button>
+      </div>
+    </div>
+    <div class="modal-actions"><button class="modal-btn" onclick="closeModalForce()">Cancel</button><button class="modal-btn primary" onclick="saveTrainingPrefs()">Save Preferences</button></div>`;
+  openModal('Training Preferences',body);
+}
+function tpSelectSplit(val,el){
+  USER_PREFS.split=val;
+  document.querySelectorAll('#modal-body .modal-btn').forEach(b=>{if(b.textContent.trim()!=='Cancel'&&b.textContent.trim()!=='Save Preferences'&&!b.id)b.classList.remove('primary');});
+  el.classList.add('primary');
+}
+function tpToggleDay(d,el){
+  if(USER_PREFS.trainDays.includes(d)){
+    USER_PREFS.trainDays=USER_PREFS.trainDays.filter(x=>x!==d);
+    el.style.background='var(--bg3)';el.style.borderColor='var(--border2)';el.style.color='var(--text3)';
+  } else {
+    USER_PREFS.trainDays=[...USER_PREFS.trainDays,d];
+    el.style.background='var(--amber)';el.style.borderColor='var(--amber)';el.style.color='#000';
+  }
+  const c=document.getElementById('tp-days-count');
+  if(c)c.textContent=USER_PREFS.trainDays.length?USER_PREFS.trainDays.length+' days selected':'All days (no restriction)';
+}
+function tpSetCardio(val,el){
+  USER_PREFS.doesCardio=val;
+  document.getElementById('tp-cardio-yes').classList.toggle('primary',val===true);
+  document.getElementById('tp-cardio-no').classList.toggle('primary',val===false);
+}
+function saveTrainingPrefs(){
+  save();closeModalForce();render();
+  showToast('Training preferences saved!');
+}
+
 function switchAuthTab(tab){
   document.getElementById('auth-login').style.display=tab==='login'?'':'none';
   document.getElementById('auth-signup').style.display=tab==='signup'?'':'none';
@@ -2226,6 +2286,13 @@ async function initNewUserData(uid,profile){
       trainDays:ob.trainDays||[],
       split:ob.split||'custom'
     };
+    // Also store in USER_PREFS so all features can access it
+    USER_PREFS={
+      split:ob.split||'custom',
+      trainDays:ob.trainDays||[],
+      doesCardio:ob.cardio==='yes',
+      cardioTiming:ob.cardioTiming||'morning'
+    };
   }
   const data={
     st:{},ws:{},wtr:{},
@@ -2255,6 +2322,13 @@ async function loadUserData(uid){
       if(d.SUPPS)SUPPS=d.SUPPS;
       if(d.CARDIO)CARDIO=d.CARDIO;
       if(d.MACROS)MACROS=d.MACROS;
+      if(d.userPrefs){
+        const p=d.userPrefs;
+        if(p.split)USER_PREFS.split=p.split;
+        if(p.trainDays)USER_PREFS.trainDays=p.trainDays;
+        if(typeof p.doesCardio==='boolean')USER_PREFS.doesCardio=p.doesCardio;
+        if(p.cardioTiming)USER_PREFS.cardioTiming=p.cardioTiming;
+      }
     }
     // Load profile
     const psnap=await fbGet(userProfileRef(uid));
@@ -2277,7 +2351,7 @@ async function loadUserData(uid){
 async function saveUserData(){
   if(!currentUser||!db)return;
   try{
-    await fbSet(userDataRef(currentUser.uid),{st,ws,wtr,EX,MEALS,SUPPS,CARDIO,MACROS,ts:Date.now()});
+    await fbSet(userDataRef(currentUser.uid),{st,ws,wtr,EX,MEALS,SUPPS,CARDIO,MACROS,userPrefs:USER_PREFS,ts:Date.now()});
   }catch(e){console.warn('saveUserData error',e);}
 }
 
@@ -2301,9 +2375,14 @@ function openProfileModal(){
     <div class="profile-row"><span class="profile-label">Email</span><input class="profile-edit-input" id="pf-email" type="email" value="${esc(p.email||'')}"></div>
     <div class="profile-row"><span class="profile-label">Phone</span><input class="profile-edit-input" id="pf-phone" type="tel" value="${esc(p.phone||'')}"></div>
     <div class="profile-row"><span class="profile-label">Username</span><span class="profile-val" style="color:var(--text3)">@${esc(p.username||'')} (fixed)</span></div>
-    <div class="modal-actions" style="margin-top:18px">
-      <button class="modal-btn" style="color:var(--red);border-color:rgba(232,52,74,.2)" onclick="doSignOut()">Sign Out</button>
-      <button class="modal-btn primary" onclick="saveProfile()">Save Changes</button>
+    <div class="profile-row"><span class="profile-label">Split</span><span class="profile-val">${USER_PREFS.split?USER_PREFS.split:'Not set'}</span></div>
+    <div class="profile-row"><span class="profile-label">Train Days</span><span class="profile-val">${USER_PREFS.trainDays&&USER_PREFS.trainDays.length?USER_PREFS.trainDays.join(', '):'All days'}</span></div>
+    <div class="modal-actions" style="margin-top:18px;flex-direction:column;gap:8px">
+      <button class="modal-btn" style="width:100%" onclick="closeModalForce();setTimeout(openTrainingPrefsModal,200)">⚙️ Training Preferences</button>
+      <div style="display:flex;gap:8px;width:100%">
+        <button class="modal-btn" style="color:var(--red);border-color:rgba(232,52,74,.2)" onclick="doSignOut()">Sign Out</button>
+        <button class="modal-btn primary" onclick="saveProfile()">Save</button>
+      </div>
     </div>`;
   openModal('My Profile',body);
 }
@@ -2994,6 +3073,7 @@ async function render(){
 const _fns={
   selectMode,enterCoachMode,showMsMain,showCoTrainRole,selectCoTrainRole,enterGuestMode,exitGuestView,startGuestView,stopCoTrainHost,showCoTrainCodeToast,
   switchAuthTab,doLogin,doSignup,doSignOut,openProfileModal,saveProfile,updateHeaderName,
+  openTrainingPrefsModal,tpSelectSplit,tpToggleDay,tpSetCardio,saveTrainingPrefs,
   getCardio,setCardio,openEditCardio,confirmEditCardio,removeCardio,saveMacro,
   isRestDay,activateRestDay,addCardioToRestDay,
   aeShowTab,aeFilterLib,aeSelectExercise,getLibraryForDay,
