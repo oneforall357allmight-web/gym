@@ -498,6 +498,27 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;back
 #guest-overlay{position:fixed;inset:0;z-index:150;pointer-events:auto;cursor:not-allowed;display:none}
 #guest-overlay.show{display:block}
 /* ═══════════════════════════════════════════════
+   EXERCISE LIBRARY MODAL
+═══════════════════════════════════════════════ */
+.ex-lib-search{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:13px 14px;font-family:'Space Grotesk',sans-serif;font-size:15px;color:var(--text);outline:none;transition:all .18s;-webkit-appearance:none;margin-bottom:10px}
+.ex-lib-search:focus{border-color:var(--amber);background:var(--amber-dim)}
+.ex-lib-search::placeholder{color:var(--text3)}
+.ex-lib-list{max-height:240px;overflow-y:auto;border:1px solid var(--border);border-radius:10px;background:var(--bg3);margin-bottom:12px}
+.ex-lib-item{padding:12px 14px;border-bottom:1px solid var(--border);cursor:pointer;font-family:'Space Grotesk',sans-serif;font-size:14px;color:var(--text);transition:background .12s;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.ex-lib-item:last-child{border-bottom:none}
+.ex-lib-item:active{background:var(--amber-dim)}
+.ex-lib-item.selected{background:var(--amber-dim);color:var(--amber)}
+.ex-lib-item-name{flex:1}
+.ex-lib-item-add{font-size:18px;color:var(--text3);flex-shrink:0}
+.ex-lib-empty{padding:20px;text-align:center;font-family:'Space Grotesk',sans-serif;font-size:13px;color:var(--text3)}
+.ex-lib-divider{font-family:'Space Grotesk',sans-serif;font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--text3);padding:8px 14px 4px;background:var(--bg4);border-bottom:1px solid var(--border)}
+.ae-selected-name{background:var(--amber-dim);border:1px solid var(--amber);border-radius:8px;padding:10px 12px;font-family:'Space Grotesk',sans-serif;font-size:14px;color:var(--amber);font-weight:600;margin-bottom:12px;display:none}
+.ae-selected-name.show{display:block}
+.ae-tabs{display:flex;gap:0;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:3px;margin-bottom:12px}
+.ae-tab{flex:1;padding:7px 4px;border-radius:5px;border:none;background:none;font-family:'Space Grotesk',sans-serif;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);cursor:pointer;transition:all .18s}
+.ae-tab.active{background:var(--bg5);color:var(--text);border:1px solid var(--border2)}
+
+/* ═══════════════════════════════════════════════
    ONBOARDING WIZARD
 ═══════════════════════════════════════════════ */
 #onboarding{position:fixed;inset:0;z-index:9998;background:#040810;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 24px;opacity:0;pointer-events:none;transition:opacity .4s var(--ease);overflow-y:auto}
@@ -1172,6 +1193,140 @@ const DEFAULT_MEALS=[
 ];
 const DEFAULT_SUPPS=['Creatine 5g — with Meal 4','Fish oil 2-3g EPA+DHA — with Meal 4','Vitamin D3 4,000 IU + K2 — with any meal','Magnesium glycinate 300-400mg — before bed','Zinc 25-30mg — with Meal 5'];
 
+// ── EXERCISE LIBRARY ─────────────────────────────────────────────────────
+// Keyed by split type. 'all' contains every exercise across all splits.
+const EX_LIBRARY={
+  push:[
+    'Barbell Bench Press','Incline Dumbbell Press','Decline Barbell Press','Flat Dumbbell Press',
+    'Decline Dumbbell Press','Overhead Press (Barbell)','Seated Dumbbell Shoulder Press','Arnold Press',
+    'Smith Machine Overhead Press','Landmine Press','Lateral Raise (Dumbbell)','Cable Lateral Raise',
+    'Machine Lateral Raise','Front Raise (Dumbbell)','Cable Front Raise','Plate Front Raise',
+    'Cable Crossover','Pec Deck / Machine Fly','Incline Cable Fly','Dumbbell Fly','Incline Dumbbell Fly',
+    'Machine Chest Press','Push-Up','Wide Push-Up','Feet-Elevated Push-Up','Dip (chest-focused)',
+    'Diamond Push-Up','Close-Grip Bench Press','Skull Crusher','Tricep Pushdown (Bar)',
+    'Tricep Pushdown (Rope)','Overhead Tricep Extension (Cable)','Overhead Tricep Extension (Dumbbell)',
+    'Tricep Kickback','Dip (tricep-focused)'
+  ],
+  pull:[
+    'Deadlift','Barbell Row','Pendlay Row','T-Bar Row','Dumbbell Row','Meadows Row',
+    'Chest-Supported Row','Rack Pull','Good Morning','Pull-Up','Weighted Pull-Up','Chin-Up',
+    'Neutral-Grip Pull-Up','Lat Pulldown (Wide Grip)','Lat Pulldown (Close Grip)',
+    'Straight-Arm Pulldown','Seated Cable Row','Machine Row','Face Pull',
+    'Rear Delt Fly (Bent Over)','Reverse Pec Deck','Cable Rear Delt Fly','Barbell Curl',
+    'EZ Bar Curl','Dumbbell Curl','Hammer Curl','Preacher Curl','Incline Dumbbell Curl',
+    'Concentration Curl','Cable Curl','Cable Hammer Curl','Overhead Cable Curl',
+    'Shrug (Barbell)','Shrug (Dumbbell)','Upright Row'
+  ],
+  legs:[
+    'Barbell Squat','Front Squat','Hack Squat','Leg Press','Bulgarian Split Squat','Lunge',
+    'Walking Lunge','Reverse Lunge','Goblet Squat','Step-Up','Box Jump','Leg Extension',
+    'Romanian Deadlift','Stiff-Leg Deadlift','Sumo Deadlift','Lying Leg Curl','Seated Leg Curl',
+    'Nordic Curl','Glute-Ham Raise','Hip Thrust','Cable Kickback','Sumo Squat',
+    'Abductor Machine','Adductor Machine','Calf Raise (Standing)','Calf Raise (Seated)',
+    'Donkey Calf Raise','Calf Press (on Leg Press)'
+  ],
+  upper:[
+    'Barbell Bench Press','Incline Barbell Press','Incline Dumbbell Press','Dumbbell Bench Press',
+    'Decline Barbell Press','Machine Chest Press','Incline Machine Press','Pec Deck','Cable Crossover',
+    'Dumbbell Fly','Overhead Press (Barbell)','Seated Dumbbell Shoulder Press','Arnold Press',
+    'Dumbbell Lateral Raise','Cable Lateral Raise','Front Raise','Face Pull','Rear Delt Fly',
+    'Reverse Pec Deck','Barbell Row','Dumbbell Row','T-Bar Row','Cable Row','Meadows Row',
+    'Lat Pulldown','Wide-Grip Pulldown','Straight-Arm Pulldown','Pull-Up','Weighted Pull-Up',
+    'Chin-Up','Dip','Close-Grip Bench Press','Skull Crusher','Tricep Pushdown',
+    'Overhead Tricep Extension','Tricep Kickback','Barbell Curl','EZ Bar Curl','Dumbbell Curl',
+    'Hammer Curl','Preacher Curl','Incline Dumbbell Curl','Cable Curl'
+  ],
+  lower:[
+    'Barbell Squat','Front Squat','Hack Squat','Leg Press (Standard)','Leg Press (Wide)',
+    'Leg Press (Close)','Bulgarian Split Squat','Lunge','Walking Lunge','Reverse Lunge',
+    'Goblet Squat','Step-Up','Sumo Squat','Box Jump','Leg Extension','Romanian Deadlift',
+    'Stiff-Leg Deadlift','Sumo Deadlift','Trap Bar Deadlift','Lying Leg Curl','Seated Leg Curl',
+    'Nordic Curl','Glute-Ham Raise','Hip Thrust','Hip Thrust (Banded)','Cable Kickback',
+    'Abductor Machine','Adductor Machine','Calf Raise (Standing)','Seated Calf Raise',
+    'Donkey Calf Raise','Calf Press (Leg Press)'
+  ],
+  'full-body':[
+    'Barbell Squat','Front Squat','Goblet Squat','Hack Squat','Leg Press','Trap Bar Deadlift',
+    'Bulgarian Split Squat','Walking Lunge','Reverse Lunge','Step-Up','Box Jump','Leg Extension',
+    'Leg Curl (Lying)','Leg Curl (Seated)','Romanian Deadlift','Stiff-Leg Deadlift','Nordic Curl',
+    'Hip Thrust','Cable Kickback','Abductor Machine','Calf Raise (Standing)','Seated Calf Raise',
+    'Barbell Bench Press','Incline Dumbbell Press','Dumbbell Bench Press','Cable Crossover',
+    'Pec Deck','Dip','Push-Up (Variations)','Overhead Press (Barbell)','Dumbbell Shoulder Press',
+    'Arnold Press','Dumbbell Lateral Raise','Cable Lateral Raise','Front Raise','Face Pull',
+    'Rear Delt Fly','Reverse Pec Deck','Landmine Press','Deadlift','Barbell Row','Dumbbell Row',
+    'T-Bar Row','Cable Row','Meadows Row','Machine Row','Lat Pulldown','Straight-Arm Pulldown',
+    'Pull-Up','Chin-Up','Skull Crusher','Close-Grip Bench Press','Tricep Pushdown',
+    'Overhead Tricep Extension','Dumbbell Curl','EZ Bar Curl','Hammer Curl','Cable Curl',
+    'Plank','Side Plank','Hollow Body Hold','Dead Bug','Hanging Leg Raise','Ab Wheel Rollout',
+    'Cable Crunch','Russian Twist','Pallof Press','V-Up','Dragon Flag'
+  ],
+  chest:[
+    'Barbell Bench Press','Incline Barbell Press','Decline Barbell Press','Incline Dumbbell Press',
+    'Flat Dumbbell Press','Decline Dumbbell Press','Dumbbell Fly','Incline Dumbbell Fly',
+    'Cable Crossover','High-to-Low Cable Fly','Low-to-High Cable Fly','Pec Deck / Machine Fly',
+    'Machine Chest Press','Incline Machine Press','Smith Machine Bench Press','Dip (chest-focused)',
+    'Push-Up','Wide Push-Up','Feet-Elevated Push-Up','Landmine Press'
+  ],
+  back:[
+    'Deadlift','Barbell Row','Pendlay Row','T-Bar Row','Dumbbell Row','Meadows Row',
+    'Chest-Supported Row','Machine Row','Seated Cable Row','Pull-Up','Weighted Pull-Up','Chin-Up',
+    'Neutral-Grip Pull-Up','Lat Pulldown (Wide)','Lat Pulldown (Close)','Straight-Arm Pulldown',
+    'Rack Pull','Good Morning','Barbell Shrug','Dumbbell Shrug'
+  ],
+  shoulders:[
+    'Barbell Overhead Press','Seated Barbell Press','Dumbbell Shoulder Press','Seated Dumbbell Press',
+    'Arnold Press','Smith Machine OHP','Machine Shoulder Press','Dumbbell Lateral Raise',
+    'Cable Lateral Raise','Machine Lateral Raise','Dumbbell Front Raise','Cable Front Raise',
+    'Plate Front Raise','Face Pull','Rear Delt Fly (Bent Over)','Reverse Pec Deck',
+    'Cable Rear Delt Fly','Upright Row','Dumbbell Shrug','Barbell Shrug'
+  ],
+  arms:[
+    'Barbell Curl','EZ Bar Curl','Dumbbell Curl','Alternating Dumbbell Curl','Hammer Curl',
+    'Cross-Body Hammer Curl','Preacher Curl','Incline Dumbbell Curl','Concentration Curl',
+    'Cable Curl','Cable Hammer Curl','Overhead Cable Curl','Close-Grip Bench Press','Skull Crusher',
+    'Overhead Tricep Extension (Dumbbell)','Dip (tricep-focused)','Tricep Pushdown (Bar)',
+    'Tricep Pushdown (Rope)','Overhead Cable Extension','Tricep Kickback'
+  ],
+  bro_legs:[
+    'Barbell Squat','Front Squat','Hack Squat','Leg Press','Bulgarian Split Squat','Lunge',
+    'Goblet Squat','Leg Extension','Romanian Deadlift','Stiff-Leg Deadlift','Lying Leg Curl',
+    'Seated Leg Curl','Nordic Curl','Glute-Ham Raise','Hip Thrust','Cable Kickback',
+    'Abductor Machine','Adductor Machine','Calf Raise (Standing)','Seated Calf Raise'
+  ]
+};
+
+// Get library exercises for a given day based on user's split and the day label
+function getLibraryForDay(d){
+  if(!userProfile)return null;
+  const prefs=(CARDIO[d]&&CARDIO[d]._onboarding)||null;
+  if(!prefs)return null; // admin or no onboarding — no library filter
+  const split=prefs.split||'custom';
+  const dayLabel=(WK[d]&&WK[d].full)||'';
+  if(split==='ppl'){
+    if(dayLabel.toLowerCase().includes('push'))return{label:'Push',exs:EX_LIBRARY.push};
+    if(dayLabel.toLowerCase().includes('pull'))return{label:'Pull',exs:EX_LIBRARY.pull};
+    if(dayLabel.toLowerCase().includes('leg'))return{label:'Legs',exs:EX_LIBRARY.legs};
+    return{label:'All',exs:[...EX_LIBRARY.push,...EX_LIBRARY.pull,...EX_LIBRARY.legs]};
+  }
+  if(split==='upper-lower'){
+    if(dayLabel.toLowerCase().includes('upper'))return{label:'Upper',exs:EX_LIBRARY.upper};
+    if(dayLabel.toLowerCase().includes('lower'))return{label:'Lower',exs:EX_LIBRARY.lower};
+    return{label:'All',exs:[...EX_LIBRARY.upper,...EX_LIBRARY.lower]};
+  }
+  if(split==='full-body')return{label:'Full Body',exs:EX_LIBRARY['full-body']};
+  if(split==='bro'){
+    const dl=dayLabel.toLowerCase();
+    if(dl.includes('chest'))return{label:'Chest',exs:EX_LIBRARY.chest};
+    if(dl.includes('back'))return{label:'Back',exs:EX_LIBRARY.back};
+    if(dl.includes('shoulder'))return{label:'Shoulders',exs:EX_LIBRARY.shoulders};
+    if(dl.includes('arm'))return{label:'Arms',exs:EX_LIBRARY.arms};
+    if(dl.includes('leg'))return{label:'Legs',exs:EX_LIBRARY.bro_legs};
+    // Fallback — show everything
+    return{label:'All',exs:[...EX_LIBRARY.chest,...EX_LIBRARY.back,...EX_LIBRARY.shoulders,...EX_LIBRARY.arms,...EX_LIBRARY.bro_legs]};
+  }
+  return null; // custom — no library suggestion
+}
+
 // Grocery: cat is now one of the GR_CATS values
 const GROCERY_BASE=[
   {id:'gb01',name:'Lean ground beef',qty:'~400g/day',cat:'🥩 Protein'},{id:'gb02',name:'Whole eggs',qty:'2/day',cat:'🥩 Protein'},{id:'gb03',name:'Whey protein powder',qty:'3+ scoops/day',cat:'🥩 Protein'},
@@ -1824,14 +1979,34 @@ function getCardio(d,field){
 }
 function setCardio(d,field,val){if(!CARDIO[d])CARDIO[d]={};CARDIO[d][field]=val;save();}
 function openEditCardio(d,type){
-  // type = 'am' or 'pc'
   const nameField=type,noteField=type==='am'?'ams':'pcs';
   const currentName=getCardio(d,nameField);
   const currentNote=getCardio(d,noteField);
   const label=type==='am'?'Morning Cardio':'Post-Workout Cardio';
-  const body=`<div class="modal-field"><label class="modal-label">Activity</label><input class="modal-input" id="ec-name" placeholder="e.g. 40 min fasted incline walk" value="${esc(currentName||'')}"></div><div class="modal-field"><label class="modal-label">Details / Notes</label><input class="modal-input" id="ec-note" placeholder="e.g. HR 120-135 · incline 8%" value="${esc(currentNote||'')}"></div><div class="modal-hint">Edit the cardio description for ${DNAMES[d]}</div><div class="modal-actions"><button class="modal-btn" onclick="closeModalForce()">Cancel</button><button class="modal-btn primary" onclick="confirmEditCardio('${d}','${nameField}','${noteField}')">Save</button></div>`;
+  const body=`
+    <div class="modal-field"><label class="modal-label">Activity</label>
+      <input class="modal-input" id="ec-name" placeholder="e.g. 40 min incline walk" value="${esc(currentName||'')}">
+    </div>
+    <div class="modal-field"><label class="modal-label">Details / Notes</label>
+      <input class="modal-input" id="ec-note" placeholder="e.g. HR 120-135 · incline 8%" value="${esc(currentNote||'')}">
+    </div>
+    <div class="modal-hint">Leave activity blank and save to remove this cardio slot.</div>
+    <div class="modal-actions">
+      <button class="modal-btn" style="color:var(--red);border-color:rgba(232,52,74,.2)" onclick="removeCardio('${d}','${nameField}','${noteField}')">🗑 Remove</button>
+      <button class="modal-btn" onclick="closeModalForce()">Cancel</button>
+      <button class="modal-btn primary" onclick="confirmEditCardio('${d}','${nameField}','${noteField}')">Save</button>
+    </div>`;
   openModal('Edit '+label,body);
   setTimeout(()=>{const f=document.getElementById('ec-name');if(f)f.focus();},350);
+}
+function removeCardio(d,nameField,noteField){
+  if(!CARDIO[d])CARDIO[d]={};
+  CARDIO[d][nameField]='';
+  CARDIO[d][noteField]='';
+  // If it was pc, also null it out so the section disappears
+  if(nameField==='pc')CARDIO[d].pc=null;
+  if(nameField==='am')CARDIO[d].am='';
+  save();closeModalForce();render();showToast('Cardio removed');
 }
 function confirmEditCardio(d,nameField,noteField){
   const name=(document.getElementById('ec-name')||{}).value||'';
@@ -2502,7 +2677,85 @@ function resetDay(d){if(!confirm('Reset '+DNAMES[d]+'?'))return;[`${d}|am`,`${d}
 function addSet(d,ei){EX[d][ei].s++;exop[`${d}-${ei}`]=true;seedWeights();save();render();}
 function removeSet(d,ei){const ex=EX[d][ei];if(ex.s<=1){showToast('Minimum 1 set');return;}const lk=sk(d,ei,ex.s-1);if(ws[lk]&&(ws[lk].done||ws[lk].w||ws[lk].r)){if(!confirm('Remove last set?'))return;}delete ws[lk];ex.s--;save();render();}
 function removeExercise(d,ei){if(!confirm('Remove "'+EX[d][ei].n+'"?'))return;for(let si=0;si<EX[d][ei].s;si++)delete ws[sk(d,ei,si)];const ol=EX[d].length;EX[d].splice(ei,1);for(let i=ei+1;i<ol;i++)for(let si=0;si<20;si++){const ok=`${d}|${i}|${si}`,nk=`${d}|${i-1}|${si}`;if(ws[ok]){ws[nk]=ws[ok];delete ws[ok];}}const neo={};Object.keys(exop).forEach(k=>{const[kd,kei]=k.split('-');if(kd!==d){neo[k]=exop[k];return;}const idx=parseInt(kei,10);if(idx<ei)neo[k]=exop[k];else if(idx>ei)neo[`${kd}-${idx-1}`]=exop[k];});exop=neo;save();render();showToast('Exercise removed');}
-function openAddExercise(d){const body=`<div class="modal-field"><label class="modal-label">Exercise name</label><input class="modal-input" id="ae-name" placeholder="e.g. Cable lateral raise" autocomplete="off"></div><div class="modal-grid3"><div class="modal-field"><label class="modal-label">Sets</label><input class="modal-input" id="ae-sets" type="number" min="1" max="20" value="3" inputmode="numeric"></div><div class="modal-field"><label class="modal-label">Reps</label><input class="modal-input" id="ae-reps" placeholder="8-12" value="8-12"></div><div class="modal-field"><label class="modal-label">Rest (sec)</label><input class="modal-input" id="ae-rest" type="number" min="0" max="600" value="90" inputmode="numeric"></div></div><div class="modal-hint">Rest in seconds — 60, 90, 120, 180…</div><div class="modal-actions"><button class="modal-btn" onclick="closeModalForce()">Cancel</button><button class="modal-btn primary" onclick="confirmAddExercise('${d}')">Add</button></div>`;openModal('Add Exercise',body);setTimeout(()=>{const f=document.getElementById('ae-name');if(f)f.focus();},350);}
+function openAddExercise(d){
+  const lib=getLibraryForDay(d);
+  const libSection=lib?`
+    <div class="ae-tabs">
+      <button class="ae-tab active" id="ae-tab-lib" onclick="aeShowTab('lib')">📚 ${lib.label} Library</button>
+      <button class="ae-tab" id="ae-tab-custom" onclick="aeShowTab('custom')">✏️ Custom</button>
+    </div>
+    <div id="ae-lib-panel">
+      <input class="ex-lib-search" id="ae-lib-search" placeholder="Search exercises…" autocomplete="off"
+        oninput="aeFilterLib()">
+      <div class="ex-lib-list" id="ae-lib-list"></div>
+    </div>
+    <div id="ae-custom-panel" style="display:none">` : '<div id="ae-custom-panel">';
+  const body=libSection+`
+    <div class="ae-selected-name" id="ae-selected-name"></div>
+    <div class="modal-field"><label class="modal-label">Exercise name</label>
+      <input class="modal-input" id="ae-name" placeholder="Type or pick from library" autocomplete="off">
+    </div>
+    <div class="modal-grid3">
+      <div class="modal-field"><label class="modal-label">Sets</label>
+        <input class="modal-input" id="ae-sets" type="number" min="1" max="20" value="3" inputmode="numeric">
+      </div>
+      <div class="modal-field"><label class="modal-label">Reps</label>
+        <input class="modal-input" id="ae-reps" placeholder="8–12" value="8–12">
+      </div>
+      <div class="modal-field"><label class="modal-label">Rest (sec)</label>
+        <input class="modal-input" id="ae-rest" type="number" min="0" max="600" value="90" inputmode="numeric">
+      </div>
+    </div>
+    <div class="modal-hint">Rest in seconds — 60s, 90s, 120s, 180s, 240s…</div>
+    <div class="modal-actions">
+      <button class="modal-btn" onclick="closeModalForce()">Cancel</button>
+      <button class="modal-btn primary" onclick="confirmAddExercise('${d}')">Add →</button>
+    </div>
+  </div>`;
+  openModal('Add Exercise',body);
+  // Store library for filtering
+  window._aeLib=lib?lib.exs:null;
+  window._aeCurDay=d;
+  if(lib){aeRenderLib(lib.exs);}
+  else{setTimeout(()=>{const f=document.getElementById('ae-name');if(f)f.focus();},350);}
+}
+function aeShowTab(tab){
+  document.getElementById('ae-tab-lib').classList.toggle('active',tab==='lib');
+  document.getElementById('ae-tab-custom').classList.toggle('active',tab==='custom');
+  const lp=document.getElementById('ae-lib-panel');
+  const cp=document.getElementById('ae-custom-panel');
+  if(lp)lp.style.display=tab==='lib'?'':'none';
+  if(cp)cp.style.display=tab==='custom'?'':'none';
+  if(tab==='custom'){const f=document.getElementById('ae-name');if(f)f.focus();}
+  else{const f=document.getElementById('ae-lib-search');if(f)f.focus();}
+}
+function aeRenderLib(exercises){
+  const list=document.getElementById('ae-lib-list');
+  if(!list)return;
+  if(!exercises||exercises.length===0){list.innerHTML='<div class="ex-lib-empty">No exercises found</div>';return;}
+  list.innerHTML=exercises.map(name=>`<div class="ex-lib-item" onclick="aeSelectExercise('${esc(name)}')">`+
+    `<span class="ex-lib-item-name">${esc(name)}</span><span class="ex-lib-item-add">+</span></div>`).join('');
+  setTimeout(()=>{const f=document.getElementById('ae-lib-search');if(f)f.focus();},300);
+}
+function aeFilterLib(){
+  const q=(document.getElementById('ae-lib-search').value||'').toLowerCase().trim();
+  const all=window._aeLib||[];
+  const filtered=q?all.filter(n=>n.toLowerCase().includes(q)):all;
+  aeRenderLib(filtered);
+}
+function aeSelectExercise(name){
+  // Fill the name field and show confirmation badge
+  const inp=document.getElementById('ae-name');if(inp)inp.value=name;
+  const badge=document.getElementById('ae-selected-name');
+  if(badge){badge.textContent='✓ '+name;badge.classList.add('show');}
+  // Highlight selected in list
+  document.querySelectorAll('.ex-lib-item').forEach(el=>{
+    el.classList.toggle('selected',el.querySelector('.ex-lib-item-name').textContent===name);
+  });
+  // Switch to custom tab to show the sets/reps form
+  if(document.getElementById('ae-tab-custom'))aeShowTab('custom');
+  setTimeout(()=>{const f=document.getElementById('ae-sets');if(f)f.focus();},100);
+}
 function confirmAddExercise(d){const name=(document.getElementById('ae-name').value||'').trim(),sets=parseInt(document.getElementById('ae-sets').value,10),reps=(document.getElementById('ae-reps').value||'').trim(),rest=parseInt(document.getElementById('ae-rest').value,10)||0;if(!name){showToast('Name required');return;}if(!sets||sets<1){showToast('Sets must be ≥ 1');return;}if(!reps){showToast('Reps required');return;}EX[d].push({n:name,s:sets,r:reps,rest,note:''});exop[`${d}-${EX[d].length-1}`]=true;save();closeModalForce();render();showToast('Exercise added');}
 function toggleEditMeal(mid){editingMeal=editingMeal===mid?null:mid;render();}
 function addMealItem(mid){const inp=document.getElementById('meal-add-'+mid);if(!inp)return;const val=inp.value.trim();if(!val){showToast('Enter an item');return;}const m=MEALS.find(x=>x.id===mid);if(!m)return;m.items.push(val);inp.value='';save();render();}
@@ -2646,7 +2899,8 @@ async function render(){
 const _fns={
   selectMode,enterCoachMode,showMsMain,showCoTrainRole,selectCoTrainRole,enterGuestMode,exitGuestView,startGuestView,stopCoTrainHost,showCoTrainCodeToast,
   switchAuthTab,doLogin,doSignup,doSignOut,openProfileModal,saveProfile,updateHeaderName,
-  getCardio,setCardio,openEditCardio,confirmEditCardio,
+  getCardio,setCardio,openEditCardio,confirmEditCardio,removeCardio,
+  aeShowTab,aeFilterLib,aeSelectExercise,getLibraryForDay,
   check,toggleSec,toggleMealSec,toggleEx,switchDay,setMode,
   markSet,undoSet,wInput,rInput,addWater,resetDay,
   addSet,removeSet,removeExercise,openAddExercise,confirmAddExercise,
