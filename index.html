@@ -2017,15 +2017,44 @@ function activateRestDay(d){
   save();render();showToast(d+' added to your training days!');
 }
 function addCardioToRestDay(d,type){
-  if(!CARDIO[d])CARDIO[d]={};
-  if(type==='am'){CARDIO[d].am='Morning cardio';CARDIO[d].ams='Duration and intensity up to you';}
-  else{CARDIO[d].pc='Post-workout cardio';CARDIO[d].pcs='Cool down when done';}
-  // Add to USER_PREFS.trainDays so it persists
+  // Works for rest days — also adds day to trainDays
   if(!USER_PREFS.trainDays.includes(d))USER_PREFS.trainDays=[...USER_PREFS.trainDays,d];
+  addCardioToDay(d,type);
+}
+function addCardioToDay(d,type){
+  // Adds a cardio slot to ANY day — works whether user chose cardio or not
+  if(!CARDIO[d])CARDIO[d]={};
+  if(type==='am'){
+    CARDIO[d].am='Morning cardio';
+    CARDIO[d].ams='Duration and intensity up to you';
+  } else {
+    CARDIO[d].pc='Post-workout cardio';
+    CARDIO[d].pcs='Cool down when done';
+  }
   if(CARDIO[d]._onboarding){
     CARDIO[d]._onboarding={...CARDIO[d]._onboarding,trainDays:USER_PREFS.trainDays};
   }
-  save();render();showToast('Cardio added to '+d);
+  save();render();showToast('Cardio added for '+d+'!');
+}
+function openAddCardioModal(d){
+  // Modal to add cardio to a training day that currently has none
+  const body=`
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:18px">
+      <button class="rest-day-btn" style="border-radius:10px;padding:16px;border:1.5px solid var(--border2);background:var(--bg3);font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:600;color:var(--text);cursor:pointer;text-align:left;display:flex;align-items:center;gap:12px" onclick="addCardioToDay('${d}','am');closeModalForce()">
+        <span style="font-size:22px">🌅</span>
+        <span><strong>Morning cardio</strong><br><span style="font-size:12px;color:var(--text3)">Before workout — fasted or early session</span></span>
+      </button>
+      <button class="rest-day-btn" style="border-radius:10px;padding:16px;border:1.5px solid var(--border2);background:var(--bg3);font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:600;color:var(--text);cursor:pointer;text-align:left;display:flex;align-items:center;gap:12px" onclick="addCardioToDay('${d}','pc');closeModalForce()">
+        <span style="font-size:22px">🏃</span>
+        <span><strong>Post-workout cardio</strong><br><span style="font-size:12px;color:var(--text3)">After lifting — finisher or cool-down</span></span>
+      </button>
+      <button class="rest-day-btn" style="border-radius:10px;padding:16px;border:1.5px solid var(--border2);background:var(--bg3);font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:600;color:var(--text);cursor:pointer;text-align:left;display:flex;align-items:center;gap:12px" onclick="addCardioToDay('${d}','am');addCardioToDay('${d}','pc');closeModalForce()">
+        <span style="font-size:22px">🔁</span>
+        <span><strong>Both</strong><br><span style="font-size:12px;color:var(--text3)">Morning and post-workout</span></span>
+      </button>
+    </div>
+    <div class="modal-actions"><button class="modal-btn" onclick="closeModalForce()">Cancel</button></div>`;
+  openModal('Add Cardio for '+d,body);
 }
 function wkProg(d){if(!WK[d]||!EX[d])return{done:0,total:0,pct:0};const c=[];if(getCardio(d,'am'))c.push(`${d}|am`);if(getCardio(d,'pc'))c.push(`${d}|pc`);const sets=getSetKeys(d);const done=c.filter(id=>st[id]).length+sets.filter(k=>ws[k]&&ws[k].done).length;const tot=c.length+sets.length;return{done,total:tot,pct:tot?Math.round(done/tot*100):0};}
 
@@ -3050,15 +3079,23 @@ async function render(){
       } else {
         // Training day (or rest day that user activated)
         const amName=getCardio(d,'am'),amNote=getCardio(d,'ams');
+        const pcName=getCardio(d,'pc'),pcNote=getCardio(d,'pcs');
+        const hasAnyCardio=!!amName||!!pcName;
         if(amName){
           const amBody=ciHTML(`${d}|am`,amName,amNote)+`<button class="add-btn" style="margin-top:4px;border-style:solid;border-color:var(--border);font-size:10px;padding:8px" onclick="openEditCardio('${d}','am')">✏️ Edit Cardio</button>`;
           h+=secHTML('am','ic-am','AM','Morning Cardio',amName,amBody,st[`${d}|am`]?'1/1':'0/1');
         }
         h+=wkHTML(d);
-        if(w.pc||getCardio(d,'pc')){
-          const pcName=getCardio(d,'pc'),pcNote=getCardio(d,'pcs');
+        if(pcName){
           const pcBody=ciHTML(`${d}|pc`,pcName,pcNote)+`<button class="add-btn" style="margin-top:4px;border-style:solid;border-color:var(--border);font-size:10px;padding:8px" onclick="openEditCardio('${d}','pc')">✏️ Edit Cardio</button>`;
           h+=secHTML('pc','ic-pc','PC','Post-Workout Cardio',pcName,pcBody,st[`${d}|pc`]?'1/1':'0/1');
+        }
+        // Show "+ Add Cardio" button when no cardio is set for this training day
+        if(!hasAnyCardio){
+          h+=`<button class="add-btn" style="border-style:dashed;margin-bottom:6px" onclick="openAddCardioModal('${d}')">
+            <svg viewBox="0 0 14 14"><line x1="7" y1="2" x2="7" y2="12"/><line x1="2" y1="7" x2="12" y2="7"/></svg>
+            Add Cardio for ${d}
+          </button>`;
         }
         // Progress Photos section
         const isPhO=!!op.ph;
@@ -3091,7 +3128,7 @@ const _fns={
   switchAuthTab,doLogin,doSignup,doSignOut,openProfileModal,saveProfile,updateHeaderName,
   openTrainingPrefsModal,tpSelectSplit,tpToggleDay,tpSetCardio,saveTrainingPrefs,
   getCardio,setCardio,openEditCardio,confirmEditCardio,removeCardio,saveMacro,
-  isRestDay,activateRestDay,addCardioToRestDay,
+  isRestDay,activateRestDay,addCardioToRestDay,addCardioToDay,openAddCardioModal,
   aeShowTab,aeFilterLib,aeSelectExercise,getLibraryForDay,
   check,toggleSec,toggleMealSec,toggleEx,switchDay,setMode,
   markSet,undoSet,wInput,rInput,addWater,resetDay,
