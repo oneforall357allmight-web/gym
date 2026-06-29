@@ -332,6 +332,23 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;back
 .reset-row{display:flex;justify-content:flex-end;margin-bottom:8px}
 .reset-btn{font-family:'Space Grotesk',sans-serif;font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);background:none;border:1px solid var(--border);border-radius:6px;padding:6px 12px;cursor:pointer;min-height:32px;transition:all .15s}
 .reset-btn:active{color:var(--red);border-color:var(--red)}
+/* Rest day screen */
+.rest-day-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 24px;text-align:center;gap:12px}
+.rest-day-icon{font-size:52px;margin-bottom:4px}
+.rest-day-title{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;letter-spacing:.05em;color:var(--text)}
+.rest-day-sub{font-family:'Space Grotesk',sans-serif;font-size:13px;color:var(--text3);line-height:1.6;max-width:280px}
+.rest-day-actions{display:flex;flex-direction:column;gap:8px;width:100%;max-width:300px;margin-top:8px}
+.rest-day-btn{padding:14px;border-radius:10px;border:1px solid var(--border2);background:var(--bg2);font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text2);cursor:pointer;transition:all .15s;min-height:48px}
+.rest-day-btn:active{background:var(--bg3);transform:scale(.97)}
+.rest-day-btn.primary{background:var(--amber);border-color:var(--amber);color:#000;box-shadow:0 0 16px var(--amber-glow)}
+.rest-day-btn.primary:active{background:var(--amber-soft)}
+/* Editable macros */
+.mac-input{width:100%;background:transparent;border:none;font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:500;color:var(--text);text-align:center;outline:none;-webkit-appearance:none;-moz-appearance:textfield;padding:0}
+.mac-input::-webkit-outer-spin-button,.mac-input::-webkit-inner-spin-button{-webkit-appearance:none}
+.mac-input:focus{color:var(--amber)}
+.mac-input::placeholder{color:var(--text3)}
+.mac-edit-hint{font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;font-family:'Space Grotesk',sans-serif;margin-top:1px;opacity:0;transition:opacity .2s}
+.mac:focus-within .mac-edit-hint{opacity:1}
 
 /* ═══════════════════════════════════════════════
    PROGRESS PHOTOS
@@ -500,23 +517,29 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;back
 /* ═══════════════════════════════════════════════
    EXERCISE LIBRARY MODAL
 ═══════════════════════════════════════════════ */
-.ex-lib-search{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:13px 14px;font-family:'Space Grotesk',sans-serif;font-size:15px;color:var(--text);outline:none;transition:all .18s;-webkit-appearance:none;margin-bottom:10px}
-.ex-lib-search:focus{border-color:var(--amber);background:var(--amber-dim)}
+/* Exercise library tabs */
+.ae-tabs{display:flex;gap:4px;margin-bottom:14px}
+.ae-tab{flex:1;padding:11px 6px;border-radius:10px;border:1.5px solid var(--border2);background:var(--bg3);font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);cursor:pointer;transition:all .18s;-webkit-user-select:none;user-select:none}
+.ae-tab:active{transform:scale(.96)}
+.ae-tab.active{background:var(--amber);border-color:var(--amber);color:#000;box-shadow:0 0 14px var(--amber-glow)}
+/* Search bar */
+.ex-lib-search{width:100%;background:var(--bg4);border:1.5px solid var(--border3);border-radius:10px;padding:13px 14px 13px 40px;font-family:'Space Grotesk',sans-serif;font-size:15px;color:var(--text);outline:none;transition:all .18s;-webkit-appearance:none;margin-bottom:10px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%234A6480' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:13px center}
+.ex-lib-search:focus{border-color:var(--amber);background-color:var(--amber-dim);box-shadow:0 0 0 3px rgba(245,166,35,.07)}
 .ex-lib-search::placeholder{color:var(--text3)}
-.ex-lib-list{max-height:240px;overflow-y:auto;border:1px solid var(--border);border-radius:10px;background:var(--bg3);margin-bottom:12px}
-.ex-lib-item{padding:12px 14px;border-bottom:1px solid var(--border);cursor:pointer;font-family:'Space Grotesk',sans-serif;font-size:14px;color:var(--text);transition:background .12s;display:flex;align-items:center;justify-content:space-between;gap:8px}
-.ex-lib-item:last-child{border-bottom:none}
-.ex-lib-item:active{background:var(--amber-dim)}
-.ex-lib-item.selected{background:var(--amber-dim);color:var(--amber)}
-.ex-lib-item-name{flex:1}
-.ex-lib-item-add{font-size:18px;color:var(--text3);flex-shrink:0}
-.ex-lib-empty{padding:20px;text-align:center;font-family:'Space Grotesk',sans-serif;font-size:13px;color:var(--text3)}
-.ex-lib-divider{font-family:'Space Grotesk',sans-serif;font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--text3);padding:8px 14px 4px;background:var(--bg4);border-bottom:1px solid var(--border)}
-.ae-selected-name{background:var(--amber-dim);border:1px solid var(--amber);border-radius:8px;padding:10px 12px;font-family:'Space Grotesk',sans-serif;font-size:14px;color:var(--amber);font-weight:600;margin-bottom:12px;display:none}
-.ae-selected-name.show{display:block}
-.ae-tabs{display:flex;gap:0;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:3px;margin-bottom:12px}
-.ae-tab{flex:1;padding:7px 4px;border-radius:5px;border:none;background:none;font-family:'Space Grotesk',sans-serif;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);cursor:pointer;transition:all .18s}
-.ae-tab.active{background:var(--bg5);color:var(--text);border:1px solid var(--border2)}
+/* Library list */
+.ex-lib-list{max-height:50vh;overflow-y:auto;border-radius:12px;margin-bottom:14px;display:flex;flex-direction:column;gap:4px}
+.ex-lib-item{padding:13px 14px;border-radius:9px;border:1.5px solid var(--border2);background:var(--bg3);cursor:pointer;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:500;color:var(--text);transition:all .15s;display:flex;align-items:center;justify-content:space-between;gap:10px;-webkit-user-select:none;user-select:none}
+.ex-lib-item:active{background:var(--amber-dim);border-color:var(--amber);transform:scale(.98)}
+.ex-lib-item.selected{background:var(--amber);border-color:var(--amber);color:#000;font-weight:700}
+.ex-lib-item.selected .ex-lib-item-add{color:#000}
+.ex-lib-item-name{flex:1;line-height:1.3}
+.ex-lib-item-add{width:26px;height:26px;border-radius:50%;background:rgba(245,166,35,.15);border:1.5px solid rgba(245,166,35,.3);display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--amber);flex-shrink:0;font-weight:700;transition:all .15s}
+.ex-lib-item:active .ex-lib-item-add{background:var(--amber);color:#000;border-color:var(--amber)}
+.ex-lib-empty{padding:28px 16px;text-align:center;font-family:'Space Grotesk',sans-serif;font-size:13px;color:var(--text3);background:var(--bg3);border-radius:10px;border:1.5px dashed var(--border2)}
+/* Selected exercise badge */
+.ae-selected-name{background:rgba(62,217,158,.08);border:1.5px solid var(--done);border-radius:10px;padding:12px 14px;font-family:'Space Grotesk',sans-serif;font-size:14px;color:var(--done);font-weight:700;margin-bottom:14px;display:none;align-items:center;gap:8px}
+.ae-selected-name.show{display:flex}
+.ae-selected-name::before{content:'✓';font-size:16px;flex-shrink:0}
 
 /* ═══════════════════════════════════════════════
    ONBOARDING WIZARD
@@ -1339,6 +1362,8 @@ const GROCERY_BASE=[
 // EX/MEALS/SUPPS start empty — populated from Firebase after auth (admin gets full program)
 const EMPTY_EX={Sat:[],Sun:[],Mon:[],Tue:[],Wed:[],Thu:[],Fri:[]};
 let EX=JSON.parse(JSON.stringify(EMPTY_EX)),MEALS=[],SUPPS=[];
+// User macros — editable, saved with data. Default 0 for new users.
+let MACROS={cal:'',protein:'',carbs:'',fat:''};
 // Editable cardio: overrides WK[d].am/ams/pc/pcs per day
 let CARDIO={};  // {Mon:{am:'...',ams:'...',pc:'...',pcs:'...'}, ...}
 let st={},ws={},wtr={},op={am:false,pc:false,sp:false,h2o:false,ph:false},mealOp={},exop={};
@@ -1582,7 +1607,7 @@ async function confirmDeletePhoto(id){
 }
 
 // ── PERSISTENCE ────────────────────────────────────────────────────────────
-function save(){try{localStorage.setItem('trk-v8',JSON.stringify({st,ws,wtr,EX,MEALS,SUPPS,CARDIO}));}catch(e){}if(currentUser)dCloudSave();if(syncSessionId&&!isCoachView)pushSync();if(isCoachView&&coachSessionId)pushCoachEdit();}
+function save(){try{localStorage.setItem('trk-v8',JSON.stringify({st,ws,wtr,EX,MEALS,SUPPS,CARDIO,MACROS}));}catch(e){}if(currentUser)dCloudSave();if(syncSessionId&&!isCoachView)pushSync();if(isCoachView&&coachSessionId)pushCoachEdit();}
 function loadCardio(){try{const r=localStorage.getItem('trk-v8');if(r){const d=JSON.parse(r);if(d.CARDIO)CARDIO=d.CARDIO;}}catch(e){}}
 function seedWeights(){
   // For every exercise that has a default weight (e.w), pre-fill ws entries
@@ -1615,6 +1640,7 @@ function load(){
       if(d.MEALS&&d.MEALS.length)MEALS=d.MEALS;
       if(d.SUPPS&&d.SUPPS.length)SUPPS=d.SUPPS;
       if(d.CARDIO)CARDIO=d.CARDIO;
+      if(d.MACROS)MACROS=d.MACROS;
     }
   }catch(e){console.warn('load error',e);}
   seedWeights();
@@ -1969,6 +1995,33 @@ function renderGroceryBody(){
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function sk(d,ei,si){return`${d}|${ei}|${si}`;}
 function getSetKeys(d){return EX[d].flatMap((e,ei)=>Array.from({length:e.s},(_,si)=>sk(d,ei,si)));}
+function isRestDay(d){
+  // For admin/no-onboarding: use WK badge
+  const ob=(CARDIO[d]&&CARDIO[d]._onboarding)||null;
+  if(!ob)return WK[d]&&WK[d].badge==='Rest';
+  // For onboarded users: rest if day not in trainDays AND trainDays was actually set
+  const trainDays=ob.trainDays||[];
+  if(trainDays.length===0)return false; // no restriction set
+  return!trainDays.includes(d);
+}
+function activateRestDay(d){
+  // User wants to train today despite it being a rest day — remove the rest flag for today
+  if(!CARDIO[d])CARDIO[d]={};
+  // Patch the onboarding trainDays to include this day
+  if(CARDIO[d]._onboarding){
+    CARDIO[d]._onboarding={...CARDIO[d]._onboarding,trainDays:[...((CARDIO[d]._onboarding.trainDays)||[]),d]};
+  }
+  save();render();showToast(d+' added to your training days!');
+}
+function addCardioToRestDay(d,type){
+  if(!CARDIO[d])CARDIO[d]={};
+  if(type==='am'){CARDIO[d].am='Morning cardio';CARDIO[d].ams='Duration and intensity up to you';}
+  else{CARDIO[d].pc='Post-workout cardio';CARDIO[d].pcs='Cool down when done';}
+  if(CARDIO[d]._onboarding){
+    CARDIO[d]._onboarding={...CARDIO[d]._onboarding,trainDays:[...((CARDIO[d]._onboarding.trainDays)||[]),d]};
+  }
+  save();render();showToast('Cardio added to '+d);
+}
 function wkProg(d){if(!WK[d]||!EX[d])return{done:0,total:0,pct:0};const c=[];if(getCardio(d,'am'))c.push(`${d}|am`);if(getCardio(d,'pc'))c.push(`${d}|pc`);const sets=getSetKeys(d);const done=c.filter(id=>st[id]).length+sets.filter(k=>ws[k]&&ws[k].done).length;const tot=c.length+sets.length;return{done,total:tot,pct:tot?Math.round(done/tot*100):0};}
 
 // ── ACTIONS ────────────────────────────────────────────────────────────────
@@ -2201,6 +2254,7 @@ async function loadUserData(uid){
       if(d.MEALS&&d.MEALS.length)MEALS=d.MEALS;
       if(d.SUPPS)SUPPS=d.SUPPS;
       if(d.CARDIO)CARDIO=d.CARDIO;
+      if(d.MACROS)MACROS=d.MACROS;
     }
     // Load profile
     const psnap=await fbGet(userProfileRef(uid));
@@ -2223,7 +2277,7 @@ async function loadUserData(uid){
 async function saveUserData(){
   if(!currentUser||!db)return;
   try{
-    await fbSet(userDataRef(currentUser.uid),{st,ws,wtr,EX,MEALS,SUPPS,CARDIO,ts:Date.now()});
+    await fbSet(userDataRef(currentUser.uid),{st,ws,wtr,EX,MEALS,SUPPS,CARDIO,MACROS,ts:Date.now()});
   }catch(e){console.warn('saveUserData error',e);}
 }
 
@@ -2681,12 +2735,12 @@ function openAddExercise(d){
   const lib=getLibraryForDay(d);
   const libSection=lib?`
     <div class="ae-tabs">
-      <button class="ae-tab active" id="ae-tab-lib" onclick="aeShowTab('lib')">📚 ${lib.label} Library</button>
+      <button class="ae-tab active" id="ae-tab-lib" onclick="aeShowTab('lib')">📚 ${lib.label}</button>
       <button class="ae-tab" id="ae-tab-custom" onclick="aeShowTab('custom')">✏️ Custom</button>
     </div>
     <div id="ae-lib-panel">
-      <input class="ex-lib-search" id="ae-lib-search" placeholder="Search exercises…" autocomplete="off"
-        oninput="aeFilterLib()">
+      <input class="ex-lib-search" id="ae-lib-search" placeholder="Search ${lib.label} exercises…" autocomplete="off" oninput="aeFilterLib()">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text3);margin-bottom:6px;text-align:right" id="ae-lib-count"></div>
       <div class="ex-lib-list" id="ae-lib-list"></div>
     </div>
     <div id="ae-custom-panel" style="display:none">` : '<div id="ae-custom-panel">';
@@ -2732,10 +2786,19 @@ function aeShowTab(tab){
 function aeRenderLib(exercises){
   const list=document.getElementById('ae-lib-list');
   if(!list)return;
-  if(!exercises||exercises.length===0){list.innerHTML='<div class="ex-lib-empty">No exercises found</div>';return;}
-  list.innerHTML=exercises.map(name=>`<div class="ex-lib-item" onclick="aeSelectExercise('${esc(name)}')">`+
-    `<span class="ex-lib-item-name">${esc(name)}</span><span class="ex-lib-item-add">+</span></div>`).join('');
-  setTimeout(()=>{const f=document.getElementById('ae-lib-search');if(f)f.focus();},300);
+  if(!exercises||exercises.length===0){
+    list.innerHTML='<div class="ex-lib-empty">No exercises match your search</div>';
+    const countEl=document.getElementById('ae-lib-count');if(countEl)countEl.textContent='0 exercises';
+    return;
+  }
+  const curSelected=(document.getElementById('ae-name')||{}).value||'';
+  list.innerHTML=exercises.map(name=>{
+    const isSel=name===curSelected;
+    return'<div class="ex-lib-item'+(isSel?' selected':'')+'" onclick="aeSelectExercise(this.dataset.name)" data-name="'+esc(name)+'"><span class="ex-lib-item-name">'+esc(name)+'</span><span class="ex-lib-item-add">'+(isSel?'✓':'+')+'</span></div>';
+  }).join('');
+  const countEl=document.getElementById('ae-lib-count');
+  if(countEl)countEl.textContent=exercises.length+' exercise'+(exercises.length!==1?'s':'');
+  setTimeout(()=>{const f=document.getElementById('ae-lib-search');if(f)f.focus();},200);
 }
 function aeFilterLib(){
   const q=(document.getElementById('ae-lib-search').value||'').toLowerCase().trim();
@@ -2811,8 +2874,22 @@ function wkHTML(d){
   return`<div class="section open-section"><div class="sec-head" onclick="toggleSec('wk')"><div class="sec-icon ic-wk">WK</div><div class="sec-title">${isRest?'Recovery Tasks':'Workout'}<span class="sec-sub">${esc(WK[d].full)}</span></div><div class="sec-count${done===tot?' done':''}">${done}/${tot}</div><div class="sec-chev open">▾</div></div><div class="sec-body open">${exsH}${addBtn}</div></div>`;
 }
 
+function saveMacro(field,val){MACROS[field]=val;dSave();}
 function nutrHTML(d){
-  let h=`<div class="macros-strip"><div class="mac"><div class="mac-val">~2,310</div><div class="mac-lbl">Cal</div></div><div class="mac"><div class="mac-val">~205g</div><div class="mac-lbl">Protein</div></div><div class="mac"><div class="mac-val">~190g</div><div class="mac-lbl">Carbs</div></div><div class="mac"><div class="mac-val">~70g</div><div class="mac-lbl">Fat</div></div></div>`;
+  const isAdmin=userProfile&&(userProfile.username===ADMIN_USERNAME||userProfile.email===ADMIN_EMAIL);
+  // Admin gets pre-set macros display; new users get editable inputs
+  let macroH;
+  if(isAdmin&&!MACROS.cal){
+    macroH=`<div class="macros-strip"><div class="mac"><div class="mac-val">~2,310</div><div class="mac-lbl">Cal</div></div><div class="mac"><div class="mac-val">~205g</div><div class="mac-lbl">Protein</div></div><div class="mac"><div class="mac-val">~190g</div><div class="mac-lbl">Carbs</div></div><div class="mac"><div class="mac-val">~70g</div><div class="mac-lbl">Fat</div></div></div>`;
+  } else {
+    macroH=`<div class="macros-strip">
+      <div class="mac"><input class="mac-input" type="number" inputmode="numeric" placeholder="0" value="${esc(MACROS.cal||'')}" onchange="saveMacro('cal',this.value)" title="Daily calories"><div class="mac-lbl">Cal</div><div class="mac-edit-hint">tap to edit</div></div>
+      <div class="mac"><input class="mac-input" type="number" inputmode="numeric" placeholder="0" value="${esc(MACROS.protein||'')}" onchange="saveMacro('protein',this.value)" title="Protein (g)"><div class="mac-lbl">Protein g</div><div class="mac-edit-hint">tap to edit</div></div>
+      <div class="mac"><input class="mac-input" type="number" inputmode="numeric" placeholder="0" value="${esc(MACROS.carbs||'')}" onchange="saveMacro('carbs',this.value)" title="Carbs (g)"><div class="mac-lbl">Carbs g</div><div class="mac-edit-hint">tap to edit</div></div>
+      <div class="mac"><input class="mac-input" type="number" inputmode="numeric" placeholder="0" value="${esc(MACROS.fat||'')}" onchange="saveMacro('fat',this.value)" title="Fat (g)"><div class="mac-lbl">Fat g</div><div class="mac-edit-hint">tap to edit</div></div>
+    </div>`;
+  }
+  let h=macroH;
 
   MEALS.forEach((m,mi)=>{
     const isO=!!mealOp[m.id],isE=editingMeal===m.id;
@@ -2859,22 +2936,40 @@ async function render(){
   } else {
     h=`<div class="reset-row"><button class="reset-btn" onclick="resetDay('${d}')">Reset ${d}</button></div>`;
     if(mode==='workout'){
-      const amName=getCardio(d,'am'),amNote=getCardio(d,'ams');
-      if(amName){
-        const amBody=ciHTML(`${d}|am`,amName,amNote)+`<button class="add-btn" style="margin-top:4px;border-style:solid;border-color:var(--border);font-size:10px;padding:8px" onclick="openEditCardio('${d}','am')">✏️ Edit Cardio</button>`;
-        h+=secHTML('am','ic-am','AM','Morning Cardio',amName,amBody,st[`${d}|am`]?'1/1':'0/1');
+      const restDay=isRestDay(d);
+      if(restDay&&EX[d].length===0&&!getCardio(d,'am')&&!getCardio(d,'pc')){
+        // Pure rest day — show the friendly rest screen
+        h+=`<div class="rest-day-wrap">
+          <div class="rest-day-icon">🛋️</div>
+          <div class="rest-day-title">Rest Day</div>
+          <div class="rest-day-sub">You're not training today. Recovery is part of the program.<br>But if you want to train or add cardio, you can override below.</div>
+          <div class="rest-day-actions">
+            <button class="rest-day-btn primary" onclick="activateRestDay('${d}')">💪 Train today</button>
+            <button class="rest-day-btn" onclick="addCardioToRestDay('${d}','am')">🌅 Add morning cardio</button>
+            <button class="rest-day-btn" onclick="addCardioToRestDay('${d}','pc')">🏃 Add cardio session</button>
+          </div>
+        </div>`;
+        // Still show photos section
+        const isPhO=!!op.ph;
+        h+=`<div class="section${isPhO?' open-section':''}"><div class="sec-head" onclick="toggleSec('ph')"><div class="sec-icon ic-ph">📸</div><div class="sec-title">Progress Photos<span class="sec-sub">Tap to log your physique</span></div><div class="sec-count"></div><div class="sec-chev${isPhO?' open':''}">▾</div></div><div class="sec-body${isPhO?' open':''}">${isPhO?'<div id="photo-sec-body">Loading…</div>':''}</div></div>`;
+      } else {
+        // Training day (or rest day that user activated)
+        const amName=getCardio(d,'am'),amNote=getCardio(d,'ams');
+        if(amName){
+          const amBody=ciHTML(`${d}|am`,amName,amNote)+`<button class="add-btn" style="margin-top:4px;border-style:solid;border-color:var(--border);font-size:10px;padding:8px" onclick="openEditCardio('${d}','am')">✏️ Edit Cardio</button>`;
+          h+=secHTML('am','ic-am','AM','Morning Cardio',amName,amBody,st[`${d}|am`]?'1/1':'0/1');
+        }
+        h+=wkHTML(d);
+        if(w.pc||getCardio(d,'pc')){
+          const pcName=getCardio(d,'pc'),pcNote=getCardio(d,'pcs');
+          const pcBody=ciHTML(`${d}|pc`,pcName,pcNote)+`<button class="add-btn" style="margin-top:4px;border-style:solid;border-color:var(--border);font-size:10px;padding:8px" onclick="openEditCardio('${d}','pc')">✏️ Edit Cardio</button>`;
+          h+=secHTML('pc','ic-pc','PC','Post-Workout Cardio',pcName,pcBody,st[`${d}|pc`]?'1/1':'0/1');
+        }
+        // Progress Photos section
+        const isPhO=!!op.ph;
+        const phBody=`<div id="photo-sec-body">Loading…</div>`;
+        h+=`<div class="section${isPhO?' open-section':''}"><div class="sec-head" onclick="toggleSec('ph')"><div class="sec-icon ic-ph">📸</div><div class="sec-title">Progress Photos<span class="sec-sub">Tap to log your physique</span></div><div class="sec-count"></div><div class="sec-chev${isPhO?' open':''}">▾</div></div><div class="sec-body${isPhO?' open':''}">${isPhO?phBody:''}</div></div>`;
       }
-      h+=wkHTML(d);
-      if(w.pc||getCardio(d,'pc')){
-        const pcName=getCardio(d,'pc'),pcNote=getCardio(d,'pcs');
-        const pcBody=ciHTML(`${d}|pc`,pcName,pcNote)+`<button class="add-btn" style="margin-top:4px;border-style:solid;border-color:var(--border);font-size:10px;padding:8px" onclick="openEditCardio('${d}','pc')">✏️ Edit Cardio</button>`;
-        h+=secHTML('pc','ic-pc','PC','Post-Workout Cardio',pcName,pcBody,st[`${d}|pc`]?'1/1':'0/1');
-      }
-
-      // Progress Photos section (workout mode)
-      const isPhO=!!op.ph;
-      const phBody=`<div id="photo-sec-body">Loading…</div>`;
-      h+=`<div class="section${isPhO?' open-section':''}"><div class="sec-head" onclick="toggleSec('ph')"><div class="sec-icon ic-ph">📸</div><div class="sec-title">Progress Photos<span class="sec-sub">Tap to log your physique</span></div><div class="sec-count"></div><div class="sec-chev${isPhO?' open':''}">▾</div></div><div class="sec-body${isPhO?' open':''}">${isPhO?phBody:''}</div></div>`;
     } else {
       h+=nutrHTML(d);
     }
@@ -2899,7 +2994,8 @@ async function render(){
 const _fns={
   selectMode,enterCoachMode,showMsMain,showCoTrainRole,selectCoTrainRole,enterGuestMode,exitGuestView,startGuestView,stopCoTrainHost,showCoTrainCodeToast,
   switchAuthTab,doLogin,doSignup,doSignOut,openProfileModal,saveProfile,updateHeaderName,
-  getCardio,setCardio,openEditCardio,confirmEditCardio,removeCardio,
+  getCardio,setCardio,openEditCardio,confirmEditCardio,removeCardio,saveMacro,
+  isRestDay,activateRestDay,addCardioToRestDay,
   aeShowTab,aeFilterLib,aeSelectExercise,getLibraryForDay,
   check,toggleSec,toggleMealSec,toggleEx,switchDay,setMode,
   markSet,undoSet,wInput,rInput,addWater,resetDay,
