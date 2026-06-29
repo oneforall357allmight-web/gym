@@ -1122,30 +1122,22 @@ const PROGRAM_START='2026-06-26';
 const GR_CATS=['🥩 Protein','🍚 Carbs','🥦 Produce','☕ Other','💊 Supps','✏️ Custom'];
 
 const WK={
-  Sat:{full:'Legs — Hypertrophy',badge:'Volume',bc:'bvol',am:'25 min cycling — easy',ams:'Moderate pace · protect legs',pc:'10 min slow walk',pcs:'Legs are done. Just flush.'},
-  Sun:{full:'Push — Strength',badge:'Strength',bc:'bstr',am:'40 min fasted incline walk',ams:'Incline 8-10% · HR 120-135 · empty stomach',pc:'20 min HIIT — stationary bike',pcs:'30s sprint / 90s rest × 8 rounds'},
-  Mon:{full:'Pull — Strength',badge:'Strength',bc:'bstr',am:'40 min fasted incline walk',ams:'Incline 8-10% · HR 120-135',pc:'15 min steady state — rowing',pcs:'65-70% max HR'},
-  Tue:{full:'Active Recovery',badge:'Rest',bc:'brst',am:'30-45 min walk or light swim',ams:'Keep moving. No structured training.',pc:null,pcs:null},
-  Wed:{full:'Legs — Strength',badge:'Strength',bc:'bstr',am:'25 min cycling — easy',ams:'HR 110-125 · preserve legs',pc:'10 min slow incline walk',pcs:'Cool down only — flush lactic acid'},
-  Thu:{full:'Push — Hypertrophy',badge:'Volume',bc:'bvol',am:'40 min fasted incline walk',ams:'Incline 8-10% · HR 120-135',pc:'20 min HIIT — treadmill',pcs:'20s sprint / 40s walk × 10 rounds'},
-  Fri:{full:'Pull — Hypertrophy',badge:'Volume',bc:'bvol',am:'40 min fasted incline walk',ams:'Incline 8-10% · HR 120-135',pc:'15 min elliptical',pcs:'HR 130-145 · low impact'}
+  Sat:{full:'Push — Strength',badge:'Strength',bc:'bstr',am:'40 min fasted incline walk',ams:'Incline 8-10% · HR 120-135 · empty stomach',pc:'20 min HIIT — stationary bike',pcs:'30s sprint / 90s rest × 8 rounds'},
+  Sun:{full:'Pull — Strength',badge:'Strength',bc:'bstr',am:'40 min fasted incline walk',ams:'Incline 8-10% · HR 120-135',pc:'15 min steady state — rowing',pcs:'65-70% max HR'},
+  Mon:{full:'Legs — Strength',badge:'Strength',bc:'bstr',am:'25 min cycling — easy',ams:'HR 110-125 · preserve legs',pc:'10 min slow incline walk',pcs:'Cool down only — flush lactic acid'},
+  Tue:{full:'Active Recovery',badge:'Rest',bc:'brst',am:'',ams:'',pc:null,pcs:null},
+  Wed:{full:'Push — Hypertrophy',badge:'Volume',bc:'bvol',am:'40 min fasted incline walk',ams:'Incline 8-10% · HR 120-135',pc:'20 min HIIT — treadmill',pcs:'20s sprint / 40s walk × 10 rounds'},
+  Thu:{full:'Pull — Hypertrophy',badge:'Volume',bc:'bvol',am:'40 min fasted incline walk',ams:'Incline 8-10% · HR 120-135',pc:'15 min elliptical',pcs:'HR 130-145 · low impact'},
+  Fri:{full:'Legs — Hypertrophy',badge:'Volume',bc:'bvol',am:'25 min cycling — easy',ams:'Moderate pace · protect legs',pc:'10 min slow walk',pcs:'Legs are done. Just flush.'}
 };
 
 // DEFAULT_WEIGHTS: net lbs (no bar on barbell moves · per-hand on DBs · machine/cable ignored)
 // Calibrated for a solid 7/10 lifter — RPE 8-9 on the prescribed rep range.
 // Schedule: Sat=Legs Hyper · Sun=Push Str · Mon=Pull Str · Tue=Rest · Wed=Legs Str · Thu=Push Hyper · Fri=Pull Hyper
 const DEFAULT_EX={
+  // PPL Cycle: Sat=Push Str · Sun=Pull Str · Mon=Legs Str · Tue=Rest · Wed=Push Hyper · Thu=Pull Hyper · Fri=Legs Hyper
   Sat:[
-    {n:'Trap Bar / Sumo Deadlift',s:5,r:'3–6',rest:210,w:'255',note:'RPE 8-9'},
-    {n:'Front Squat or Goblet Squat',s:3,r:'6–10',rest:150,w:'135',note:'Upright torso = more quad'},
-    {n:'Nordic Hamstring Curl / GHD',s:3,r:'5–8',rest:120,note:'Best hamstring eccentric'},
-    {n:'Walking Lunge (dumbbell)',s:3,r:'20 steps',rest:90,w:'45',note:'Long stride = more glute · per DB'},
-    {n:'Leg Press (feet high)',s:4,r:'12–15',rest:90,note:'Posterior chain'},
-    {n:'Hip Thrust + Abduction SS',s:3,r:'12+15',rest:75,w:'155',note:'Pre-fatigue then thrust'},
-    {n:'Seated Calf Raise (5s tempo)',s:5,r:'15–20',rest:75,note:'5s up 5s down'},
-    {n:'Tibialis Raise (ATG)',s:3,r:'20–25',rest:45,note:'Bulletproofs shins'}
-  ],
-  Sun:[
+    // PUSH — STRENGTH
     {n:'Barbell Bench Press',s:4,r:'4–6',rest:180,w:'185',note:'RPE 8-9 · pause 1s on chest'},
     {n:'Overhead Press (standing)',s:4,r:'5–7',rest:180,w:'115',note:'RPE 8 · brace hard'},
     {n:'Incline Dumbbell Press',s:3,r:'8–12',rest:120,w:'70',note:'30-45° · full stretch'},
@@ -1156,7 +1148,8 @@ const DEFAULT_EX={
     {n:'Cable Overhead Tricep Ext.',s:3,r:'12–15',rest:75,note:'Long head · full stretch'},
     {n:'Lateral Raise Drop Set',s:1,r:'×3 drops',rest:0,w:'25',note:'Start 25→20→15 · finisher'}
   ],
-  Mon:[
+  Sun:[
+    // PULL — STRENGTH
     {n:'Weighted Pull-Up',s:4,r:'4–8',rest:180,w:'35',note:'Add weight when 10 reps clean'},
     {n:'Barbell Row (Yates)',s:4,r:'5–8',rest:150,w:'185',note:'Upright · elbows in'},
     {n:'Seated Cable Row (wide)',s:3,r:'10–12',rest:90,note:'Drive elbows back hard'},
@@ -1167,13 +1160,8 @@ const DEFAULT_EX={
     {n:'Incline Dumbbell Curl',s:3,r:'10–15',rest:75,w:'30',note:'Long head stretch'},
     {n:'Hammer Curl',s:3,r:'10–15',rest:60,w:'35',note:'Brachialis · neutral grip'}
   ],
-  Tue:[
-    {n:'Foam roll full body',s:1,r:'15 min',rest:0,note:'Quads, lats, thoracic'},
-    {n:'Hip flexor + thoracic mobility',s:1,r:'15 min',rest:0,note:'Keep these loose'},
-    {n:'Zone 2 walk or light swim',s:1,r:'30–45 min',rest:0,note:'Conversational pace'},
-    {n:'Sleep 8-9 hours tonight',s:1,r:'done',rest:0,note:'GH peaks during deep sleep'}
-  ],
-  Wed:[
+  Mon:[
+    // LEGS — STRENGTH
     {n:'Back Squat',s:5,r:'3–5',rest:210,w:'225',note:'Non-negotiable · hit depth'},
     {n:'Romanian Deadlift',s:4,r:'8–10',rest:150,w:'165',note:'Hip hinge · feel the stretch'},
     {n:'Leg Press',s:4,r:'10–15',rest:120,note:'Wide feet = more glute'},
@@ -1183,7 +1171,9 @@ const DEFAULT_EX={
     {n:'Hip Thrust (barbell)',s:4,r:'10–15',rest:90,w:'185',note:'Full extension · squeeze hard'},
     {n:'Standing Calf Raise',s:4,r:'15–20',rest:60,note:'Full ROM · pause at top'}
   ],
-  Thu:[
+  Tue:[],
+  Wed:[
+    // PUSH — HYPERTROPHY
     {n:'Incline Barbell Press',s:4,r:'6–10',rest:120,w:'155',note:'Upper chest leads'},
     {n:'Dumbbell Shoulder Press',s:4,r:'8–12',rest:120,w:'55',note:'Greater ROM'},
     {n:'Flat Dumbbell Press',s:3,r:'10–12',rest:90,w:'75',note:'Let DBs drop below chest'},
@@ -1194,7 +1184,8 @@ const DEFAULT_EX={
     {n:'Skull Crusher (EZ-bar)',s:3,r:'10–12',rest:75,w:'85',note:'Lower behind head'},
     {n:'Cable Fly + Pushdown SS',s:3,r:'12 ea',rest:60,note:'Superset'}
   ],
-  Fri:[
+  Thu:[
+    // PULL — HYPERTROPHY
     {n:'Conventional Deadlift',s:4,r:'3–5',rest:240,w:'275',note:'RPE 8-9'},
     {n:'Chest-Supported T-Bar Row',s:4,r:'8–12',rest:120,w:'90',note:'No lower back fatigue'},
     {n:'Straight-Arm Lat Pulldown',s:3,r:'12–15',rest:75,note:'Pure lat isolation'},
@@ -1204,6 +1195,17 @@ const DEFAULT_EX={
     {n:'Preacher Curl',s:3,r:'10–12',rest:90,w:'65',note:'No cheating'},
     {n:'Single-Arm Cable Curl',s:3,r:'12–15',rest:60,note:'Constant tension'},
     {n:'21s (Barbell)',s:3,r:'21',rest:60,w:'55',note:'7+7+7'}
+  ],
+  Fri:[
+    // LEGS — HYPERTROPHY
+    {n:'Trap Bar / Sumo Deadlift',s:5,r:'3–6',rest:210,w:'255',note:'RPE 8-9'},
+    {n:'Front Squat or Goblet Squat',s:3,r:'6–10',rest:150,w:'135',note:'Upright torso = more quad'},
+    {n:'Nordic Hamstring Curl / GHD',s:3,r:'5–8',rest:120,note:'Best hamstring eccentric'},
+    {n:'Walking Lunge (dumbbell)',s:3,r:'20 steps',rest:90,w:'45',note:'Long stride = more glute · per DB'},
+    {n:'Leg Press (feet high)',s:4,r:'12–15',rest:90,note:'Posterior chain'},
+    {n:'Hip Thrust + Abduction SS',s:3,r:'12+15',rest:75,w:'155',note:'Pre-fatigue then thrust'},
+    {n:'Seated Calf Raise (5s tempo)',s:5,r:'15–20',rest:75,note:'5s up 5s down'},
+    {n:'Tibialis Raise (ATG)',s:3,r:'20–25',rest:45,note:'Bulletproofs shins'}
   ]
 };
 
@@ -2365,30 +2367,22 @@ async function loadUserData(uid){
     const psnap=await fbGet(userProfileRef(uid));
     if(psnap&&psnap.exists())userProfile=psnap.val();
   }catch(e){console.warn('loadUserData error',e);}
-  // Admin (haitamahir) always gets the full pre-populated program
+  // Admin (haitamahir) — always restore full program if exercises are missing
   if(currentUser&&userProfile&&userProfile.username===ADMIN_USERNAME){
-    // Seed if every single day has zero exercises (fresh or wiped account)
-    const hasData=DAYS.some(d=>EX[d]&&EX[d].length>0);
-    if(!hasData){
-      // Restore full exercises, meals, supplements
+    const totalEx=DAYS.reduce((sum,d)=>sum+(EX[d]?EX[d].length:0),0);
+    const needsRestore=totalEx===0; // any empty dashboard triggers restore
+    if(needsRestore){
       EX=JSON.parse(JSON.stringify(DEFAULT_EX));
       MEALS=JSON.parse(JSON.stringify(DEFAULT_MEALS));
       SUPPS=[...DEFAULT_SUPPS];
-      // Restore WK-based cardio for each day
       CARDIO={};
       DAYS.forEach(d=>{
-        if(WK[d].am)CARDIO[d]={am:WK[d].am,ams:WK[d].ams,pc:WK[d].pc||null,pcs:WK[d].pcs||null};
+        if(WK[d]&&WK[d].am)CARDIO[d]={am:WK[d].am,ams:WK[d].ams||'',pc:WK[d].pc||null,pcs:WK[d].pcs||null};
       });
-      // Restore USER_PREFS to match the WK schedule
-      USER_PREFS={
-        split:'ppl',
-        trainDays:['Sat','Sun','Mon','Wed','Thu','Fri'], // Tue is rest
-        doesCardio:true,
-        cardioTiming:'both'
-      };
+      USER_PREFS={split:'ppl',trainDays:['Sat','Sun','Mon','Wed','Thu','Fri'],doesCardio:true,cardioTiming:'both'}; // Tue=rest
       MACROS={cal:'2310',protein:'205',carbs:'190',fat:'70'};
       await saveUserData();
-      showToast('Welcome back Haytha — your program is restored!');
+      showToast('Program restored — welcome back Haytha!');
     }
   }
   seedWeights();
