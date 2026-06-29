@@ -2365,15 +2365,30 @@ async function loadUserData(uid){
     const psnap=await fbGet(userProfileRef(uid));
     if(psnap&&psnap.exists())userProfile=psnap.val();
   }catch(e){console.warn('loadUserData error',e);}
-  // If admin user and no data saved yet, seed full program
+  // Admin (haitamahir) always gets the full pre-populated program
   if(currentUser&&userProfile&&userProfile.username===ADMIN_USERNAME){
-    // Check if EX is empty (new account) and seed with defaults
+    // Seed if every single day has zero exercises (fresh or wiped account)
     const hasData=DAYS.some(d=>EX[d]&&EX[d].length>0);
     if(!hasData){
+      // Restore full exercises, meals, supplements
       EX=JSON.parse(JSON.stringify(DEFAULT_EX));
       MEALS=JSON.parse(JSON.stringify(DEFAULT_MEALS));
       SUPPS=[...DEFAULT_SUPPS];
+      // Restore WK-based cardio for each day
+      CARDIO={};
+      DAYS.forEach(d=>{
+        if(WK[d].am)CARDIO[d]={am:WK[d].am,ams:WK[d].ams,pc:WK[d].pc||null,pcs:WK[d].pcs||null};
+      });
+      // Restore USER_PREFS to match the WK schedule
+      USER_PREFS={
+        split:'ppl',
+        trainDays:['Sat','Sun','Mon','Wed','Thu','Fri'], // Tue is rest
+        doesCardio:true,
+        cardioTiming:'both'
+      };
+      MACROS={cal:'2310',protein:'205',carbs:'190',fat:'70'};
       await saveUserData();
+      showToast('Welcome back Haytha — your program is restored!');
     }
   }
   seedWeights();
