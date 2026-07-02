@@ -2367,18 +2367,22 @@ async function loadUserData(uid){
     const psnap=await fbGet(userProfileRef(uid));
     if(psnap&&psnap.exists())userProfile=psnap.val();
   }catch(e){console.warn('loadUserData error',e);}
-  // Admin (haitamahir) — ALWAYS restore full program unconditionally
+ // Admin (haitamahir) — seed the starting program ONCE, never overwrite saved edits
   if(currentUser&&userProfile&&userProfile.username===ADMIN_USERNAME){
-    EX=JSON.parse(JSON.stringify(DEFAULT_EX));
-    MEALS=JSON.parse(JSON.stringify(DEFAULT_MEALS));
-    SUPPS=[...DEFAULT_SUPPS];
-    CARDIO={};
-    DAYS.forEach(d=>{
-      if(WK[d]&&WK[d].am)CARDIO[d]={am:WK[d].am,ams:WK[d].ams||'',pc:WK[d].pc||null,pcs:WK[d].pcs||null};
-    });
-    USER_PREFS={split:'ppl',trainDays:['Sat','Sun','Mon','Wed','Thu','Fri'],doesCardio:true,cardioTiming:'both'};
-    MACROS={cal:'2310',protein:'205',carbs:'190',fat:'70'};
-    await saveUserData();
+    const hasSavedProgram = DAYS.some(dd => Array.isArray(EX[dd]) && EX[dd].length > 0);
+    if(!hasSavedProgram){
+      EX=JSON.parse(JSON.stringify(DEFAULT_EX));
+      MEALS=JSON.parse(JSON.stringify(DEFAULT_MEALS));
+      SUPPS=[...DEFAULT_SUPPS];
+      CARDIO={};
+      DAYS.forEach(d=>{
+        if(WK[d]&&WK[d].am)CARDIO[d]={am:WK[d].am,ams:WK[d].ams||'',pc:WK[d].pc||null,pcs:WK[d].pcs||null};
+      });
+      USER_PREFS={split:'ppl',trainDays:['Sat','Sun','Mon','Wed','Thu','Fri'],doesCardio:true,cardioTiming:'both'};
+      MACROS={cal:'2310',protein:'205',carbs:'190',fat:'70'};
+      await saveUserData();
+    }
+    // else: your saved program loads normally and is left untouched
   }
   seedWeights();
 }
@@ -2393,6 +2397,18 @@ async function saveUserData(){
 // Debounced cloud save
 let cloudSaveT;
 function dCloudSave(){clearTimeout(cloudSaveT);cloudSaveT=setTimeout(saveUserData,1500);}
+
+// Manual immediate save — commits the current routine right now
+async function saveDayNow(){
+  try{
+    save();                 // localStorage + triggers debounced cloud save
+    await saveUserData();   // force an immediate cloud write
+    showToast('✓ Routine saved');
+    if(navigator.vibrate)navigator.vibrate([20,40,20]);
+  }catch(e){
+    showToast('Save failed — check connection');
+  }
+}
 
 // ── PROFILE FUNCTIONS ─────────────────────────────────────────────────────
 function openProfileModal(){
@@ -2999,7 +3015,8 @@ function wkHTML(d){
     return`<div class="ex-wrap${isExO?' ex-open':''}"><div class="ex-head" onclick="toggleEx('${ekey}')"><div class="ex-num-badge">${ei+1}</div><div class="ex-info"><div class="ex-name">${esc(e.n)}</div><div class="ex-meta">${e.s}×${esc(e.r)}${rl?' · '+rl:''}${e.note?' · '+esc(e.note):''}</div></div><div class="ex-prog${allSD?' full':''}">${sd}/${e.s}</div><div class="ex-chev${isExO?' open':''}">▾</div></div><div class="ex-body${isExO?' open':''}">${sH}${ctrl}</div></div>`;
   }).join('');
   const addBtn=`<button class="add-btn" onclick="openAddExercise('${d}')"><svg viewBox="0 0 14 14"><line x1="7" y1="2" x2="7" y2="12"/><line x1="2" y1="7" x2="12" y2="7"/></svg>Add Exercise</button>`;
-  return`<div class="section open-section"><div class="sec-head" onclick="toggleSec('wk')"><div class="sec-icon ic-wk">WK</div><div class="sec-title">${isRest?'Recovery Tasks':'Workout'}<span class="sec-sub">${esc(dayLabel)}</span></div><div class="sec-count${done===tot?' done':''}">${done}/${tot}</div><div class="sec-chev open">▾</div></div><div class="sec-body open">${exsH}${addBtn}</div></div>`;
+  const saveBtn=`<button class="add-btn" style="border-style:solid;border-color:var(--amber);color:var(--amber)" onclick="saveDayNow()">💾 Save Day</button>`;
+  return`<div class="section open-section"><div class="sec-head" onclick="toggleSec('wk')"><div class="sec-icon ic-wk">WK</div><div class="sec-title">${isRest?'Recovery Tasks':'Workout'}<span class="sec-sub">${esc(dayLabel)}</span></div><div class="sec-count${done===tot?' done':''}">${done}/${tot}</div><div class="sec-chev open">▾</div></div><div class="sec-body open">${exsH}${addBtn}${saveBtn}</div></div>`;
 }
 
 function saveMacro(field,val){MACROS[field]=val;dSave();}
@@ -3146,7 +3163,7 @@ const _fns={
   toggleCalDay,dismissPopup,
   skipTimer,adjustTimer,startTimerLocal,
   triggerPhotoCapture,handlePhotoFile,saveCurrentPhoto,openPhotoViewer,closePhotoViewer,confirmDeletePhoto,
-  showToast,save,render,confirmSignOut,showAuthLoading,hideAuthLoading,markGuestDayDone,
+  showToast,save,render,confirmSignOut,showAuthLoading,hideAuthLoading,markGuestDayDone,saveDayNow,
   showOnboarding,hideOnboarding,obSelectCardio,obSelectSplit,obSelectNum,obToggleDay,obNext,obFinish,obGoToStep,obSelectCardioTiming
 };
 Object.assign(window,_fns);
@@ -3156,6 +3173,25 @@ Object.defineProperty(window,'ws',{get:()=>ws});
 Object.defineProperty(window,'currentPhotoCaptureData',{get:()=>currentPhotoCaptureData,set:(v)=>{currentPhotoCaptureData=v;}});
 Object.defineProperty(window,'calMonthOffset',{get:()=>calMonthOffset,set:(v)=>{calMonthOffset=v;}});
 Object.defineProperty(window,'op',{get:()=>op});
+
+// ── LIVE PRESENT-DAY TRACKING ──────────────────────────────────────────────
+// Keeps the selected day tab and the progress calendar locked to the REAL
+// current day. If the date rolls over past midnight, or the app is reopened /
+// refocused on a new day, we jump to today and re-render — so tomorrow it shows
+// Friday, the day after Saturday, and so on, automatically.
+let _lastSeenDay=todayStr();
+function todayTab(){return DAYS[(new Date().getDay()+1)%7];}
+function checkDayRollover(){
+  const now=todayStr();
+  if(now!==_lastSeenDay){
+    _lastSeenDay=now;
+    if(!isGuestView&&!isCoachView)day=todayTab(); // follow the new current day
+    if(typeof render==='function')render();        // refreshes calendar + tabs
+  }
+}
+setInterval(checkDayRollover,30000); // check twice a minute while open
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkDayRollover();});
+window.addEventListener('focus',checkDayRollover);
 
 // ── INIT ───────────────────────────────────────────────────────────────────
 setInterval(updateClock,1000);
