@@ -255,32 +255,39 @@ body::after{
   transition:width .6s var(--ez-out);box-shadow:0 0 12px rgba(255,182,39,.45)}
 .rail-pct{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--gold);min-width:36px;text-align:right}
 
-/* Day strip. Every pill is identical in size, and each indicator sits in a
-   fixed-size slot, so a rest day and a training day line up exactly. The bar is
-   a fixed pixel width — a percentage rounds differently in each grid column and
-   makes the row look ragged on a phone. */
+/* Day strip.
+   Placement is a fixed two-row grid (label, indicator) with align-content:center,
+   so every pill puts its contents on exactly the same two lines no matter what
+   is inside it. Centring a flex column of mixed children was resolving a few
+   pixels lower for rest days and made the row look crooked.
+   Every day also uses the SAME indicator element — a 22px track. Training days
+   fill it; rest days leave it empty and faint. A fixed pixel width matters here:
+   a percentage rounds differently in each grid column and frays the row. */
 .days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;padding-bottom:12px}
 .day{position:relative;min-width:0;height:52px;box-sizing:border-box;
-  border:1px solid var(--line);background:var(--surf);
-  border-radius:13px;cursor:pointer;transition:background .2s var(--ez),border-color .2s var(--ez),transform .2s var(--ez);
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;padding:0}
+  border:1px solid var(--line);background:var(--surf);border-radius:13px;cursor:pointer;
+  display:grid;grid-template-rows:11px 3px;gap:7px;align-content:center;justify-items:center;
+  padding:0;overflow:hidden;
+  transition:background .2s var(--ez),border-color .2s var(--ez),transform .2s var(--ez)}
 .day:active{transform:scale(.93)}
 .day-n{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;color:var(--txt3);
-  letter-spacing:.02em;line-height:1;height:11px;display:flex;align-items:center}
-.day-ind{height:8px;margin-top:5px;display:flex;align-items:center;justify-content:center}
+  letter-spacing:.02em;line-height:11px;height:11px}
 .day-bar{width:22px;height:3px;border-radius:2px;background:var(--track);overflow:hidden}
 .day-bar i{display:block;height:100%;width:0;background:var(--molten);border-radius:2px;
   transition:width .5s var(--ez-out)}
-.day-rest{width:4px;height:4px;border-radius:50%;background:var(--txt4)}
-.day.on{background:var(--gold-d2);border-color:var(--gold-d3)}
+/* rest day: same shape, quieter — outlined rather than filled */
+.day.rest{background:transparent;border-style:dashed}
+.day.rest .day-n{color:var(--txt4)}
+.day.rest .day-bar{background:var(--line)}
+/* today: gold outline. selected: filled. both can be true at once. */
+.day.today{border-color:var(--gold-d3);border-style:solid}
+.day.today .day-n{color:var(--gold)}
+.day.on{background:var(--gold-d2);border-color:var(--gold);border-style:solid}
 .day.on .day-n{color:var(--gold)}
-.day.today::after{content:'';position:absolute;top:5px;right:5px;width:4px;height:4px;
-  border-radius:50%;background:var(--gold);box-shadow:0 0 6px var(--gold)}
-.day.rest{opacity:.55}
 /* very narrow phones */
 @media (max-width:359px){
   .days{gap:4px}
-  .day{height:48px;border-radius:11px}
+  .day{height:48px;border-radius:11px;gap:6px}
   .day-n{font-size:9px}
   .day-bar{width:18px}
 }
@@ -1230,12 +1237,8 @@ function renderHeader(){
     document.getElementById('rail-pct').textContent=p.pct+'%';
     document.getElementById('day-strip').innerHTML=DAYS.map(d=>{
       const pp=dayProgress(d),tr=isTrainingDay(d);
-      // training days get a progress bar; rest days get a quiet dot instead
-      return `<div class="day${d===day?' on':''}${d===todayKey()?' today':''}${tr?'':' rest'}" onclick="setDay('${d}')">
-        <div class="day-n">${d}</div>
-        <div class="day-ind">${tr
-          ?`<div class="day-bar"><i style="width:${pp.pct}%"></i></div>`
-          :'<div class="day-rest"></div>'}</div></div>`;
+      // identical markup for every day — only the fill and the styling differ
+      return `<div class="day${d===day?' on':''}${d===todayKey()?' today':''}${tr?'':' rest'}" onclick="setDay('${d}')"><div class="day-n">${d}</div><div class="day-bar"><i style="width:${tr?pp.pct:0}%"></i></div></div>`;
     }).join('');
   }
   renderPairStrip();
