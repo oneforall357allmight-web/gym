@@ -47,9 +47,9 @@
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 button,input,select,textarea{font-family:inherit;touch-action:manipulation}
-html{background:var(--ink);-webkit-text-size-adjust:100%}
+html{background:var(--ink);-webkit-text-size-adjust:100%;overflow-x:hidden}
 body{
-  background:var(--ink);color:var(--txt);
+  background:var(--ink);color:var(--txt);overflow-x:hidden;max-width:100vw;
   font-family:'Space Grotesk',system-ui,sans-serif;
   min-height:100dvh;overscroll-behavior-y:none;
   -webkit-font-smoothing:antialiased;
@@ -140,7 +140,7 @@ body::after{
   padding:14px 15px;color:var(--txt);font-size:16px;font-weight:500;transition:.2s var(--ez);outline:none}
 .inp::placeholder{color:var(--txt4)}
 .inp:focus{border-color:var(--gold-d3);background:rgba(0,0,0,.45);box-shadow:0 0 0 3px var(--gold-d1)}
-.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .auth-err{color:var(--red);font-size:12.5px;margin-top:11px;text-align:center;min-height:16px;line-height:1.4}
 .auth-note{margin-top:16px;font-size:11.5px;color:var(--txt4);text-align:center;line-height:1.6}
 .auth-note a{color:var(--gold);text-decoration:none}
@@ -194,22 +194,29 @@ body::after{
   transition:width .6s var(--ez-out);box-shadow:0 0 12px rgba(255,182,39,.45)}
 .rail-pct{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--gold);min-width:36px;text-align:right}
 
-/* day strip */
-.days{display:flex;gap:6px;overflow-x:auto;padding-bottom:12px;scrollbar-width:none;
-  -webkit-overflow-scrolling:touch;scroll-snap-type:x proximity}
-.days::-webkit-scrollbar{display:none}
-.day{flex:1;min-width:44px;scroll-snap-align:center;border:1px solid var(--line);background:var(--surf);
-  border-radius:var(--r-m);padding:8px 4px 7px;text-align:center;cursor:pointer;
-  transition:.22s var(--ez);position:relative;overflow:hidden}
-.day:active{transform:scale(.94)}
-.day-n{font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:600;color:var(--txt3);letter-spacing:.04em}
-.day-bar{height:3px;border-radius:2px;background:rgba(255,255,255,.08);margin-top:6px;overflow:hidden}
-.day-bar i{display:block;height:100%;background:var(--molten);border-radius:2px;transition:width .5s var(--ez-out)}
+/* day strip — seven fixed columns, never scrolls, never overflows */
+.days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;padding-bottom:12px}
+.day{position:relative;min-width:0;height:50px;border:1px solid var(--line);background:var(--surf);
+  border-radius:12px;cursor:pointer;transition:.2s var(--ez);overflow:hidden;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:0 2px}
+.day:active{transform:scale(.93)}
+.day-n{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;color:var(--txt3);
+  letter-spacing:.02em;line-height:1}
+.day-bar{width:58%;height:3px;border-radius:2px;background:rgba(255,255,255,.09);overflow:hidden}
+.day-bar i{display:block;height:100%;width:0;background:var(--molten);border-radius:2px;
+  transition:width .5s var(--ez-out)}
+.day-rest{width:4px;height:4px;border-radius:50%;background:var(--txt4)}
 .day.on{background:var(--gold-d2);border-color:var(--gold-d3)}
 .day.on .day-n{color:var(--gold)}
 .day.today::after{content:'';position:absolute;top:5px;right:5px;width:4px;height:4px;
   border-radius:50%;background:var(--gold);box-shadow:0 0 6px var(--gold)}
-.day.rest .day-n{color:var(--txt4)}
+.day.rest{opacity:.55}
+/* very narrow phones */
+@media (max-width:359px){
+  .days{gap:4px}
+  .day{height:46px}
+  .day-n{font-size:9px}
+}
 
 /* pair strip */
 .pair{display:flex;align-items:center;gap:9px;padding:8px 12px;margin-bottom:11px;
@@ -231,7 +238,7 @@ body::after{
    CONTENT + BOTTOM NAV
 ═══════════════════════════════════════════════════════════ */
 .main{position:relative;z-index:2;padding:4px 16px calc(var(--navh) + var(--sab) + 30px)}
-.nav{position:fixed;left:0;right:0;bottom:0;z-index:500;display:grid;grid-template-columns:repeat(4,1fr);
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:500;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
   gap:2px;padding:8px 12px calc(var(--sab) + 8px);
   background:linear-gradient(0deg,rgba(6,8,14,.99) 55%,rgba(6,8,14,.82));
   backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);border-top:1px solid var(--line)}
@@ -354,7 +361,7 @@ body::after{
 .rest-a{display:flex;flex-direction:column;gap:9px;max-width:300px;margin:0 auto;position:relative}
 
 /* ═══ WATER / MACROS ═══ */
-.macros{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:11px}
+.macros{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-bottom:11px}
 .macro{background:var(--surf);border:1px solid var(--line);border-radius:var(--r-m);padding:11px 6px;text-align:center}
 .macro-l{font-family:'JetBrains Mono',monospace;font-size:8.5px;letter-spacing:.12em;
   color:var(--txt4);text-transform:uppercase;margin-bottom:6px}
@@ -406,7 +413,7 @@ body::after{
 .seg-i.on{background:var(--surf3);color:var(--txt)}
 
 /* ═══ CALENDAR ═══ */
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:13px}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:13px}
 .stat{background:var(--surf);border:1px solid var(--line);border-radius:var(--r-m);padding:14px 8px;text-align:center}
 .stat-v{font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:700;
   background:var(--molten);-webkit-background-clip:text;background-clip:text;color:transparent;line-height:1}
@@ -417,10 +424,10 @@ body::after{
 .cal-b{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--surf);
   color:var(--txt2);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center}
 .cal-b:active{transform:scale(.9)}
-.cal-g{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
-.cal-dow{text-align:center;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--txt4);
+.cal-g{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.cal-dow{text-align:center;min-width:0;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--txt4);
   padding-bottom:5px;letter-spacing:.06em}
-.cal-d{aspect-ratio:1;border-radius:10px;border:1px solid var(--line);background:var(--surf);
+.cal-d{aspect-ratio:1;min-width:0;border-radius:10px;border:1px solid var(--line);background:var(--surf);
   display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;
   font-size:12px;font-weight:600;color:var(--txt3);cursor:pointer;transition:.2s var(--ez-spring);position:relative}
 .cal-d:active{transform:scale(.88)}
@@ -429,6 +436,11 @@ body::after{
   box-shadow:0 3px 12px rgba(255,150,50,.28)}
 .cal-d.today{border-color:var(--gold);border-width:1.6px}
 .cal-d.future{opacity:.34;pointer-events:none}
+@media (max-width:359px){
+  .cal-g{gap:3px}
+  .cal-d{font-size:11px;border-radius:8px}
+  .stats{gap:6px}
+}
 
 /* ═══ PROFILE ═══ */
 .pf-hero{text-align:center;padding:26px 18px 22px;background:var(--surf);border:1px solid var(--line);
@@ -457,8 +469,8 @@ body::after{
   color:var(--txt4);margin:20px 0 9px;padding-left:3px}
 
 /* day picker */
-.dpick{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-bottom:10px}
-.dp{aspect-ratio:1;border-radius:11px;border:1.5px solid var(--line);background:var(--surf);
+.dpick{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;margin-bottom:10px}
+.dp{aspect-ratio:1;min-width:0;border-radius:11px;border:1.5px solid var(--line);background:var(--surf);
   color:var(--txt3);font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:700;
   cursor:pointer;transition:.2s var(--ez-spring);display:flex;align-items:center;justify-content:center}
 .dp:active{transform:scale(.88)}
@@ -477,7 +489,7 @@ body::after{
 .opt.on .opt-c::after{content:'';width:7px;height:7px;border-radius:50%;background:#150E00}
 
 /* ═══ PHOTOS ═══ */
-.ph-g{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.ph-g{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
 .ph{aspect-ratio:3/4;border-radius:11px;overflow:hidden;background:var(--surf2);border:1px solid var(--line);
   cursor:pointer;position:relative}
 .ph img{width:100%;height:100%;object-fit:cover}
@@ -830,8 +842,9 @@ let sheetCtx={};
 
 // session / pairing
 let sessId=null,role=null,partner=null; // role: 'host'|'guest'
+let editGranted=false; // host has handed the guest control of the workout
 let myBackup=null; // our own program, parked while we watch someone else's
-let sessListener=null,sessRef=null,partnerListener=null,partnerRef=null;
+let watchers=[]; // every live firebase listener in this session
 let timerListener=null,timerRef=null;
 
 // timer
@@ -934,15 +947,21 @@ function applyBundle(d){
 }
 let cloudT=null,syncT=null;
 function save(opts){
-  // Watching a friend? Their workout is on screen, not ours — never persist it over our own.
-  if(role==='guest')return;
+  // A guest is working on the host's program, not their own. Push it to the
+  // session, but never write it over their own saved data.
+  if(role==='guest'){
+    if(editGranted&&sessId){clearTimeout(syncT);syncT=setTimeout(pushState,300);if(!(opts&&opts.quiet))flashSaved();}
+    return;
+  }
   saveLocal();
   clearTimeout(cloudT);
   cloudT=setTimeout(cloudSave,900);
-  if(sessId&&role==='host'){clearTimeout(syncT);syncT=setTimeout(pushSession,400);}
+  if(sessId){clearTimeout(syncT);syncT=setTimeout(pushState,300);}
   if(opts&&opts.quiet)return;
   flashSaved();
 }
+// Who is allowed to change the workout right now
+function canWrite(){return !sessId||role==='host'||(role==='guest'&&editGranted);}
 let cloudWarned=false;
 async function cloudSave(){
   if(!user||!db)return;
@@ -1025,7 +1044,7 @@ function render(){
     if(b){b.classList.toggle('on',tab===t);b.style.display=(role==='guest'&&t!=='train')?'none':'';}
   });
   if(tab==='train'&&openCards.photos)loadPhotoGrid();
-  m.classList.toggle('locked',role==='guest');
+  m.classList.toggle('locked',role==='guest'&&!editGranted);
   updateCart();
   // keep the reader where they were unless we deliberately changed screens
   if(jumpTop){jumpTop=false;window.scrollTo(0,0);}
@@ -1046,9 +1065,10 @@ function renderHeader(){
     document.getElementById('rail-pct').textContent=p.pct+'%';
     document.getElementById('day-strip').innerHTML=DAYS.map(d=>{
       const pp=dayProgress(d),tr=isTrainingDay(d);
+      // training days get a progress bar; rest days get a quiet dot instead
       return `<div class="day${d===day?' on':''}${d===todayKey()?' today':''}${tr?'':' rest'}" onclick="setDay('${d}')">
         <div class="day-n">${d}</div>
-        <div class="day-bar"><i style="width:${tr?pp.pct:0}%"></i></div></div>`;
+        ${tr?`<div class="day-bar"><i style="width:${pp.pct}%"></i></div>`:'<div class="day-rest"></div>'}</div>`;
     }).join('');
   }
   renderPairStrip();
@@ -1076,9 +1096,11 @@ function renderPairStrip(){
   s.style.display='';
   const me=profile||{firstName:'You'};
   document.getElementById('pair-avs').innerHTML=avHTML(me,'av-30')+avHTML(partner||{firstName:'?'},'av-30');
-  const pn=partner?[partner.firstName,partner.lastName].filter(Boolean).join(' ')||partner.username:'Waiting for partner…';
+  const pn=partner?([partner.firstName,partner.lastName].filter(Boolean).join(' ')||partner.username):'';
   document.getElementById('pair-t').textContent=partner?('Training with '+pn):'Waiting for partner…';
-  document.getElementById('pair-s').textContent=(role==='host'?'Hosting · '+sessId:'Watching '+pn);
+  document.getElementById('pair-s').textContent=role==='host'
+    ?(editGranted?'They have control · '+sessId:'You have control · '+sessId)
+    :(editGranted?'You can edit':'Following '+(pn||'the host'));
 }
 function setTab(t){
   if(role==='guest'&&t!=='train'){toast('You are watching a session');return;}
@@ -1838,7 +1860,7 @@ async function saveDetails(){
   profile.lastName=(document.getElementById('d-l').value||'').trim();
   profile.email=(document.getElementById('d-e').value||'').trim();
   await saveProfileCloud();
-  if(sessId)pushSession();
+  if(sessId)pushMyProfile();
   closeSheet();render();toast('Details saved');
 }
 
@@ -1859,7 +1881,7 @@ document.getElementById('file-in').addEventListener('change',async e=>{
       const d=await resizeImg(f,320,.82);
       profile=profile||{};profile.avatar=d;
       await saveProfileCloud();
-      if(sessId)pushSession();
+      if(sessId)pushMyProfile();
       const s=document.getElementById('sheet-bd');
       if(s.classList.contains('active'))openDetailsSheet();
       render();toast('Photo updated');buzz([12,30,12]);
@@ -1898,7 +1920,7 @@ function resizeImg(file,max,q){
   });
 }
 async function clearAvatar(){
-  if(profile){delete profile.avatar;await saveProfileCloud();if(sessId)pushSession();}
+  if(profile){delete profile.avatar;await saveProfileCloud();if(sessId)pushMyProfile();}
   openDetailsSheet();render();toast('Photo removed');
 }
 function openPhotoDB(){
@@ -2062,35 +2084,77 @@ function pubProfile(){
   const p=profile||{};
   return{firstName:p.firstName||'',lastName:p.lastName||'',username:p.username||'',avatar:p.avatar||''};
 }
+// our name/photo changed mid-session — refresh just that node
+async function pushMyProfile(){
+  if(!db||!sessId||!role)return;
+  try{await set(sref(role+'/profile'),pubProfile());}catch(e){}
+}
+function partnerName(){
+  if(!partner)return '';
+  return [partner.firstName,partner.lastName].filter(Boolean).join(' ')||partner.username||'';
+}
 function genCode(){return Array.from({length:6},()=>'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*32)]).join('');}
+function sref(path){return ref(db,'sessions/'+sessId+'/'+path);}
+function watch(path,cb){
+  const r=sref(path);
+  const l=onValue(r,cb);
+  watchers.push({r,l});
+}
+function unwatchAll(){
+  watchers.forEach(({r,l})=>{try{off(r,'value',l);}catch(e){}});
+  watchers=[];
+}
+
+/* ── the pairing sheet ── */
 function openPair(){
-  if(sessId){
-    const pn=partner?[partner.firstName,partner.lastName].filter(Boolean).join(' ')||partner.username:null;
-    openSheet(`<div class="sheet-t">${role==='host'?'You\'re hosting':'You\'re watching'}</div>
-      <div class="sheet-s">${role==='host'
-        ?'Your partner sees your workout update live as you log each set.'
-        :'You\'re following '+esc(pn||'the session')+' in real time.'}</div>
-      <div style="display:flex;align-items:center;justify-content:center;gap:14px;margin:20px 0">
-        <div style="text-align:center">${avHTML(profile,'av-84')}
-          <div style="font-size:12px;margin-top:8px;font-weight:600">You</div></div>
-        <div style="font-size:22px;color:var(--txt4)">⇄</div>
-        <div style="text-align:center">${avHTML(partner||{},'av-84')}
-          <div style="font-size:12px;margin-top:8px;font-weight:600">${esc(pn||'Waiting…')}</div></div>
-      </div>
-      ${role==='host'?`<div class="code-box"><div class="code-v mono">${sessId}</div><div class="code-l">Share this code</div></div>`:''}
-      <div class="sheet-a"><button class="btn ghost" onclick="closeSheet()">Close</button>
-        <button class="btn danger" onclick="leaveSession()">Leave session</button></div>`);
-    return;
-  }
+  if(sessId)return openLiveSheet();
   openSheet(`<div class="sheet-t">Train with a friend</div>
-    <div class="sheet-s">Share a live session and you'll both see each other's photo while one of you leads the workout.</div>
+    <div class="sheet-s">Share a live session. One of you leads, the other follows along — and you can hand over control whenever you want.</div>
     <div class="opt" onclick="hostSession()">
-      <div class="opt-i">📡</div><div class="opt-t"><b>Host a session</b><i>Get a code and share your workout live</i></div>
+      <div class="opt-i">📡</div><div class="opt-t"><b>Host a session</b><i>Lead the workout and share your code</i></div>
       <div class="pf-row-v">›</div></div>
     <div class="opt" onclick="joinPrompt()">
-      <div class="opt-i">👀</div><div class="opt-t"><b>Join with a code</b><i>Watch your friend's session as it happens</i></div>
+      <div class="opt-i">👀</div><div class="opt-t"><b>Join with a code</b><i>Follow your friend's session as it happens</i></div>
       <div class="pf-row-v">›</div></div>
     <div class="sheet-a"><button class="btn ghost btn-full" onclick="closeSheet()">Cancel</button></div>`);
+}
+function openLiveSheet(){
+  const pn=partnerName();
+  const isHost=role==='host';
+  let ctrl;
+  if(isHost){
+    ctrl=`<div class="opt${editGranted?' on':''}" onclick="toggleEditAccess()">
+      <div class="opt-i">${editGranted?'✏️':'🔒'}</div>
+      <div class="opt-t"><b>${editGranted?'They can edit':'You have control'}</b>
+        <i>${editGranted
+          ?esc(pn||'Your partner')+' can tick sets and change the workout'
+          :'Only you can tick sets. Tap to hand over control.'}</i></div>
+      <div class="opt-c"></div></div>
+      <div class="hint">Either way you both see every change the moment it happens.</div>`;
+  }else{
+    ctrl=`<div class="opt${editGranted?' on':''}" style="pointer-events:none">
+      <div class="opt-i">${editGranted?'✏️':'👀'}</div>
+      <div class="opt-t"><b>${editGranted?'You can edit':'Following along'}</b>
+        <i>${editGranted
+          ?'You can tick sets for both of you'
+          :esc(pn||'The host')+' is leading. They can hand you control at any time.'}</i></div>
+      <div class="opt-c"></div></div>`;
+  }
+  openSheet(`<div class="sheet-t">${isHost?'You\'re hosting':'You\'re in a session'}</div>
+    <div class="sheet-s">${isHost
+      ?'Your partner sees your workout update live as you log each set.'
+      :'You\'re following '+esc(pn||'the session')+' in real time.'}</div>
+    <div style="display:flex;align-items:center;justify-content:center;gap:14px;margin:20px 0">
+      <div style="text-align:center">${avHTML(profile,'av-84')}
+        <div style="font-size:12px;margin-top:8px;font-weight:600">You</div></div>
+      <div style="font-size:22px;color:var(--txt4)">⇄</div>
+      <div style="text-align:center">${avHTML(partner||{},'av-84')}
+        <div style="font-size:12px;margin-top:8px;font-weight:600">${esc(pn||'Waiting…')}</div></div>
+    </div>
+    ${isHost?`<div class="code-box"><div class="code-v mono">${sessId}</div><div class="code-l">Share this code</div></div>`:''}
+    ${ctrl}
+    <div class="sheet-a"><button class="btn ghost" onclick="closeSheet()">Close</button>
+      <button class="btn danger" onclick="leaveSession()">${isHost?'End session':'Leave'}</button></div>`);
 }
 function joinPrompt(){
   openSheet(`<div class="sheet-t">Join a session</div>
@@ -2102,93 +2166,131 @@ function joinPrompt(){
       <button class="btn pri" onclick="doJoin()">Join</button></div>`);
   setTimeout(()=>{const f=document.getElementById('join-code');if(f)f.focus();},330);
 }
+
+/* ── host ── */
 async function hostSession(){
   if(!db){toast('You need a connection for this');return;}
-  sessId=genCode();role='host';partner=null;
+  sessId=genCode();role='host';partner=null;editGranted=false;
   try{
-    await set(ref(db,'sessions/'+sessId+'/host/profile'),pubProfile());
-    await pushSession();
+    await set(sref('host/profile'),pubProfile());
+    await set(sref('control'),{edit:false});
+    await set(sref('ended'),false);
+    await pushState();
   }catch(e){toast('Could not start the session');sessId=null;role=null;return;}
-  watchPartner('guest');
+  watchSession();
   saveSess();closeSheet();render();
   buzz([16,40,16]);
-  setTimeout(openPair,220);
+  setTimeout(openLiveSheet,220);
 }
+async function toggleEditAccess(){
+  if(role!=='host'||!db||!sessId)return;
+  editGranted=!editGranted;
+  try{await set(sref('control'),{edit:editGranted});}
+  catch(e){editGranted=!editGranted;toast('Could not change that');return;}
+  buzz([12,30,12]);
+  openLiveSheet();renderPairStrip();
+  toast(editGranted
+    ?(partnerName()||'Your partner')+' can now edit'
+    :'You have control again');
+}
+
+/* ── guest ── */
 async function doJoin(){
   const code=((document.getElementById('join-code')||{}).value||'').trim().toUpperCase();
   if(code.length<4){toast('Enter the full code');return;}
   if(!db){toast('You need a connection for this');return;}
+  let snapVal;
   try{
-    const s=await get(ref(db,'sessions/'+code+'/host'));
+    const s=await get(ref(db,'sessions/'+code));
     if(!s||!s.exists()){toast('No session with that code');return;}
-    // park our own program before the host's state lands on top of it
-    myBackup=JSON.stringify(bundle());
-    try{localStorage.setItem('unit-backup',myBackup);}catch(e){}
-    sessId=code;role='guest';
-    const v=s.val();
-    partner=v.profile||{};
-    if(v.state)applyPartnerState(v.state);
-    await set(ref(db,'sessions/'+code+'/guest/profile'),pubProfile());
-  }catch(e){toast('Could not join');sessId=null;role=null;return;}
-  watchPartner('host');watchTimer();
+    snapVal=s.val();
+    if(snapVal.ended){toast('That session has ended');return;}
+  }catch(e){toast('Could not join');return;}
+  // park our own program before the host's lands on top of it
+  myBackup=JSON.stringify(bundle());
+  try{localStorage.setItem('unit-backup',myBackup);}catch(e){}
+  sessId=code;role='guest';
+  partner=(snapVal.host&&snapVal.host.profile)||{};
+  editGranted=!!(snapVal.control&&snapVal.control.edit);
+  if(snapVal.state)applyRemoteState(snapVal.state);
+  try{await set(sref('guest/profile'),pubProfile());}catch(e){}
+  watchSession();
   saveSess();closeSheet();tab='train';render();
   toast('Connected');buzz([16,40,16]);
 }
-function watchPartner(side){
-  unwatchPartner();
-  partnerRef=ref(db,'sessions/'+sessId+'/'+side);
-  partnerListener=onValue(partnerRef,snap=>{
+
+/* ── shared state, both directions ── */
+function watchSession(){
+  if(!db||!sessId)return;
+  unwatchAll();
+  const mine=role==='host'?'host':'guest';
+  const theirs=role==='host'?'guest':'host';
+
+  watch(theirs+'/profile',snap=>{
+    if(snap&&snap.exists()){partner=snap.val();renderPairStrip();}
+  });
+  watch('control',snap=>{
+    const was=editGranted;
+    editGranted=!!(snap&&snap.exists()&&snap.val().edit);
+    if(role==='guest'&&was!==editGranted){
+      toast(editGranted?'You can now edit the workout':'The host took back control');
+      buzz([12,30,12]);
+      render();
+    }
+    renderPairStrip();
+  });
+  watch('state',snap=>{
     if(!snap||!snap.exists())return;
     const v=snap.val();
-    if(v.ended&&role==='guest'){toast('The host ended the session');leaveSession();return;}
-    if(v.profile)partner=v.profile;
-    if(role==='guest'&&v.state)applyPartnerState(v.state);
-    renderPairStrip();
-    if(role==='guest')render();
+    if(v.by===mine)return; // our own write coming back to us
+    applyRemoteState(v);
+    // a guest's edit belongs to the host's program, so the host keeps it
+    if(role==='host'){saveLocal();clearTimeout(cloudT);cloudT=setTimeout(cloudSave,900);}
+    render();
   });
+  watch('ended',snap=>{
+    if(role==='guest'&&snap&&snap.exists()&&snap.val()===true){
+      toast('The host ended the session');leaveSession();
+    }
+  });
+  watchTimer();
 }
-function unwatchPartner(){
-  if(partnerRef&&partnerListener){try{off(partnerRef,'value',partnerListener);}catch(e){}}
-  partnerRef=null;partnerListener=null;
-}
-function applyPartnerState(s){
+function applyRemoteState(s){
   if(!s)return;
-  if(s.EX)EX={...emptyEX(),...s.EX};
-  if(s.ws)ws=s.ws;
-  if(s.st)st=s.st;
-  if(s.CARDIO)CARDIO=s.CARDIO;
+  // copy out of the snapshot — never keep a live reference to it
+  const clone=v=>{try{return JSON.parse(JSON.stringify(v));}catch(e){return v;}};
+  if(s.EX)EX={...emptyEX(),...clone(s.EX)};
+  if(s.ws)ws=clone(s.ws);
+  if(s.st)st=clone(s.st);
+  if(s.CARDIO)CARDIO=clone(s.CARDIO);
   if(s.day)day=s.day;
-  if(s.PREFS)PREFS={...PREFS,...s.PREFS};
+  if(s.PREFS)PREFS={...PREFS,...clone(s.PREFS)};
 }
-async function pushSession(){
-  if(!db||!sessId||role!=='host')return;
-  try{await set(ref(db,'sessions/'+sessId+'/host/state'),{EX,ws,st,CARDIO,day,PREFS,ts:Date.now()});}catch(e){}
+async function pushState(){
+  if(!db||!sessId||!canWrite())return;
+  try{await set(sref('state'),{EX,ws,st,CARDIO,day,PREFS,by:role,ts:Date.now()});}catch(e){}
 }
 async function pushTimer(){
-  if(!db||!sessId)return;
-  try{await set(ref(db,'sessions/'+sessId+'/timer'),tEnd?{e:tEnd,t:tTotal,n:tName}:null);}catch(e){}
+  if(!db||!sessId||!canWrite())return;
+  try{await set(sref('timer'),tEnd?{e:tEnd,t:tTotal,n:tName,by:role}:null);}catch(e){}
 }
 function watchTimer(){
   if(!db||!sessId)return;
-  timerRef=ref(db,'sessions/'+sessId+'/timer');
-  timerListener=onValue(timerRef,snap=>{
+  watch('timer',snap=>{
     const v=snap&&snap.exists()?snap.val():null;
     if(!v||!v.e||v.e<=Date.now()){if(tEnd){tEnd=0;clearInterval(tInt);closeTimer();}return;}
-    if(Math.abs(v.e-tEnd)<900)return;
+    if(v.by===role)return;              // our own timer echoing back
+    if(Math.abs(v.e-tEnd)<900)return;   // already in step
     tEnd=v.e;tTotal=v.t;tName=v.n||'Rest';
     document.getElementById('fst').classList.add('active');
     paintTimer();clearInterval(tInt);tInt=setInterval(tick,240);
   });
 }
-function unwatchTimer(){
-  if(timerRef&&timerListener){try{off(timerRef,'value',timerListener);}catch(e){}}
-  timerRef=null;timerListener=null;
-}
 async function leaveSession(){
   const wasHost=role==='host',id=sessId;
-  unwatchPartner();unwatchTimer();
-  if(wasHost&&db&&id){try{await set(ref(db,'sessions/'+id+'/host/ended'),true);}catch(e){}}
-  sessId=null;role=null;partner=null;
+  unwatchAll();
+  if(wasHost&&db&&id){try{await set(ref(db,'sessions/'+id+'/ended'),true);}catch(e){}}
+  sessId=null;role=null;partner=null;editGranted=false;
   saveSess();closeSheet();
   if(wasHost){render();toast('Session ended');}
   else{await reloadOwnData();toast('You left the session');}
@@ -2399,7 +2501,7 @@ Object.assign(window,{
   toggleDay,calMove,closeSheet,promptOk,
   pickPhoto,savePhoto,openPv,closePv,clearAvatar,
   adjustTimer,skipTimer,
-  openPair,hostSession,joinPrompt,doJoin,leaveSession,
+  openPair,openLiveSheet,hostSession,joinPrompt,doJoin,leaveSession,toggleEditAccess,
   switchAuth,doLogin,doSignup,doSignOut,
   obGo,obNext,obDay,obSplit,obCardio,obFinish,
   save,render,toast
@@ -2445,8 +2547,9 @@ if(auth){
       if(!isTrainingDay(day)&&PREFS.trainDays.length)day=PREFS.trainDays.includes(todayKey())?todayKey():day;
       saveLocal();render();
       if(sessId&&role){
-        if(role==='host'){await set(ref(db,'sessions/'+sessId+'/host/profile'),pubProfile()).catch(()=>{});watchPartner('guest');pushSession();}
-        else{watchPartner('host');watchTimer();}
+        try{await set(ref(db,'sessions/'+sessId+'/'+role+'/profile'),pubProfile());}catch(e){}
+        watchSession();
+        if(role==='host')pushState();
         renderPairStrip();
       }
     }else{
