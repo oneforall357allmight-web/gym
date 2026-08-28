@@ -943,10 +943,17 @@ function save(opts){
   if(opts&&opts.quiet)return;
   flashSaved();
 }
+let cloudWarned=false;
 async function cloudSave(){
   if(!user||!db)return;
-  try{await set(ref(db,'users/'+user.uid+'/data'),{...bundle(),ts:Date.now()});}
-  catch(e){console.warn('cloud save failed',e);}
+  try{
+    await set(ref(db,'users/'+user.uid+'/data'),{...bundle(),ts:Date.now()});
+    cloudWarned=false;
+  }catch(e){
+    console.warn('cloud save failed',e);
+    // Say it once. Local storage still has everything, so nothing is lost.
+    if(!cloudWarned){cloudWarned=true;toast('Saved on this device — cloud sync is blocked');}
+  }
 }
 async function cloudLoad(uidStr){
   if(!db)return;
@@ -2228,10 +2235,13 @@ function authErr(e){
   if(c.includes('too-many'))return 'Too many attempts. Wait a minute, then try again.';
   return (e&&e.message||'Something went wrong. Try again.').slice(0,120);
 }
+let nameIndexBlocked=false;
 async function resolveEmail(v){
   if(v.includes('@'))return v.trim().toLowerCase();
-  if(!db)throw new Error('Enter your email address instead');
-  const s=await get(ref(db,'usernames/'+v.trim().toLowerCase()));
+  if(!db)throw new Error('Enter your email address instead.');
+  let s;
+  try{s=await get(ref(db,'usernames/'+v.trim().toLowerCase()));}
+  catch(e){throw new Error('Sign in with your email address instead of your username.');}
   if(s&&s.exists())return s.val().email;
   throw{code:'auth/user-not-found'};
 }
@@ -2261,31 +2271,45 @@ async function doSignup(){
   if(!auth){err.textContent='Cannot reach the server right now.';return;}
   busy('Creating your account');
   signingUp=true;
-  try{
-    if(db){
+  // Checking whether a username is free is a read made while still signed out.
+  // If the database rules block that, it is not a reason to stop — Firebase Auth
+  // is the real gatekeeper for duplicate accounts.
+  if(db){
+    try{
       const taken=await get(ref(db,'usernames/'+uname));
       if(taken&&taken.exists()){signingUp=false;unbusy();err.textContent='That username is taken. Pick another.';return;}
-    }
-    const cred=await createUserWithEmailAndPassword(auth,email,pass);
-    user=cred.user;
-    try{await updateProfile(user,{displayName:first+(last?' '+last:'')});}catch(e){}
-    profile={firstName:first,lastName:last,email,username:uname,avatar:''};
-    EX=emptyEX();CARDIO={};MEALS=[];SUPPS=[];GROCERY=[];grChecked={};
-    st={};ws={};wtr={};calDone={};MACROS={cal:'',protein:'',carbs:'',fat:''};
-    PREFS={trainDays:[],split:'',doesCardio:false,onboarded:false};
-    if(db){
-      try{await set(ref(db,'usernames/'+uname),{email,uid:user.uid});}catch(e){}
-      await saveProfileCloud();
-    }
-    signingUp=false;unbusy();hideAuth();
-    await runOnboarding();
-    PREFS.onboarded=true;
-    await cloudSave();saveLocal();
-    render();
-    toast('Welcome to UNIT, '+first);
-  }catch(e){
-    signingUp=false;unbusy();err.textContent=authErr(e);
+    }catch(e){/* rules blocked the lookup — carry on and create the account */}
   }
+  // The only step that can legitimately fail the signup.
+  let cred;
+  try{
+    cred=await createUserWithEmailAndPassword(auth,email,pass);
+  }catch(e){
+    signingUp=false;unbusy();err.textContent=authErr(e);return;
+  }
+  // From here the account exists. Everything below is best-effort and must never
+  // surface as a signup failure.
+  user=cred.user;
+  try{await updateProfile(user,{displayName:first+(last?' '+last:'')});}catch(e){}
+  profile={firstName:first,lastName:last,email,username:uname,avatar:''};
+  EX=emptyEX();CARDIO={};MEALS=[];SUPPS=[];GROCERY=[];grChecked={};
+  st={};ws={};wtr={};calDone={};MACROS={cal:'',protein:'',carbs:'',fat:''};
+  PREFS={trainDays:[],split:'',doesCardio:false,onboarded:false};
+  if(db){
+    try{await set(ref(db,'usernames/'+uname),{email,uid:user.uid});}
+    catch(e){nameIndexBlocked=true;}
+    try{await saveProfileCloud();}catch(e){}
+  }
+  signingUp=false;unbusy();hideAuth();
+  try{await runOnboarding();}catch(e){}
+  PREFS.onboarded=true;
+  try{await cloudSave();}catch(e){}
+  saveLocal();
+  render();
+  toast('Welcome to UNIT, '+first);
+  // Say this after the welcome, or it gets overwritten and never read.
+  if(nameIndexBlocked||cloudWarned)
+    setTimeout(()=>toast('Saved on this device — sign in with your email next time'),2800);
 }
 async function doSignOut(){
   if(!confirm('Sign out of UNIT?'))return;
