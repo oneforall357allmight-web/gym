@@ -727,6 +727,9 @@ body::after{
   padding:6px 13px;border-radius:20px;opacity:0;transition:.3s var(--ez);pointer-events:none}
 .saved.show{opacity:1}
 .saved.warn{background:var(--gold-d1);border-color:var(--gold-d3);color:var(--gold)}
+.saved.bad{background:rgba(214,64,64,.16);border-color:rgba(214,64,64,.45);color:#ff7a7a;
+  cursor:pointer;opacity:1}
+.saved.bad,.saved.warn{pointer-events:auto}
 </style>
 </head>
 <body>
@@ -854,7 +857,7 @@ body::after{
   <div class="days" id="day-strip"></div>
 </div>
 
-<div class="saved" id="saved-pill">Saved</div>
+<div class="saved" id="saved-pill" onclick="syncDetail()">Saved</div>
 <div class="main" id="main"></div>
 
 <nav class="nav" id="nav">
@@ -1012,19 +1015,67 @@ let dataKey=LS, profKey=PS;          // become per-account once we know the uid
 let dirty=false;                      // something still needs to reach the cloud
 let syncState='local';                // local | saving | saved | offline | blocked
 let syncMsg='';
+let tearing=false;                    // true while signing out — local writes are suppressed
+
+/* Two devices merging on Date.now() means whichever clock runs fast wins for
+   ever. Firebase hands us the offset, so ask for it and stamp with real time. */
+let clockSkew=0;
+function serverNow(){return Date.now()+clockSkew;}
+function watchClock(){
+  if(!db)return;
+  try{onValue(ref(db,'.info/serverTimeOffset'),s=>{
+    const v=s&&s.val();if(typeof v==='number')clockSkew=v;
+  });}catch(e){}
+}
 
 function bundle(){return{EX,CARDIO,MEALS,SUPPS,MACROS,GROCERY,grChecked,st,ws,wtr,calDone,PREFS};}
-function stamped(){return{...bundle(),ts:Date.now(),_uid:user?user.uid:''};}
+function stamped(){return{...bundle(),ts:serverNow(),_uid:user?user.uid:''};}
 
-function saveLocal(){
-  try{localStorage.setItem(dataKey,JSON.stringify(stamped()));}catch(e){}
+/* How much real content a bundle holds. An empty program must never win a
+   merge against a full one just because its timestamp reads later. */
+function weigh(d){
+  if(!d||typeof d!=='object')return 0;
+  let n=0;
+  try{
+    const ex=d.EX||{};
+    Object.keys(ex).forEach(k=>{if(Array.isArray(ex[k]))n+=ex[k].length*10;});
+    n+=Object.keys(d.CARDIO||{}).length*5;
+    n+=(Array.isArray(d.MEALS)?d.MEALS.length:0)*5;
+    n+=(Array.isArray(d.SUPPS)?d.SUPPS.length:0)*2;
+    n+=(Array.isArray(d.GROCERY)?d.GROCERY.length:0);
+    n+=Object.keys(d.ws||{}).length;
+    n+=Object.keys(d.st||{}).length;
+    n+=Object.keys(d.wtr||{}).length;
+    n+=Object.keys(d.calDone||{}).length;
+    const m=d.MACROS||{};Object.keys(m).forEach(k=>{if(m[k])n+=1;});
+    const td=(d.PREFS||{}).trainDays;if(Array.isArray(td)&&td.length)n+=1;
+  }catch(e){}
+  return n;
 }
-function localTs(){
-  try{const r=localStorage.getItem(dataKey);return r?(JSON.parse(r).ts||0):0;}catch(e){return 0;}
+function storedBundle(key){
+  try{const r=localStorage.getItem(key||dataKey);return r?JSON.parse(r):null;}
+  catch(e){return null;}
 }
+
+/* A blank in-memory state must not quietly erase a full saved one. That is
+   exactly what used to happen on sign-out: the state was wiped, a queued save
+   fired a moment later, and the empty bundle hit disk with a fresh stamp. */
+function saveLocal(opts){
+  if(tearing&&!(opts&&opts.force))return;
+  try{
+    const next=stamped();
+    if(!(opts&&opts.force)){
+      const prev=storedBundle();
+      if(prev&&weigh(next)===0&&weigh(prev)>0)return;
+    }
+    localStorage.setItem(dataKey,JSON.stringify(next));
+  }catch(e){}
+}
+function localTs(){const p=storedBundle();return p?(p.ts||0):0;}
 function loadLocal(){
-  try{const r=localStorage.getItem(dataKey);if(!r)return false;applyBundle(JSON.parse(r));return true;}
-  catch(e){return false;}
+  const p=storedBundle();
+  if(!p)return false;
+  applyBundle(p);return true;
 }
 /* The profile (name + photo) is data too. It used to live only in the cloud,
    so if the database refused a write the photo was gone on the next reload. */
@@ -1046,9 +1097,12 @@ function useAccountKeys(uid){
     if(!localStorage.getItem(nd)){
       const shared=localStorage.getItem(LS);
       if(shared){
-        const owner=(JSON.parse(shared)||{})._uid;
-        // adopt it only if it is unclaimed or already ours
-        if(!owner||owner===uid)localStorage.setItem(nd,shared);
+        let s=null;try{s=JSON.parse(shared);}catch(e){}
+        const owner=(s||{})._uid;
+        // Adopt real content only, and only if unclaimed or already ours.
+        // An empty leftover slot used to be adopted here, and — being newer
+        // than the cloud — then overwrote the real program on sign-in.
+        if(s&&weigh(s)>0&&(!owner||owner===uid))localStorage.setItem(nd,shared);
       }
     }
     if(!localStorage.getItem(np)){
@@ -1063,10 +1117,32 @@ function setSync(state,msg){
   syncState=state;syncMsg=msg||'';
   const pill=document.getElementById('saved-pill');
   if(!pill)return;
+  // 'blocked' used to render as 'Saved on device' — near identical to 'Saved'.
+  // A refused write looked like a successful one, which is how a whole program
+  // could live on one machine and never leave it.
   const label={saving:'Saving…',saved:'Saved',local:'Saved on device',
-               offline:'Offline — saved on device',blocked:'Saved on device'}[state]||'Saved';
+               offline:'Offline — this device only',
+               blocked:'Not synced — tap'}[state]||'Saved';
   pill.textContent=label;
-  pill.classList.toggle('warn',state==='offline'||state==='blocked');
+  pill.classList.toggle('warn',state==='offline');
+  pill.classList.toggle('bad',state==='blocked');
+  const stuck=(state==='blocked'||state==='offline');
+  pill.style.pointerEvents=stuck?'auto':'none';
+  if(stuck)pill.classList.add('show');
+}
+// Tap the pill to see what actually went wrong.
+function syncDetail(){
+  if(syncState==='blocked'){
+    alert('The database refused the write, so this device holds the only copy.\n\n'+
+      (syncMsg||'PERMISSION_DENIED')+
+      '\n\nFix it in the Firebase console: Realtime Database \u2192 Rules, and allow '+
+      'read and write on users/$uid for the signed-in owner.');
+  }else if(syncState==='offline'){
+    alert('No connection to the database right now.\n\n'+(syncMsg||'')+
+      '\n\nYour work is safe on this device and uploads automatically once you reconnect.');
+  }else{
+    alert('Everything is synced to your account.');
+  }
 }
 function flashSaved(){
   const p=document.getElementById('saved-pill');if(!p)return;
@@ -1102,6 +1178,16 @@ async function cloudSave(){
   if(!user||!db){setSync('local');return false;}
   setSync('saving');
   try{
+    // Last line of defence. If we are about to send an empty program, check
+    // what is up there first — never blank out a real one by accident.
+    if(weigh(bundle())===0){
+      const cur=await get(ref(db,'users/'+user.uid+'/data'));
+      if(cur&&cur.exists()&&weigh(cur.val()||{})>0){
+        applyBundle(cur.val());saveLocal({force:true});
+        dirty=false;setSync('saved');render();
+        return true;
+      }
+    }
     await set(ref(db,'users/'+user.uid+'/data'),stamped());
     if(profile)await set(ref(db,'users/'+user.uid+'/profile'),{...profile,ts:Date.now()});
     dirty=false;setSync('saved');
@@ -1129,9 +1215,28 @@ async function cloudLoad(uidStr){
     const s=await get(ref(db,'users/'+uidStr+'/data'));
     if(s&&s.exists()){
       const remote=s.val()||{};
-      const mine=localTs();
-      if(!mine||(remote.ts||0)>=mine)applyBundle(remote);
-      else dirty=true;                       // ours is newer — push it up instead
+      const local=storedBundle();
+      const rw=weigh(remote), lw=weigh(local);
+      const rt=remote.ts||0,  lt=local?(local.ts||0):0;
+      /* This comparison used to be timestamps alone. A blank local slot with a
+         fresh stamp therefore beat a full cloud program, and flushPending()
+         then pushed the blank one up over it — which is how a program entered
+         on one device vanished when you signed in on another.
+         Content first now; the clock only breaks ties between two real ones. */
+      let takeRemote;
+      if(!local)                          takeRemote=true;
+      else if(rw>0&&lw===0)               takeRemote=true;   // full beats empty
+      else if(lw>0&&rw===0)               takeRemote=false;
+      else if((local._uid||'')!==uidStr)  takeRemote=true;   // local was never this account's
+      else                                takeRemote=rt>=lt;
+      if(takeRemote){
+        applyBundle(remote);
+        // keep the cloud's own stamp so later comparisons stay meaningful
+        try{localStorage.setItem(dataKey,JSON.stringify({...bundle(),ts:rt||serverNow(),_uid:uidStr}));}catch(e){}
+        dirty=false;
+      }else dirty=true;                    // ours is genuinely newer — push it up
+    }else if(weigh(bundle())>0){
+      dirty=true;                          // nothing up there yet; send what we have
     }
     const p=await get(ref(db,'users/'+uidStr+'/profile'));
     if(p&&p.exists()){
@@ -1145,9 +1250,11 @@ async function cloudLoad(uidStr){
 // Anything that failed gets another go — on a timer, on refocus, on reconnect.
 async function flushPending(){
   if(!dirty||!user||!db)return;
+  if(tearing)return;
   await cloudSave();
 }
 function startRetryLoop(){
+  watchClock();
   setInterval(flushPending,20000);
   window.addEventListener('online',()=>{setSync('saving');flushPending();});
   window.addEventListener('offline',()=>setSync('offline'));
@@ -1161,7 +1268,7 @@ async function forceSave(){
   toast('Saving…');
   const okd=await cloudSave();
   if(okd)toast('Saved to your account');
-  else if(syncState==='blocked')toast('Saved on device — the database refused the write');
+  else if(syncState==='blocked'){toast('Not synced — the database refused the write');setTimeout(syncDetail,700);}
   else toast('Saved on device — no connection right now');
   render();
 }
@@ -2849,7 +2956,26 @@ async function doSignup(){
 }
 async function doSignOut(){
   if(!confirm('Sign out of UNIT?'))return;
-  closeSheet();busy('Signing out');
+  closeSheet();
+  /* save() queues the cloud write on a 900ms timer. Signing out inside that
+     window used to drop it, and the stray timer then fired against a wiped
+     state. Land it first, and tell the truth if it will not land. */
+  clearTimeout(cloudT);cloudT=null;
+  if(user&&db&&(dirty||weigh(bundle())>0)){
+    busy('Saving your program');
+    const landed=await cloudSave();
+    if(!landed){
+      unbusy();
+      const why=syncState==='blocked'
+        ? 'The database refused the write.'
+        : 'There is no connection right now.';
+      if(!confirm(why+'\n\nYour latest changes exist only on this device and '+
+        'will not appear when you sign in elsewhere.\n\nSign out anyway?'))return;
+    }
+  }
+  busy('Signing out');
+  saveLocal({force:true});saveProfileLocal();
+  tearing=true;                       // block writes while the state is torn down
   if(sessId)await leaveSession();
   try{if(auth)await signOut(auth);}catch(e){}
   user=null;profile=null;
@@ -2857,6 +2983,8 @@ async function doSignOut(){
   st={};ws={};wtr={};calDone={};
   PREFS={trainDays:[],split:'',doesCardio:false,onboarded:false};
   dataKey=LS;profKey=PS;   // back to the shared slot; each account keeps its own
+  tearing=false;
+  setSync('local');
   unbusy();showAuth();render();
 }
 
@@ -2930,7 +3058,7 @@ Object.assign(window,{
   openCardioSheet,saveCardio,filterCardio,pickSlot,
   openMealSheet,saveMeal,addMealItem,delMealItem,delMeal,addSupp,delSupp,setWater,
   openDaysSheet,toggleDayPick,saveDays,openSplitSheet,pickSplit,saveSplit,
-  openDetailsSheet,saveDetails,toggleCardioPref,resetToday,exportData,openThemeSheet,setTheme,forceSave,
+  openDetailsSheet,saveDetails,toggleCardioPref,resetToday,exportData,openThemeSheet,setTheme,forceSave,syncDetail,
   openGrocery,closeGrocery,addGr,toggleGr,delGr,clearGr,pickGrCat,
   toggleDay,calMove,closeSheet,promptOk,
   pickPhoto,savePhoto,openPv,closePv,clearAvatar,
