@@ -234,6 +234,18 @@ body::after{
 .ico-btn svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.9;
   stroke-linecap:round;stroke-linejoin:round}
 .ico-btn.on{color:var(--gold);border-color:var(--gold-d3);background:var(--gold-d1)}
+/* save button — its look is the sync state, not decoration */
+.save-btn{position:relative}
+.save-btn.dirty{color:var(--gold);border-color:var(--gold-d3);background:var(--gold-d1)}
+.save-btn.saving{color:var(--gold);border-color:var(--gold-d3);background:var(--gold-d1)}
+.save-btn.saving svg{animation:sv-pulse 1s var(--ez) infinite}
+.save-btn.done{color:var(--green);border-color:rgba(47,217,138,.4);background:var(--green-d)}
+.save-btn.bad{color:#ff7a7a;border-color:rgba(214,64,64,.5);background:rgba(214,64,64,.14)}
+@keyframes sv-pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.save-dot{position:absolute;top:-3px;right:-3px;width:9px;height:9px;border-radius:50%;
+  background:var(--molten);border:2px solid var(--ink);display:none}
+.save-dot.show{display:block}
+.save-btn.bad .save-dot{background:#ff5a5a;display:block}
 .badge{position:absolute;top:-4px;right:-4px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;
   background:var(--molten);color:#150E00;font-family:'JetBrains Mono',monospace;font-size:9.5px;
   font-weight:700;display:none;align-items:center;justify-content:center;border:2px solid var(--ink)}
@@ -841,6 +853,12 @@ body::after{
       <div class="hdr-name" id="hdr-name">UNIT</div>
     </div>
     <div class="hdr-acts">
+      <button class="ico-btn save-btn" id="btn-save" onclick="forceSave()" aria-label="Save now" title="Save now">
+        <svg viewBox="0 0 24 24" id="save-ico-disk"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        <svg viewBox="0 0 24 24" id="save-ico-tick" style="display:none"><polyline points="20 6 9 17 4 12"/></svg>
+        <svg viewBox="0 0 24 24" id="save-ico-warn" style="display:none"><path d="M10.29 3.86 1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <span class="save-dot" id="save-dot"></span>
+      </button>
       <button class="ico-btn" id="btn-pair" onclick="openPair()" aria-label="Train with a friend">
         <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
       </button>
@@ -1129,6 +1147,7 @@ function setSync(state,msg){
   const stuck=(state==='blocked'||state==='offline');
   pill.style.pointerEvents=stuck?'auto':'none';
   if(stuck)pill.classList.add('show');
+  paintSaveBtn();
 }
 // Tap the pill to see what actually went wrong.
 function syncDetail(){
@@ -1159,6 +1178,7 @@ function save(opts){
   }
   saveLocal();
   dirty=true;
+  paintSaveBtn();
   clearTimeout(cloudT);
   cloudT=setTimeout(cloudSave,900);
   if(sessId){clearTimeout(syncT);syncT=setTimeout(pushState,300);}
@@ -1260,15 +1280,56 @@ function startRetryLoop(){
   window.addEventListener('offline',()=>setSync('offline'));
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)flushPending();});
   window.addEventListener('pagehide',()=>{try{saveLocal();saveProfileLocal();}catch(e){}});
+  // closing the tab with work that never reached the account is worth a prompt
+  window.addEventListener('beforeunload',e=>{
+    if(dirty&&user&&syncState!=='saved'){e.preventDefault();e.returnValue='';}
+  });
+}
+/* The button shows the truth: amber when work is waiting, green when it has
+   landed in the account, red when the database turned it away. */
+let saveDoneT=null;
+function paintSaveBtn(){
+  const b=document.getElementById('btn-save');
+  if(!b)return;
+  const disk=document.getElementById('save-ico-disk');
+  const tick=document.getElementById('save-ico-tick');
+  const warn=document.getElementById('save-ico-warn');
+  const dot=document.getElementById('save-dot');
+  b.classList.remove('dirty','saving','done','bad');
+  let ico='disk';
+  if(syncState==='saving'){b.classList.add('saving');}
+  else if(syncState==='blocked'){b.classList.add('bad');ico='warn';}
+  else if(syncState==='offline'&&dirty){b.classList.add('dirty');}
+  else if(dirty){b.classList.add('dirty');}
+  else if(saveDoneT){b.classList.add('done');ico='tick';}
+  if(disk)disk.style.display=ico==='disk'?'':'none';
+  if(tick)tick.style.display=ico==='tick'?'':'none';
+  if(warn)warn.style.display=ico==='warn'?'':'none';
+  if(dot)dot.classList.toggle('show',dirty&&syncState!=='saving'&&syncState!=='blocked');
+  b.title=({saving:'Saving…',blocked:'Not synced — tap to see why',
+            offline:'Offline — waiting to upload',saved:'Everything is saved',
+            local:'Saved on this device'})[syncState]||(dirty?'Unsaved changes — tap to save':'Everything is saved');
+}
+function flashSaveDone(){
+  clearTimeout(saveDoneT);
+  saveDoneT=setTimeout(()=>{saveDoneT=null;paintSaveBtn();},2200);
+  paintSaveBtn();
 }
 // A manual escape hatch, and a way to see the real error.
+let saving=false;
 async function forceSave(){
-  saveLocal();saveProfileLocal();
-  if(!user||!db){toast('Saved on this device');return;}
-  toast('Saving…');
+  if(saving)return;
+  saving=true;
+  saveLocal({force:true});saveProfileLocal();
+  if(!user||!db){
+    saving=false;setSync('local');flashSaveDone();
+    toast('Saved on this device');paintSaveBtn();return;
+  }
+  setSync('saving');paintSaveBtn();
   const okd=await cloudSave();
-  if(okd)toast('Saved to your account');
-  else if(syncState==='blocked'){toast('Not synced — the database refused the write');setTimeout(syncDetail,700);}
+  saving=false;
+  if(okd){toast('Saved to your account');buzz(10);flashSaveDone();}
+  else if(syncState==='blocked'){toast('Not synced — the database refused the write');buzz([14,50,14]);setTimeout(syncDetail,700);}
   else toast('Saved on device — no connection right now');
   render();
 }
@@ -1452,6 +1513,7 @@ function renderHeader(){
   document.getElementById('hdr-hi').textContent=greeting();
   const av=document.getElementById('hdr-av');
   paintAvatar(av,profile);
+  paintSaveBtn();
   if(showDays){
     const p=dayProgress(day);
     document.getElementById('rail-fill').style.width=p.pct+'%';
@@ -3058,7 +3120,7 @@ Object.assign(window,{
   openCardioSheet,saveCardio,filterCardio,pickSlot,
   openMealSheet,saveMeal,addMealItem,delMealItem,delMeal,addSupp,delSupp,setWater,
   openDaysSheet,toggleDayPick,saveDays,openSplitSheet,pickSplit,saveSplit,
-  openDetailsSheet,saveDetails,toggleCardioPref,resetToday,exportData,openThemeSheet,setTheme,forceSave,syncDetail,
+  openDetailsSheet,saveDetails,toggleCardioPref,resetToday,exportData,openThemeSheet,setTheme,forceSave,syncDetail,paintSaveBtn,
   openGrocery,closeGrocery,addGr,toggleGr,delGr,clearGr,pickGrCat,
   toggleDay,calMove,closeSheet,promptOk,
   pickPhoto,savePhoto,openPv,closePv,clearAvatar,
@@ -3092,6 +3154,10 @@ setInterval(rollover,30000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)rollover();});
 window.addEventListener('focus',rollover);
 document.addEventListener('click',()=>{initAudio();},{once:true});
+// Ctrl/Cmd+S saves instead of offering to download the page
+document.addEventListener('keydown',e=>{
+  if((e.ctrlKey||e.metaKey)&&(e.key==='s'||e.key==='S')){e.preventDefault();forceSave();}
+});
 
 if(auth){
   onAuthStateChanged(auth,async u=>{
