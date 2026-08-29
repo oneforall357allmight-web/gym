@@ -726,6 +726,7 @@ body::after{
   font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;
   padding:6px 13px;border-radius:20px;opacity:0;transition:.3s var(--ez);pointer-events:none}
 .saved.show{opacity:1}
+.saved.warn{background:var(--gold-d1);border-color:var(--gold-d3);color:var(--gold)}
 </style>
 </head>
 <body>
@@ -999,7 +1000,6 @@ function todayKey(){return DAYS[(new Date().getDay()+6)%7];}
 function uid(p){return p+Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
 function buzz(p){if(navigator.vibrate)try{navigator.vibrate(p);}catch(e){}}
 function toast(m){const el=document.getElementById('toast');if(!el)return;el.textContent=m;el.classList.add('show');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),2400);}
-function flashSaved(){const p=document.getElementById('saved-pill');if(!p)return;p.classList.add('show');clearTimeout(p._t);p._t=setTimeout(()=>p.classList.remove('show'),1200);}
 function icoCheck(){return '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>';}
 function icoPlus(){return '<svg viewBox="0 0 14 14"><line x1="7" y1="2" x2="7" y2="12"/><line x1="2" y1="7" x2="12" y2="7"/></svg>';}
 function icoChev(){return '<svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>';}
@@ -1007,12 +1007,163 @@ function icoChev(){return '<svg viewBox="0 0 24 24"><polyline points="6 9 12 15 
 /* ═══════════════════════════════════════════════════════════
    PERSISTENCE — local first, cloud debounced. Never blocks UI.
 ═══════════════════════════════════════════════════════════ */
-const LS='unit-v10';
+const LS='unit-v10', PS='unit-profile';
+let dataKey=LS, profKey=PS;          // become per-account once we know the uid
+let dirty=false;                      // something still needs to reach the cloud
+let syncState='local';                // local | saving | saved | offline | blocked
+let syncMsg='';
+
 function bundle(){return{EX,CARDIO,MEALS,SUPPS,MACROS,GROCERY,grChecked,st,ws,wtr,calDone,PREFS};}
-function saveLocal(){try{localStorage.setItem(LS,JSON.stringify(bundle()));}catch(e){}}
+function stamped(){return{...bundle(),ts:Date.now(),_uid:user?user.uid:''};}
+
+function saveLocal(){
+  try{localStorage.setItem(dataKey,JSON.stringify(stamped()));}catch(e){}
+}
+function localTs(){
+  try{const r=localStorage.getItem(dataKey);return r?(JSON.parse(r).ts||0):0;}catch(e){return 0;}
+}
 function loadLocal(){
-  try{const r=localStorage.getItem(LS);if(!r)return false;const d=JSON.parse(r);applyBundle(d);return true;}
+  try{const r=localStorage.getItem(dataKey);if(!r)return false;applyBundle(JSON.parse(r));return true;}
   catch(e){return false;}
+}
+/* The profile (name + photo) is data too. It used to live only in the cloud,
+   so if the database refused a write the photo was gone on the next reload. */
+function saveProfileLocal(){
+  try{if(profile)localStorage.setItem(profKey,JSON.stringify({...profile,ts:Date.now()}));}catch(e){}
+}
+function loadProfileLocal(){
+  try{
+    const r=localStorage.getItem(profKey);
+    if(r){const p=JSON.parse(r);if(p&&typeof p==='object'){profile=p;return true;}}
+  }catch(e){}
+  return false;
+}
+/* Keep each account's data in its own slot so two people on one phone
+   never inherit each other's program. */
+function useAccountKeys(uid){
+  const nd=LS+':'+uid, np=PS+':'+uid;
+  try{
+    if(!localStorage.getItem(nd)){
+      const shared=localStorage.getItem(LS);
+      if(shared){
+        const owner=(JSON.parse(shared)||{})._uid;
+        // adopt it only if it is unclaimed or already ours
+        if(!owner||owner===uid)localStorage.setItem(nd,shared);
+      }
+    }
+    if(!localStorage.getItem(np)){
+      const sp=localStorage.getItem(PS);
+      if(sp)localStorage.setItem(np,sp);
+    }
+  }catch(e){}
+  dataKey=nd;profKey=np;
+}
+
+function setSync(state,msg){
+  syncState=state;syncMsg=msg||'';
+  const pill=document.getElementById('saved-pill');
+  if(!pill)return;
+  const label={saving:'Saving…',saved:'Saved',local:'Saved on device',
+               offline:'Offline — saved on device',blocked:'Saved on device'}[state]||'Saved';
+  pill.textContent=label;
+  pill.classList.toggle('warn',state==='offline'||state==='blocked');
+}
+function flashSaved(){
+  const p=document.getElementById('saved-pill');if(!p)return;
+  p.classList.add('show');clearTimeout(p._t);p._t=setTimeout(()=>p.classList.remove('show'),1400);
+}
+
+let cloudT=null,syncT=null;
+function save(opts){
+  // A guest is working on the host's program, not their own. Push it to the
+  // session, but never write it over their own saved data.
+  if(role==='guest'){
+    if(editGranted&&sessId){clearTimeout(syncT);syncT=setTimeout(pushState,300);if(!(opts&&opts.quiet))flashSaved();}
+    return;
+  }
+  saveLocal();
+  dirty=true;
+  clearTimeout(cloudT);
+  cloudT=setTimeout(cloudSave,900);
+  if(sessId){clearTimeout(syncT);syncT=setTimeout(pushState,300);}
+  if(opts&&opts.quiet)return;
+  flashSaved();
+}
+// Who is allowed to change the workout right now
+function canWrite(){return !sessId||role==='host'||(role==='guest'&&editGranted);}
+
+function classifyErr(e){
+  const m=((e&&(e.message||e.code))||'')+'';
+  if(/permission|PERMISSION_DENIED/i.test(m))return 'blocked';
+  return 'offline';
+}
+async function cloudSave(){
+  saveLocal();
+  if(!user||!db){setSync('local');return false;}
+  setSync('saving');
+  try{
+    await set(ref(db,'users/'+user.uid+'/data'),stamped());
+    if(profile)await set(ref(db,'users/'+user.uid+'/profile'),{...profile,ts:Date.now()});
+    dirty=false;setSync('saved');
+    return true;
+  }catch(e){
+    dirty=true;
+    const kind=classifyErr(e);
+    setSync(kind,(e&&e.message)||'');
+    return false;
+  }
+}
+async function saveProfileCloud(){
+  saveProfileLocal();
+  if(!user||!db||!profile)return;
+  try{
+    await set(ref(db,'users/'+user.uid+'/profile'),{...profile,ts:Date.now()});
+    if(syncState!=='saved')setSync('saved');
+  }catch(e){dirty=true;setSync(classifyErr(e),(e&&e.message)||'');}
+}
+/* Newer wins. The cloud used to overwrite local unconditionally, which threw
+   away work done while the database was unreachable. */
+async function cloudLoad(uidStr){
+  if(!db)return;
+  try{
+    const s=await get(ref(db,'users/'+uidStr+'/data'));
+    if(s&&s.exists()){
+      const remote=s.val()||{};
+      const mine=localTs();
+      if(!mine||(remote.ts||0)>=mine)applyBundle(remote);
+      else dirty=true;                       // ours is newer — push it up instead
+    }
+    const p=await get(ref(db,'users/'+uidStr+'/profile'));
+    if(p&&p.exists()){
+      const rp=p.val()||{};
+      if(!profile||(rp.ts||0)>=(profile.ts||0))profile=rp;
+      else dirty=true;
+    }
+    if(!dirty)setSync('saved');
+  }catch(e){setSync(classifyErr(e),(e&&e.message)||'');}
+}
+// Anything that failed gets another go — on a timer, on refocus, on reconnect.
+async function flushPending(){
+  if(!dirty||!user||!db)return;
+  await cloudSave();
+}
+function startRetryLoop(){
+  setInterval(flushPending,20000);
+  window.addEventListener('online',()=>{setSync('saving');flushPending();});
+  window.addEventListener('offline',()=>setSync('offline'));
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)flushPending();});
+  window.addEventListener('pagehide',()=>{try{saveLocal();saveProfileLocal();}catch(e){}});
+}
+// A manual escape hatch, and a way to see the real error.
+async function forceSave(){
+  saveLocal();saveProfileLocal();
+  if(!user||!db){toast('Saved on this device');return;}
+  toast('Saving…');
+  const okd=await cloudSave();
+  if(okd)toast('Saved to your account');
+  else if(syncState==='blocked')toast('Saved on device — the database refused the write');
+  else toast('Saved on device — no connection right now');
+  render();
 }
 function normalize(d){
   if(!d)return d;
@@ -1047,8 +1198,14 @@ function normalize(d){
   }
   // legacy prefs key
   const up=d.PREFS||d.userPrefs;
-  if(up)d.PREFS={trainDays:Array.isArray(up.trainDays)?up.trainDays:[],split:up.split||'',
-    doesCardio:!!up.doesCardio,onboarded:up.onboarded!==undefined?!!up.onboarded:true};
+  // spread first so anything added later (theme, and whatever comes next)
+  // survives instead of being quietly dropped on reload
+  if(up)d.PREFS={...up,
+    trainDays:Array.isArray(up.trainDays)?up.trainDays:[],
+    split:up.split||'',
+    doesCardio:!!up.doesCardio,
+    theme:up.theme||'system',
+    onboarded:up.onboarded!==undefined?!!up.onboarded:true};
   return d;
 }
 // one-time pull of grocery/calendar from the previous version
@@ -1083,49 +1240,6 @@ function applyBundle(d){
   if(d.calDone)calDone=d.calDone;
   if(d.PREFS)PREFS={...PREFS,...d.PREFS};
 }
-let cloudT=null,syncT=null;
-function save(opts){
-  // A guest is working on the host's program, not their own. Push it to the
-  // session, but never write it over their own saved data.
-  if(role==='guest'){
-    if(editGranted&&sessId){clearTimeout(syncT);syncT=setTimeout(pushState,300);if(!(opts&&opts.quiet))flashSaved();}
-    return;
-  }
-  saveLocal();
-  clearTimeout(cloudT);
-  cloudT=setTimeout(cloudSave,900);
-  if(sessId){clearTimeout(syncT);syncT=setTimeout(pushState,300);}
-  if(opts&&opts.quiet)return;
-  flashSaved();
-}
-// Who is allowed to change the workout right now
-function canWrite(){return !sessId||role==='host'||(role==='guest'&&editGranted);}
-let cloudWarned=false;
-async function cloudSave(){
-  if(!user||!db)return;
-  try{
-    await set(ref(db,'users/'+user.uid+'/data'),{...bundle(),ts:Date.now()});
-    cloudWarned=false;
-  }catch(e){
-    console.warn('cloud save failed',e);
-    // Say it once. Local storage still has everything, so nothing is lost.
-    if(!cloudWarned){cloudWarned=true;toast('Saved on this device — cloud sync is blocked');}
-  }
-}
-async function cloudLoad(uidStr){
-  if(!db)return;
-  try{
-    const s=await get(ref(db,'users/'+uidStr+'/data'));
-    if(s&&s.exists())applyBundle(s.val());
-    const p=await get(ref(db,'users/'+uidStr+'/profile'));
-    if(p&&p.exists())profile=p.val();
-  }catch(e){console.warn('cloud load failed',e);}
-}
-async function saveProfileCloud(){
-  if(!user||!db||!profile)return;
-  try{await set(ref(db,'users/'+user.uid+'/profile'),profile);}catch(e){}
-}
-
 /* ═══════════════════════════════════════════════════════════
    THEME
 ═══════════════════════════════════════════════════════════ */
@@ -1268,9 +1382,12 @@ function renderPairStrip(){
   document.getElementById('pair-avs').innerHTML=avHTML(me,'av-30')+avHTML(partner||{firstName:'?'},'av-30');
   const pn=partner?([partner.firstName,partner.lastName].filter(Boolean).join(' ')||partner.username):'';
   document.getElementById('pair-t').textContent=partner?('Training with '+pn):'Waiting for partner…';
-  document.getElementById('pair-s').textContent=role==='host'
+  const link=!online?'Reconnecting…':(peerStale?'Partner offline':'');
+  document.getElementById('pair-s').textContent=link||(role==='host'
     ?(editGranted?'They have control · '+sessId:'You have control · '+sessId)
-    :(editGranted?'You can edit':'Following '+(pn||'the host'));
+    :(editGranted?'You can edit':'Following '+(pn||'the host')));
+  const dot=document.querySelector('#pair-strip .live-dot');
+  if(dot)dot.style.background=link?'var(--txt4)':'var(--green)';
 }
 function setTab(t){
   if(role==='guest'&&t!=='train'){toast('You are watching a session');return;}
@@ -1702,6 +1819,15 @@ function viewProfile(){
     </div>
 
     <div class="pf-sec">Data</div>
+    <div class="pf-row" onclick="forceSave()">
+      <div class="pf-row-i">${syncState==='saved'?'☁️':syncState==='saving'?'⏳':'📱'}</div>
+      <div class="pf-row-t"><b>${syncState==='saved'?'Synced to your account':'Saved on this device'}</b>
+        <i>${syncState==='saved'?'Everything is backed up':
+            syncState==='blocked'?'The database is refusing writes — tap to retry':
+            syncState==='offline'?'No connection — tap to retry':
+            'Tap to save to your account now'}</i></div>
+      <div class="pf-row-v">${syncState==='saved'?'✓':'↻'}</div>
+    </div>
     <div class="pf-row" onclick="exportData()">
       <div class="pf-row-i">📤</div>
       <div class="pf-row-t"><b>Export a backup</b><i>Download everything as a file</i></div>
@@ -2392,6 +2518,7 @@ async function hostSession(){
     await pushState();
     armDisconnect();
   }catch(e){toast('Could not start the session');sessId=null;role=null;return;}
+  startBeat();
   watchSession();
   saveSess();closeSheet();render();
   buzz([16,40,16]);
@@ -2430,6 +2557,7 @@ async function doJoin(){
   if(snapVal.state)applyRemoteState(snapVal.state);
   try{await set(sref('guest/profile'),pubProfile());}catch(e){}
   armDisconnect();
+  startBeat();
   watchSession();
   saveSess();closeSheet();tab='train';render();
   connScreen('join',partner);
@@ -2443,6 +2571,62 @@ function armDisconnect(){
     if(role==='host')onDisconnect(sref('ended')).set(true);
   }catch(e){}
 }
+/* Connection resilience.
+   onDisconnect covers a clean drop, but a phone that sleeps or a flaky signal
+   can leave a stale session. We watch the socket, beat every 15s, and put
+   everything back the moment we are online again. */
+let online=true,beatT=null,staleT=null,peerSeen=0,peerStale=false;
+function watchConnection(){
+  if(!db)return;
+  try{
+    const r=ref(db,'.info/connected');
+    onValue(r,snap=>{
+      const was=online;
+      online=!!(snap&&snap.val());
+      if(online&&!was){
+        if(sessId&&role)reassert();
+        flushPending();
+      }
+      if(!online)setSync('offline');
+      renderPairStrip();
+    });
+  }catch(e){}
+}
+async function reassert(){
+  if(!db||!sessId||!role)return;
+  try{
+    await set(sref(role+'/profile'),pubProfile());
+    armDisconnect();
+    await beat();
+    if(role==='host')await pushState();
+    renderPairStrip();
+  }catch(e){}
+}
+async function beat(){
+  if(!db||!sessId||!role)return;
+  try{await set(sref(role+'/seen'),Date.now());}catch(e){}
+}
+function startBeat(){
+  stopBeat();
+  beat();
+  beatT=setInterval(beat,15000);
+  // if the other side has gone quiet, say so rather than pretending it is live
+  staleT=setInterval(()=>{
+    if(!sessId||!peerSeen)return;
+    const s=(Date.now()-peerSeen)>50000;
+    if(s!==peerStale){peerStale=s;renderPairStrip();}
+  },10000);
+}
+function stopBeat(){
+  clearInterval(beatT);clearInterval(staleT);
+  beatT=staleT=null;peerSeen=0;peerStale=false;
+}
+// a push that fails gets retried once we are back
+let statePending=false;
+async function pushStateSafe(){
+  const okd=await pushState();
+  statePending=!okd;
+}
 
 /* ── shared state, both directions ── */
 function watchSession(){
@@ -2451,6 +2635,12 @@ function watchSession(){
   const mine=role==='host'?'host':'guest';
   const theirs=role==='host'?'guest':'host';
 
+  watch(theirs+'/seen',snap=>{
+    if(snap&&snap.exists()){
+      peerSeen=snap.val()||0;
+      if(peerStale){peerStale=false;renderPairStrip();}
+    }
+  });
   watch(theirs+'/profile',snap=>{
     const has=!!(snap&&snap.exists());
     const had=!!partner,prev=partner;
@@ -2504,8 +2694,9 @@ function applyRemoteState(s){
   if(s.PREFS)PREFS={...PREFS,...clone(s.PREFS)};
 }
 async function pushState(){
-  if(!db||!sessId||!canWrite())return;
-  try{await set(sref('state'),{EX,ws,st,CARDIO,day,PREFS,by:role,ts:Date.now()});}catch(e){}
+  if(!db||!sessId||!canWrite())return false;
+  try{await set(sref('state'),{EX,ws,st,CARDIO,day,PREFS,by:role,ts:Date.now()});statePending=false;return true;}
+  catch(e){statePending=true;return false;}
 }
 async function pushTimer(){
   if(!db||!sessId||!canWrite())return;
@@ -2530,6 +2721,7 @@ async function leaveSession(){
     try{await set(ref(db,'sessions/'+id+'/'+myRole+'/profile'),null);}catch(e){}
     if(wasHost){try{await set(ref(db,'sessions/'+id+'/ended'),true);}catch(e){}}
   }
+  stopBeat();
   sessId=null;role=null;partner=null;editGranted=false;
   saveSess();closeSheet();
   if(wasHost){render();toast('Session ended');}
@@ -2634,6 +2826,8 @@ async function doSignup(){
   user=cred.user;
   try{await updateProfile(user,{displayName:first+(last?' '+last:'')});}catch(e){}
   profile={firstName:first,lastName:last,email,username:uname,avatar:''};
+  useAccountKeys(user.uid);
+  saveProfileLocal();
   EX=emptyEX();CARDIO={};MEALS=[];SUPPS=[];GROCERY=[];grChecked={};
   st={};ws={};wtr={};calDone={};MACROS={cal:'',protein:'',carbs:'',fat:''};
   PREFS={trainDays:[],split:'',doesCardio:false,onboarded:false};
@@ -2662,7 +2856,7 @@ async function doSignOut(){
   EX=emptyEX();CARDIO={};MEALS=[];SUPPS=[];GROCERY=[];grChecked={};
   st={};ws={};wtr={};calDone={};
   PREFS={trainDays:[],split:'',doesCardio:false,onboarded:false};
-  try{localStorage.removeItem(LS);}catch(e){}
+  dataKey=LS;profKey=PS;   // back to the shared slot; each account keeps its own
   unbusy();showAuth();render();
 }
 
@@ -2736,7 +2930,7 @@ Object.assign(window,{
   openCardioSheet,saveCardio,filterCardio,pickSlot,
   openMealSheet,saveMeal,addMealItem,delMealItem,delMeal,addSupp,delSupp,setWater,
   openDaysSheet,toggleDayPick,saveDays,openSplitSheet,pickSplit,saveSplit,
-  openDetailsSheet,saveDetails,toggleCardioPref,resetToday,exportData,openThemeSheet,setTheme,
+  openDetailsSheet,saveDetails,toggleCardioPref,resetToday,exportData,openThemeSheet,setTheme,forceSave,
   openGrocery,closeGrocery,addGr,toggleGr,delGr,clearGr,pickGrCat,
   toggleDay,calMove,closeSheet,promptOk,
   pickPhoto,savePhoto,openPv,closePv,clearAvatar,
@@ -2750,7 +2944,7 @@ Object.assign(window,{
 /* ═══════════════════════════════════════════════════════════
    INIT
 ═══════════════════════════════════════════════════════════ */
-loadLocal();importLegacy();loadSess();applyTheme();
+loadLocal();loadProfileLocal();importLegacy();loadSess();applyTheme();startRetryLoop();
 openPhotoDB().catch(()=>{});
 setupSW();
 restoreTimer();
@@ -2777,8 +2971,12 @@ if(auth){
     if(u){
       user=u;
       busy('Loading your program');
+      useAccountKeys(u.uid);      // this account's own slot
+      loadLocal();loadProfileLocal();
       await cloudLoad(u.uid);
       if(!profile)profile={firstName:(u.displayName||'').split(' ')[0]||'',lastName:'',email:u.email||'',username:(u.email||'').split('@')[0]};
+      saveLocal();saveProfileLocal();
+      watchConnection();
       unbusy();applyTheme();hideAuth();
       if(!PREFS.onboarded){
         await runOnboarding();
@@ -2786,6 +2984,7 @@ if(auth){
       }
       if(!isTrainingDay(day)&&PREFS.trainDays.length)day=PREFS.trainDays.includes(todayKey())?todayKey():day;
       saveLocal();render();
+      flushPending();
       if(sessId&&role){
         try{await set(ref(db,'sessions/'+sessId+'/'+role+'/profile'),pubProfile());}catch(e){}
         watchSession();
