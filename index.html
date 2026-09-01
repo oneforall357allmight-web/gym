@@ -1070,9 +1070,83 @@ function weigh(d){
   }catch(e){}
   return n;
 }
+/* ── Durable mirror ──────────────────────────────────────────
+   localStorage is not a promise. Safari evicts it after seven days of the
+   app not being opened, private mode refuses it outright, and a full disk
+   throws on setItem. So every write also goes to IndexedDB, and boot reads
+   back whichever copy holds more. Two independent stores means one of them
+   being cleared is an inconvenience rather than a lost program. */
+let mirrorReady=null;
+function openMirror(){
+  if(mirrorReady)return mirrorReady;
+  mirrorReady=new Promise(res=>{
+    try{
+      const rq=indexedDB.open('unit-state',1);
+      rq.onupgradeneeded=()=>{const d=rq.result;if(!d.objectStoreNames.contains('kv'))d.createObjectStore('kv');};
+      rq.onsuccess=()=>res(rq.result);
+      rq.onerror=()=>res(null);
+      rq.onblocked=()=>res(null);
+    }catch(e){res(null);}
+  });
+  return mirrorReady;
+}
+function mirrorPut(key,val){
+  openMirror().then(d=>{
+    if(!d||!val)return;
+    try{d.transaction('kv','readwrite').objectStore('kv').put(val,key);}catch(e){}
+  }).catch(()=>{});
+}
+function mirrorGet(key){
+  return openMirror().then(d=>new Promise(res=>{
+    if(!d)return res(null);
+    try{
+      const rq=d.transaction('kv','readonly').objectStore('kv').get(key);
+      rq.onsuccess=()=>res(rq.result||null);
+      rq.onerror=()=>res(null);
+    }catch(e){res(null);}
+  })).catch(()=>null);
+}
+
+/* The last thing we wrote, kept in memory. If localStorage is unavailable
+   this is the only synchronous copy there is, so it is consulted first. */
+let memBundle=null,memProfile=null;
 function storedBundle(key){
-  try{const r=localStorage.getItem(key||dataKey);return r?JSON.parse(r):null;}
-  catch(e){return null;}
+  const k=key||dataKey;
+  let ls=null;
+  try{const r=localStorage.getItem(k);ls=r?JSON.parse(r):null;}
+  catch(e){ls=null;}
+  if(k!==dataKey||!memBundle)return ls;
+  if(!ls)return memBundle;
+  const mw=weigh(memBundle),lw=weigh(ls);
+  if(mw!==lw)return mw>lw?memBundle:ls;
+  return (memBundle.ts||0)>=(ls.ts||0)?memBundle:ls;
+}
+/* localStorage may have been evicted while the mirror survived. Run at boot
+   and again the moment we learn the uid. */
+async function hydrateMirror(){
+  const k=dataKey;
+  try{
+    const m=await mirrorGet(k);
+    if(!m||k!==dataKey)return false;
+    const cur=storedBundle();
+    const mw=weigh(m),cw=weigh(cur);
+    if(!cur&&mw===0)return false;
+    if(cur&&!(mw>cw||(mw===cw&&(m.ts||0)>(cur.ts||0))))return false;
+    applyBundle(m);memBundle=m;
+    try{localStorage.setItem(k,JSON.stringify(m));}catch(e){}
+    return true;
+  }catch(e){return false;}
+}
+async function hydrateProfileMirror(){
+  const k=profKey;
+  try{
+    const m=await mirrorGet(k);
+    if(!m||k!==profKey)return false;
+    if(profile&&(profile.ts||0)>=(m.ts||0))return false;
+    profile=m;memProfile=m;
+    try{localStorage.setItem(k,JSON.stringify(m));}catch(e){}
+    return true;
+  }catch(e){return false;}
 }
 
 /* A blank in-memory state must not quietly erase a full saved one. That is
@@ -1080,14 +1154,18 @@ function storedBundle(key){
    fired a moment later, and the empty bundle hit disk with a fresh stamp. */
 function saveLocal(opts){
   if(tearing&&!(opts&&opts.force))return;
+  let next=null;
   try{
-    const next=stamped();
+    next=stamped();
     if(!(opts&&opts.force)){
       const prev=storedBundle();
       if(prev&&weigh(next)===0&&weigh(prev)>0)return;
     }
-    localStorage.setItem(dataKey,JSON.stringify(next));
-  }catch(e){}
+  }catch(e){return;}
+  // memory first, so a refused localStorage still leaves us a copy
+  memBundle=next;
+  try{localStorage.setItem(dataKey,JSON.stringify(next));}catch(e){}
+  mirrorPut(dataKey,next);
 }
 function localTs(){const p=storedBundle();return p?(p.ts||0):0;}
 function loadLocal(){
@@ -1098,19 +1176,26 @@ function loadLocal(){
 /* The profile (name + photo) is data too. It used to live only in the cloud,
    so if the database refused a write the photo was gone on the next reload. */
 function saveProfileLocal(){
-  try{if(profile)localStorage.setItem(profKey,JSON.stringify({...profile,ts:Date.now()}));}catch(e){}
+  if(!profile)return;
+  const p={...profile,ts:Date.now()};
+  memProfile=p;
+  try{localStorage.setItem(profKey,JSON.stringify(p));}catch(e){}
+  mirrorPut(profKey,p);
 }
 function loadProfileLocal(){
   try{
     const r=localStorage.getItem(profKey);
     if(r){const p=JSON.parse(r);if(p&&typeof p==='object'){profile=p;return true;}}
   }catch(e){}
+  if(memProfile){profile=memProfile;return true;}
   return false;
 }
 /* Keep each account's data in its own slot so two people on one phone
    never inherit each other's program. */
 function useAccountKeys(uid){
   const nd=LS+':'+uid, np=PS+':'+uid;
+  // Never let one account's in-memory cache leak into another's slot.
+  if(nd!==dataKey){memBundle=null;memProfile=null;}
   try{
     if(!localStorage.getItem(nd)){
       const shared=localStorage.getItem(LS);
@@ -1129,6 +1214,11 @@ function useAccountKeys(uid){
     }
   }catch(e){}
   dataKey=nd;profKey=np;
+  // keep the durable copy in step with whatever this slot now holds
+  try{
+    const b=storedBundle();if(b&&weigh(b)>0)mirrorPut(nd,b);
+    const r=localStorage.getItem(np);if(r)mirrorPut(np,JSON.parse(r));
+  }catch(e){}
 }
 
 function setSync(state,msg){
@@ -1168,7 +1258,7 @@ function flashSaved(){
   p.classList.add('show');clearTimeout(p._t);p._t=setTimeout(()=>p.classList.remove('show'),1400);
 }
 
-let cloudT=null,syncT=null;
+let cloudT=null,syncT=null,cloudFloor=0;
 function save(opts){
   // A guest is working on the host's program, not their own. Push it to the
   // session, but never write it over their own saved data.
@@ -1176,11 +1266,17 @@ function save(opts){
     if(editGranted&&sessId){clearTimeout(syncT);syncT=setTimeout(pushState,300);if(!(opts&&opts.quiet))flashSaved();}
     return;
   }
-  saveLocal();
+  saveLocal();          // on disk and in the mirror before this returns
   dirty=true;
   paintSaveBtn();
+  /* The cloud write used to sit behind a 900ms timer that restarted on every
+     keystroke, so a steady run of entries could stay unsent for as long as
+     the typing lasted. Still coalesce, but never hold anything past the
+     ceiling — every entry reaches the account inside a second and a half. */
+  const now=Date.now();
+  if(!cloudT)cloudFloor=now+1500;
   clearTimeout(cloudT);
-  cloudT=setTimeout(cloudSave,900);
+  cloudT=setTimeout(cloudSave,Math.max(0,Math.min(300,cloudFloor-now)));
   if(sessId){clearTimeout(syncT);syncT=setTimeout(pushState,300);}
   if(opts&&opts.quiet)return;
   flashSaved();
@@ -1193,23 +1289,46 @@ function classifyErr(e){
   if(/permission|PERMISSION_DENIED/i.test(m))return 'blocked';
   return 'offline';
 }
+/* A write that never settles leaves the pill on "Saving…" for ever and the
+   retry loop stacking promises behind it. Give every call a deadline. */
+function withTimeout(p,ms){
+  return new Promise((res,rej)=>{
+    let settled=false;
+    const t=setTimeout(()=>{if(!settled){settled=true;rej(new Error('Timed out reaching the database'));}},ms);
+    Promise.resolve(p).then(
+      v=>{if(!settled){settled=true;clearTimeout(t);res(v);}},
+      e=>{if(!settled){settled=true;clearTimeout(t);rej(e);}});
+  });
+}
+let cloudBusy=false,cloudAgain=false,lastPushTs=0;
 async function cloudSave(){
+  clearTimeout(cloudT);cloudT=null;
   saveLocal();
   if(!user||!db){setSync('local');return false;}
+  /* Two overlapping writes can land out of order, and then the older one is
+     what the account keeps. Run them one at a time, and remember that another
+     is owed so nothing entered during a slow write is dropped. */
+  if(cloudBusy){cloudAgain=true;return false;}
+  cloudBusy=true;
   setSync('saving');
   try{
     // Last line of defence. If we are about to send an empty program, check
     // what is up there first — never blank out a real one by accident.
     if(weigh(bundle())===0){
-      const cur=await get(ref(db,'users/'+user.uid+'/data'));
+      const cur=await withTimeout(get(ref(db,'users/'+user.uid+'/data')),15000);
       if(cur&&cur.exists()&&weigh(cur.val()||{})>0){
         applyBundle(cur.val());saveLocal({force:true});
         dirty=false;setSync('saved');render();
         return true;
       }
     }
-    await set(ref(db,'users/'+user.uid+'/data'),stamped());
-    if(profile)await set(ref(db,'users/'+user.uid+'/profile'),{...profile,ts:Date.now()});
+    const payload=stamped();
+    await withTimeout(set(ref(db,'users/'+user.uid+'/data'),payload),15000);
+    lastPushTs=payload.ts;            // so our own echo does not bounce back at us
+    if(profile){
+      const p={...profile,ts:Date.now()};
+      try{await withTimeout(set(ref(db,'users/'+user.uid+'/profile'),p),15000);}catch(e){}
+    }
     dirty=false;setSync('saved');
     return true;
   }catch(e){
@@ -1217,6 +1336,9 @@ async function cloudSave(){
     const kind=classifyErr(e);
     setSync(kind,(e&&e.message)||'');
     return false;
+  }finally{
+    cloudBusy=false;
+    if(cloudAgain){cloudAgain=false;setTimeout(cloudSave,80);}
   }
 }
 async function saveProfileCloud(){
@@ -1232,7 +1354,7 @@ async function saveProfileCloud(){
 async function cloudLoad(uidStr){
   if(!db)return;
   try{
-    const s=await get(ref(db,'users/'+uidStr+'/data'));
+    const s=await withTimeout(get(ref(db,'users/'+uidStr+'/data')),15000);
     if(s&&s.exists()){
       const remote=s.val()||{};
       const local=storedBundle();
@@ -1252,16 +1374,23 @@ async function cloudLoad(uidStr){
       if(takeRemote){
         applyBundle(remote);
         // keep the cloud's own stamp so later comparisons stay meaningful
-        try{localStorage.setItem(dataKey,JSON.stringify({...bundle(),ts:rt||serverNow(),_uid:uidStr}));}catch(e){}
+        const kept={...bundle(),ts:rt||serverNow(),_uid:uidStr};
+        memBundle=kept;lastPushTs=kept.ts;
+        try{localStorage.setItem(dataKey,JSON.stringify(kept));}catch(e){}
+        mirrorPut(dataKey,kept);
         dirty=false;
       }else dirty=true;                    // ours is genuinely newer — push it up
     }else if(weigh(bundle())>0){
       dirty=true;                          // nothing up there yet; send what we have
     }
-    const p=await get(ref(db,'users/'+uidStr+'/profile'));
+    const p=await withTimeout(get(ref(db,'users/'+uidStr+'/profile')),15000);
     if(p&&p.exists()){
       const rp=p.val()||{};
-      if(!profile||(rp.ts||0)>=(profile.ts||0))profile=rp;
+      if(!profile||(rp.ts||0)>=(profile.ts||0)){
+        profile=rp;memProfile=rp;
+        try{localStorage.setItem(profKey,JSON.stringify(rp));}catch(e){}
+        mirrorPut(profKey,rp);
+      }
       else dirty=true;
     }
     if(!dirty)setSync('saved');
@@ -1273,15 +1402,87 @@ async function flushPending(){
   if(tearing)return;
   await cloudSave();
 }
+/* ── Live account watch ──────────────────────────────────────
+   Phone and laptop, or a reinstall, should show the same program without a
+   reload. The sign-in rule applies here too: fuller and newer wins, so an
+   update arriving from elsewhere can never wipe something typed here a
+   second ago, and an empty remote can never wipe a real program. */
+let ownRef=null;
+function watchOwnData(uidStr){
+  if(!db)return;
+  stopWatchOwnData();
+  try{
+    ownRef=ref(db,'users/'+uidStr+'/data');
+    onValue(ownRef,s=>{
+      if(!s||!s.exists())return;
+      if(tearing||!user||user.uid!==uidStr)return;
+      if(role==='guest')return;            // the guest is looking at someone else's program
+      const remote=s.val()||{};
+      const rt=remote.ts||0;
+      if(rt&&rt===lastPushTs)return;       // our own write coming back to us
+      const rw=weigh(remote),lw=weigh(bundle()),lt=localTs();
+      if(rw===0&&lw>0)return;              // never let a blank remote erase this device
+      if(dirty&&lw>=rw)return;             // we hold unsent work at least as full
+      if(rt<=lt&&lw>=rw)return;            // ours is newer and no thinner
+      applyBundle(remote);
+      const kept={...bundle(),ts:rt||serverNow(),_uid:uidStr};
+      memBundle=kept;lastPushTs=kept.ts;
+      try{localStorage.setItem(dataKey,JSON.stringify(kept));}catch(e){}
+      mirrorPut(dataKey,kept);
+      if(!dirty)setSync('saved');
+      applyTheme();render();
+    },err=>{setSync(classifyErr(err),(err&&err.message)||'');});
+  }catch(e){}
+}
+function stopWatchOwnData(){
+  try{if(ownRef)off(ownRef);}catch(e){}
+  ownRef=null;
+}
+
+/* ── Last gasp ───────────────────────────────────────────────
+   pagehide is the final moment the browser gives us, and it is far too late
+   for a promise. A keepalive fetch is handed to the network stack and
+   outlives the tab, so the last entry of a session still lands. */
+let idToken='',idTokenTs=0;
+async function refreshIdToken(force){
+  try{
+    if(!user||!user.getIdToken)return;
+    if(!force&&idToken&&Date.now()-idTokenTs<20*60*1000)return;
+    idToken=await user.getIdToken();idTokenTs=Date.now();
+  }catch(e){}
+}
+function beaconSave(){
+  try{
+    if(!user||!db||!dirty||tearing||role==='guest')return;
+    if(!idToken||!firebaseConfig.databaseURL)return;
+    if(weigh(bundle())===0)return;
+    const body=JSON.stringify(stamped());
+    if(body.length>60000)return;   // keepalive bodies are capped; the retry loop covers the rest
+    const url=firebaseConfig.databaseURL.replace(/\/+$/,'')+
+      '/users/'+user.uid+'/data.json?print=silent&auth='+encodeURIComponent(idToken);
+    fetch(url,{method:'PUT',keepalive:true,
+      headers:{'Content-Type':'application/json'},body:body}).catch(()=>{});
+  }catch(e){}
+}
+function parkNow(){
+  try{saveLocal();saveProfileLocal();beaconSave();}catch(e){}
+}
 function startRetryLoop(){
   watchClock();
-  setInterval(flushPending,20000);
+  setInterval(()=>{if(dirty)flushPending();},8000);
+  setInterval(()=>refreshIdToken(),15*60*1000);
   window.addEventListener('online',()=>{setSync('saving');flushPending();});
   window.addEventListener('offline',()=>setSync('offline'));
-  document.addEventListener('visibilitychange',()=>{if(!document.hidden)flushPending();});
-  window.addEventListener('pagehide',()=>{try{saveLocal();saveProfileLocal();}catch(e){}});
+  document.addEventListener('visibilitychange',()=>{
+    if(document.hidden)parkNow();          // backgrounding a phone can end the page outright
+    else{refreshIdToken();flushPending();}
+  });
+  window.addEventListener('pagehide',parkNow);
+  window.addEventListener('freeze',parkNow);
+  window.addEventListener('blur',()=>{try{saveLocal();saveProfileLocal();}catch(e){}});
   // closing the tab with work that never reached the account is worth a prompt
   window.addEventListener('beforeunload',e=>{
+    parkNow();
     if(dirty&&user&&syncState!=='saved'){e.preventDefault();e.returnValue='';}
   });
 }
@@ -3010,6 +3211,8 @@ async function doSignup(){
   PREFS.onboarded=true;
   try{await cloudSave();}catch(e){}
   saveLocal();
+  refreshIdToken(true);
+  watchOwnData(user.uid);       // this account is live on every device from here
   render();
   toast('Welcome to UNIT, '+first);
   // Say this after the welcome, or it gets overwritten and never read.
@@ -3038,6 +3241,8 @@ async function doSignOut(){
   busy('Signing out');
   saveLocal({force:true});saveProfileLocal();
   tearing=true;                       // block writes while the state is torn down
+  stopWatchOwnData();
+  idToken='';idTokenTs=0;
   if(sessId)await leaveSession();
   try{if(auth)await signOut(auth);}catch(e){}
   user=null;profile=null;
@@ -3045,6 +3250,7 @@ async function doSignOut(){
   st={};ws={};wtr={};calDone={};
   PREFS={trainDays:[],split:'',doesCardio:false,onboarded:false};
   dataKey=LS;profKey=PS;   // back to the shared slot; each account keeps its own
+  memBundle=null;memProfile=null;   // drop the outgoing account's cache
   tearing=false;
   setSync('local');
   unbusy();showAuth();render();
@@ -3135,6 +3341,9 @@ Object.assign(window,{
    INIT
 ═══════════════════════════════════════════════════════════ */
 loadLocal();loadProfileLocal();importLegacy();loadSess();applyTheme();startRetryLoop();
+// the mirror is async; if it holds more than localStorage did, take it
+hydrateMirror().then(ok=>{if(ok){applyTheme();render();}});
+hydrateProfileMirror().then(ok=>{if(ok)render();});
 openPhotoDB().catch(()=>{});
 setupSW();
 restoreTimer();
@@ -3167,10 +3376,14 @@ if(auth){
       busy('Loading your program');
       useAccountKeys(u.uid);      // this account's own slot
       loadLocal();loadProfileLocal();
+      await hydrateMirror();      // localStorage may have been evicted since last time
+      await hydrateProfileMirror();
+      refreshIdToken(true);
       await cloudLoad(u.uid);
       if(!profile)profile={firstName:(u.displayName||'').split(' ')[0]||'',lastName:'',email:u.email||'',username:(u.email||'').split('@')[0]};
       saveLocal();saveProfileLocal();
       watchConnection();
+      watchOwnData(u.uid);        // stay in step with this account's other devices
       unbusy();applyTheme();hideAuth();
       if(!PREFS.onboarded){
         await runOnboarding();
