@@ -1879,7 +1879,8 @@ function libForDay(d){
 ═══════════════════════════════════════════════════════════ */
 let jumpTop=false;
 function render(){
-  if(role==='guest')tab='train';
+  // a guest never navigates for themselves; the mirror decides the screen
+  if(role==='guest'&&!['train','food','cal'].includes(tab))tab='train';
   const y=window.scrollY;
   renderHeader();
   const m=document.getElementById('main');
@@ -1895,14 +1896,17 @@ function render(){
   else m.innerHTML=viewProfile();
   ['train','food','cal','hub','profile'].forEach(t=>{
     const b=document.getElementById('nav-'+t);
-    if(b){b.classList.toggle('on',tab===t);b.style.display=(role==='guest'&&t!=='train')?'none':'';}
+    if(b){b.classList.toggle('on',tab===t);b.style.display=(role==='guest'&&t!==tab)?'none':'';}
   });
   if(tab==='train'&&openCards.photos)loadPhotoGrid();
   m.classList.toggle('locked',role==='guest'&&!editGranted);
   updateCart();
   // keep the reader where they were unless we deliberately changed screens
   if(jumpTop){jumpTop=false;window.scrollTo(0,0);}
+  // while mirroring, the presenter's position wins — applied straight after
+  else if(mirroring){}
   else if(y>0){window.scrollTo(0,y);requestAnimationFrame(()=>window.scrollTo(0,y));}
+  if(sessId&&isPresenter()&&!mirroring)pushView();
 }
 function renderHeader(){
   const showDays=(tab==='train');
@@ -2043,8 +2047,10 @@ function exHTML(d,e,ei){
       <div class="set-n">${String(si+1).padStart(2,'0')}</div>
       <div class="set-f">
         <input class="si si-w" type="number" inputmode="decimal" placeholder="${esc(s.w||'wt')}" value="${esc(v.w??'')}"
+          data-live="${k}|w" oninput="liveType('${k}','w',this.value)"
           onchange="setField('${k}','w',this.value)" onclick="event.stopPropagation()">
         <input class="si" type="number" inputmode="numeric" placeholder="${esc(s.r||'reps')}" value="${esc(v.r??'')}"
+          data-live="${k}|r" oninput="liveType('${k}','r',this.value)"
           onchange="setField('${k}','r',this.value)" onclick="event.stopPropagation()">
       </div>
       <div class="log${v.done?' done':''}" onclick="toggleSet('${d}',${ei},${si},this)">${icoCheck()}</div>
@@ -2171,6 +2177,7 @@ function viewFood(){
     ${[['cal','kcal'],['protein','protein'],['carbs','carbs'],['fat','fat']].map(([k,l])=>
       `<div class="macro"><div class="macro-l">${l}</div>
        <input class="macro-i mono" type="number" inputmode="numeric" placeholder="—" value="${esc(MACROS[k]||'')}"
+        data-live="macro|${k}" oninput="liveMacro('${k}',this.value)"
         onchange="MACROS['${k}']=this.value;save()"></div>`).join('')}
   </div>`;
 
@@ -3173,6 +3180,7 @@ async function doJoin(){
   startBeat();
   watchSession();
   saveSess();closeSheet();tab='train';render();
+  if(snapVal.view)applyRemoteView(snapVal.view);   // land on the host's screen straight away
   connScreen('join',partner);
 }
 
@@ -3252,6 +3260,119 @@ function stopBeat(){
   clearInterval(beatT);clearInterval(staleT);
   beatT=staleT=null;peerSeen=0;peerStale=false;
 }
+/* ═══════════════════════════════════════════════════════════
+   SCREEN MIRROR
+
+   The data already travelled; what did not was everything that makes a
+   screen a screen — which day is open, which cards are unfolded, where
+   the page is scrolled, and the half-typed number in a weight box. Those
+   go in their own tiny node, pushed on a 150ms throttle, so the follower
+   sees the session as it actually looks rather than a reconstruction.
+
+   Exactly one side presents at a time: the host, until it hands control
+   over, and the guest from then on. The other side follows.
+═══════════════════════════════════════════════════════════ */
+let mirroring=false;          // true while we are applying someone else's screen
+let liveEdits={};             // field key -> the characters currently in the box
+let viewT=null,lastView='',lastMirrorTs=0;
+
+function isPresenter(){
+  if(!sessId||!role)return false;
+  return role==='guest'?!!editGranted:!editGranted;
+}
+function isFollower(){return !!sessId&&!isPresenter();}
+function docSpan(){
+  return Math.max(1,document.documentElement.scrollHeight-window.innerHeight);
+}
+function viewSnapshot(){
+  return{
+    tab,day,
+    oc:openCards||{},oe:openEx||{},
+    y:Math.round(window.scrollY||0),
+    h:Math.round(docSpan()),
+    live:Object.keys(liveEdits).length?liveEdits:null,
+    by:role,ts:Date.now()
+  };
+}
+function pushView(immediate){
+  if(!db||!sessId||!isPresenter())return;
+  const send=()=>{
+    viewT=null;
+    const v=viewSnapshot();
+    // ts changes every time; compare everything else so a still screen is silent
+    const sig=JSON.stringify({...v,ts:0});
+    if(sig===lastView)return;
+    lastView=sig;
+    try{set(sref('view'),v);}catch(e){}
+  };
+  if(immediate){clearTimeout(viewT);return send();}
+  if(viewT)return;                       // one push in flight per 150ms
+  viewT=setTimeout(send,150);
+}
+function applyRemoteView(v){
+  if(!v||!isFollower())return;
+  if(v.by===role)return;                 // our own write echoing back
+  if(v.ts&&v.ts<lastMirrorTs)return;     // an older packet arriving late
+  lastMirrorTs=v.ts||0;
+  mirroring=true;
+  try{
+    const clone=x=>{try{return JSON.parse(JSON.stringify(x||{}));}catch(e){return{};}};
+    /* Only the training screens are mirrored. The Hub and You tabs are the
+       follower's own account, so showing them here would present their
+       private data as if it were the presenter's. */
+    if(v.tab&&['train','food','cal'].includes(v.tab))tab=v.tab;
+    if(v.day)day=v.day;
+    openCards=clone(v.oc);
+    openEx=clone(v.oe);
+    render();
+    applyLive(v.live);
+    mirrorScroll(v.y,v.h);
+  }catch(e){}
+  mirroring=false;
+}
+/* Two phones are rarely the same height. Track the exact pixel when the
+   pages are close, and fall back to the proportion when they are not. */
+function mirrorScroll(y,h){
+  if(typeof y!=='number')return;
+  const mine=docSpan();
+  const theirs=h&&h>0?h:mine;
+  const close=Math.abs(mine-theirs)/Math.max(mine,theirs)<.12;
+  const target=close?y:Math.round((y/theirs)*mine);
+  const clamped=Math.max(0,Math.min(mine,target));
+  window.scrollTo(0,clamped);
+  requestAnimationFrame(()=>{if(mirroring||isFollower())window.scrollTo(0,clamped);});
+}
+/* Characters land in the follower's boxes as they are typed, without a
+   re-render — a redraw on every keystroke would flicker and drop focus. */
+function applyLive(live){
+  if(!live)return;
+  Object.keys(live).forEach(key=>{
+    const el=document.querySelector('[data-live="'+key+'"]');
+    if(el&&document.activeElement!==el){
+      const val=live[key];
+      el.value=(val===null||val===undefined)?'':val;
+    }
+  });
+}
+function noteLive(key,v){
+  liveEdits[key]=v;
+  const keys=Object.keys(liveEdits);
+  if(keys.length>60)delete liveEdits[keys[0]];   // oldest box drops off
+  pushView();
+}
+function liveType(k,f,v){
+  ws[k]=ws[k]||{};ws[k][f]=v;
+  noteLive(k+'|'+f,v);
+}
+function liveMacro(k,v){
+  MACROS[k]=v;
+  noteLive('macro|'+k,v);
+}
+function clearMirror(){
+  clearTimeout(viewT);viewT=null;
+  mirroring=false;liveEdits={};lastView='';lastMirrorTs=0;
+}
+
 // a push that fails gets retried once we are back
 let statePending=false;
 async function pushStateSafe(){
@@ -3277,7 +3398,10 @@ function watchSession(){
     const had=!!partner,prev=partner;
     if(has)partner=snap.val();
     renderPairStrip();
-    if(has&&!had)connScreen('join',partner);
+    if(has&&!had){
+      connScreen('join',partner);
+      if(isPresenter())pushView(true);            // hand the newcomer the current screen
+    }
     if(!has&&had){
       const gone=prev;
       partner=null;renderPairStrip();
@@ -3288,10 +3412,15 @@ function watchSession(){
   watch('control',snap=>{
     const was=editGranted;
     editGranted=!!(snap&&snap.exists()&&snap.val().edit);
-    if(role==='guest'&&was!==editGranted){
-      toast(editGranted?'You can now edit the workout':'The host took back control');
-      buzz([12,30,12]);
-      render();
+    if(was!==editGranted){
+      // the presenter just changed sides; start from a clean comparison
+      lastView='';lastMirrorTs=0;liveEdits={};
+      if(role==='guest'){
+        toast(editGranted?'You can now edit the workout':'The host took back control');
+        buzz([12,30,12]);
+        render();
+      }
+      if(isPresenter())pushView(true);
     }
     renderPairStrip();
   });
@@ -3303,6 +3432,10 @@ function watchSession(){
     // a guest's edit belongs to the host's program, so the host keeps it
     if(role==='host'){saveLocal();clearTimeout(cloudT);cloudT=setTimeout(cloudSave,900);}
     render();
+  });
+  watch('view',snap=>{
+    if(!snap||!snap.exists())return;
+    applyRemoteView(snap.val());
   });
   watch('ended',snap=>{
     if(role==='guest'&&snap&&snap.exists()&&snap.val()===true){
@@ -3323,10 +3456,17 @@ function applyRemoteState(s){
   if(s.CARDIO)CARDIO=clone(s.CARDIO);
   if(s.day)day=s.day;
   if(s.PREFS)PREFS={...PREFS,...clone(s.PREFS)};
+  if(s.MEALS)MEALS=clone(s.MEALS);
+  if(s.SUPPS)SUPPS=clone(s.SUPPS);
+  if(s.MACROS)MACROS={...MACROS,...clone(s.MACROS)};
+  if(s.wtr)wtr=clone(s.wtr);
+  if(s.calDone)calDone=clone(s.calDone);
 }
 async function pushState(){
   if(!db||!sessId||!canWrite())return false;
-  try{await set(sref('state'),{EX,ws,st,CARDIO,day,PREFS,by:role,ts:Date.now()});statePending=false;return true;}
+  try{await set(sref('state'),
+    {EX,ws,st,CARDIO,day,PREFS,MEALS,SUPPS,MACROS,wtr,calDone,by:role,ts:Date.now()});
+    statePending=false;return true;}
   catch(e){statePending=true;return false;}
 }
 async function pushTimer(){
@@ -3347,6 +3487,7 @@ function watchTimer(){
 }
 async function leaveSession(){
   const wasHost=role==='host',id=sessId,myRole=role;
+  clearMirror();
   unwatchAll();
   if(db&&id&&myRole){
     try{await set(ref(db,'sessions/'+id+'/'+myRole+'/profile'),null);}catch(e){}
@@ -5005,7 +5146,8 @@ Object.assign(window,{
   openLb,closeLb,openUser,closeUser,addFriend,acceptFriend,declineFriend,unfriend,
   openNotifs,tapNotif,clearNotifs,openShareSheet,toggleShare,openBioSheet,saveBio,
   paintHubBadges,friendCount,
-  cancelReq,mnScan,mnPick,mnClose,likeCmt,delCmt,refreshUserActions
+  cancelReq,mnScan,mnPick,mnClose,likeCmt,delCmt,refreshUserActions,
+  liveType,liveMacro
 });
 
 /* ═══════════════════════════════════════════════════════════
@@ -5034,6 +5176,11 @@ setInterval(rollover,30000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)rollover();});
 window.addEventListener('focus',rollover);
 document.addEventListener('click',()=>{initAudio();},{once:true});
+/* The presenter's scroll position is the single most-changing thing on the
+   screen, so it rides the same 150ms throttle as everything else. */
+window.addEventListener('scroll',()=>{
+  if(sessId&&isPresenter()&&!mirroring)pushView();
+},{passive:true});
 // Ctrl/Cmd+S saves instead of offering to download the page
 document.addEventListener('keydown',e=>{
   if((e.ctrlKey||e.metaKey)&&(e.key==='s'||e.key==='S')){e.preventDefault();forceSave();}
