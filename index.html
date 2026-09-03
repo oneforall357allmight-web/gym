@@ -1881,6 +1881,8 @@ let jumpTop=false;
 function render(){
   // a guest never navigates for themselves; the mirror decides the screen
   if(role==='guest'&&!['train','food','cal'].includes(tab))tab='train';
+  // the host adding an exercise mid-session must not arrive folded away
+  if(isFollower())expandForFollower();
   const y=window.scrollY;
   renderHeader();
   const m=document.getElementById('main');
@@ -3291,6 +3293,21 @@ function isPresenter(){
   return role==='host';
 }
 function isFollower(){return !!sessId&&!isPresenter();}
+/* A watcher is not reading over a shoulder, they are following along. A
+   collapsed card tells them nothing, so their copy is unfolded: every
+   card open, every exercise on the shown day open, all the sets visible.
+   They see the set being worked right now and the ones still to come.
+   Progress photos stay shut — those are the watcher's own, stored on
+   their device, and have nothing to do with the session. */
+function expandForFollower(){
+  const oc={};
+  oc.w=true;oc.am=true;oc.pc=true;oc.water=true;oc.supps=true;
+  (MEALS||[]).forEach(m=>{if(m&&m.id)oc['m'+m.id]=true;});
+  oc.photos=false;
+  const oe={};
+  (EX[day]||[]).forEach((e,i)=>{oe[day+'|'+i]=true;});
+  openCards=oc;openEx=oe;
+}
 function docSpan(){
   return Math.max(1,document.documentElement.scrollHeight-window.innerHeight);
 }
@@ -3326,14 +3343,13 @@ function applyRemoteView(v){
   lastMirrorTs=v.ts||0;
   mirroring=true;
   try{
-    const clone=x=>{try{return JSON.parse(JSON.stringify(x||{}));}catch(e){return{};}};
     /* Only the training screens are mirrored. The Hub and You tabs are the
        follower's own account, so showing them here would present their
        private data as if it were the presenter's. */
     if(v.tab&&['train','food','cal'].includes(v.tab))tab=v.tab;
     if(v.day)day=v.day;
-    openCards=clone(v.oc);
-    openEx=clone(v.oe);
+    // v.oc / v.oe are the presenter's folds; render() lays the follower's
+    // copy fully open instead, so nothing on the card is hidden from them
     render();
     applyLive(v.live);
     mirrorScroll(v.y,v.h);
