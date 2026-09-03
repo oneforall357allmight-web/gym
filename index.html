@@ -3601,7 +3601,10 @@ function obFinish(){
 const HUB={
   POST_MAX:600, BIO_MAX:200, CMT_MAX:280,
   PAGE:15, IMG_PX:1080, IMG_BYTES:120000, THUMB_PX:96,
-  FANOUT:150, COOLDOWN:15000, IMG_CACHE:45, NOTIF_KEEP:40
+  FANOUT:150, COOLDOWN:15000, IMG_CACHE:45, NOTIF_KEEP:40,
+  // the feed shows a 420px copy; the full picture is fetched only on tap
+  FEED_PX:420, FEED_Q:.62, FEED_BYTES:30000,
+  PUB_KEEP:400, THUMB_KEEP:150, WAIT_MAX:50
 };
 
 let hubTab='feed';                 // feed | friends | reqs
@@ -3613,7 +3616,118 @@ let pubCache=new Map(), imgCache=new Map(), cmtCache={};
 let openCmt={}, hubQ='', hubHits=null, hubSearching=false;
 let SHARE={routine:false,fuel:false,groc:false,streak:false};
 let sharePushed=0, lastPostAt=0, pendingPost=null, viewUid=null;
-let hubOn=[], imgObs=null, searchT=null, newPostRef=null, newPostCb=null;
+let hubOn=[], imgObs=null, searchT=null, newPostRef=null, newPostCb=null, pruneT=null;
+
+/* ── a cache that survives the tab ────────────────────────────
+   Public cards and feed thumbnails are the same bytes for everybody and
+   they barely change, so paying for them once per device rather than once
+   per launch is most of the saving here. */
+let hubDB=null;
+function openHubDB(){
+  return new Promise((res,rej)=>{
+    try{
+      const r=indexedDB.open('unit-hub',1);
+      r.onupgradeneeded=e=>{
+        const d=e.target.result;
+        if(!d.objectStoreNames.contains('pub'))d.createObjectStore('pub');
+        if(!d.objectStoreNames.contains('img'))d.createObjectStore('img');
+      };
+      r.onsuccess=e=>{hubDB=e.target.result;res(hubDB);};
+      r.onerror=()=>rej();
+    }catch(e){rej();}
+  });
+}
+function idbPut(store,key,val){
+  try{if(hubDB)hubDB.transaction(store,'readwrite').objectStore(store).put(val,key);}catch(e){}
+}
+function idbDel(store,key){
+  try{if(hubDB)hubDB.transaction(store,'readwrite').objectStore(store).delete(key);}catch(e){}
+}
+function idbGet(store,key){
+  return new Promise(res=>{
+    try{
+      if(!hubDB)return res(null);
+      const q=hubDB.transaction(store,'readonly').objectStore(store).get(key);
+      q.onsuccess=()=>res(q.result||null);q.onerror=()=>res(null);
+    }catch(e){res(null);}
+  });
+}
+function idbEntries(store){
+  return new Promise(res=>{
+    try{
+      if(!hubDB)return res([]);
+      const st=hubDB.transaction(store,'readonly').objectStore(store);
+      const kq=st.getAllKeys(),vq=st.getAll();
+      let k=null,v=null;
+      const done=()=>{if(k&&v)res(k.map((key,i)=>[key,v[i]]));};
+      kq.onsuccess=()=>{k=kq.result||[];done();};
+      vq.onsuccess=()=>{v=vq.result||[];done();};
+      kq.onerror=vq.onerror=()=>res([]);
+    }catch(e){res([]);}
+  });
+}
+/* Keep the newest N and drop the rest, so the cache cannot grow for ever. */
+async function trimStore(store,keep){
+  try{
+    const all=await idbEntries(store);
+    if(all.length<=keep)return;
+    all.sort((a,b)=>((b[1]&&b[1].ts)||0)-((a[1]&&a[1].ts)||0));
+    all.slice(keep).forEach(([k])=>idbDel(store,k));
+  }catch(e){}
+}
+
+/* ── avatars, fetched once and shared ────────────────────────
+   These used to be stamped onto every post, comment, friend record and
+   notification. A 96px JPEG is ~5KB, so a 150-friend list cost 750KB on
+   every launch and a single post wrote 750KB of notifications. Now the
+   records carry a uid and the picture is looked up from a cache. */
+let avMiss=new Set(),avT=null,avBusy=new Set();
+function avatarOf(u){
+  if(!u)return '';
+  if(user&&u===user.uid)return (profile&&profile.pubAvatar)||'';
+  const c=pubCache.get(u);
+  if(c)return c.a||'';
+  queueAvatar(u);
+  return '';
+}
+function queueAvatar(u){
+  if(!u||pubCache.has(u)||avBusy.has(u))return;
+  avMiss.add(u);
+  clearTimeout(avT);
+  avT=setTimeout(runAvatarQueue,140);
+}
+async function runAvatarQueue(){
+  if(!db||!user)return;
+  const list=[...avMiss].slice(0,24);
+  avMiss.clear();
+  if(!list.length)return;
+  list.forEach(u=>avBusy.add(u));
+  await Promise.all(list.map(async u=>{
+    try{
+      const snap=await withTimeout(get(hubRef('pub/'+u)),12000);
+      const v=(snap&&snap.exists()&&snap.val())||{};
+      pubCache.set(u,v);
+      idbPut('pub',u,{...v,ts:Date.now()});
+    }catch(e){pubCache.set(u,{});}
+    avBusy.delete(u);
+  }));
+  paintAvatars();
+}
+/* Draw initials immediately, swap the photo in when it lands. */
+function avHTMLFor(u,name,cls,legacy){
+  const a=avatarOf(u)||legacy||'';
+  const initial=esc(String(name||'?').trim().charAt(0).toUpperCase()||'?');
+  return a
+    ? `<div class="av ${cls} ring" data-av="${esc(u||'')}" style="background-image:url('${esc(a)}')"></div>`
+    : `<div class="av ${cls}" data-av="${esc(u||'')}">${initial}</div>`;
+}
+function paintAvatars(){
+  document.querySelectorAll('[data-av]').forEach(el=>{
+    if(el.style.backgroundImage)return;
+    const a=avatarOf(el.dataset.av);
+    if(a){el.style.backgroundImage="url('"+a+"')";el.textContent='';el.classList.add('ring');}
+  });
+}
 
 /* ── small helpers ─────────────────────────────────────────── */
 function hubRef(p){return ref(db,p);}
@@ -3660,9 +3774,11 @@ async function fitImage(file){
   if(d.length>HUB.IMG_BYTES*1.9)d=await resizeImg(file,640,.45);
   return d;
 }
+/* No avatar in here on purpose — see avatarOf(). Anything written to a
+   shared node carries the uid and the reader looks the picture up. */
 function myCard(){
   const p=profile||{};
-  return{u:p.username||'',n:fullName(p)||p.username||'Someone',a:p.pubAvatar||''};
+  return{u:p.username||'',n:fullName(p)||p.username||'Someone'};
 }
 function isFriend(u){return !!friends[u];}
 function friendCount(){return Object.keys(friends).length;}
@@ -3706,11 +3822,22 @@ function cardHTML(c,cls){
    Three tiny listeners run for the whole session: friends, incoming
    requests, and the last 40 notifications. The feed is deliberately
    not one of them — it is fetched, not subscribed to. */
-function startHub(){
+async function startHub(){
   if(!db||!user)return;
   stopHub();
+  try{
+    if(!hubDB)await openHubDB();
+    const rows=await idbEntries('pub');
+    rows.forEach(([k,v])=>{if(v)pubCache.set(k,v);});
+    paintAvatars();
+  }catch(e){}
   pushPub();
   loadShare();
+  // the inbox is capped on read; this is what stops it growing on disk
+  setTimeout(pruneNotifs,4000);
+  clearInterval(pruneT);
+  pruneT=setInterval(pruneNotifs,30*60*1000);
+  setTimeout(()=>{trimStore('pub',HUB.PUB_KEEP);trimStore('img',HUB.THUMB_KEEP);},9000);
   hubListen('friends/'+user.uid,s=>{
     friends=(s&&s.val())||{};
     if(tab==='hub'&&hubTab==='friends')paintHubList();
@@ -3736,6 +3863,24 @@ function startHub(){
     hubOn.push({r:q,l});
   }catch(e){}
 }
+/* The listener only ever reads the newest NOTIF_KEEP, so anything older was
+   invisible and immortal. Delete it. Runs only when the inbox is actually
+   full, so it costs nothing for most people. */
+async function pruneNotifs(){
+  if(!db||!user||notifs.length<HUB.NOTIF_KEEP)return;
+  const oldest=notifs[notifs.length-1].ts||0;
+  if(!oldest)return;
+  try{
+    const q=query(hubRef('notif/'+user.uid),orderByChild('ts'),endBefore(oldest));
+    const snap=await withTimeout(get(q),15000);
+    const v=(snap&&snap.val())||{};
+    const keys=Object.keys(v).slice(0,500);
+    if(!keys.length)return;
+    const w={};
+    keys.forEach(k=>{w['notif/'+user.uid+'/'+k]=null;});
+    await update(rootRef(),w);
+  }catch(e){}
+}
 function hubListen(path,cb){
   try{
     const r=hubRef(path);
@@ -3750,6 +3895,7 @@ function stopHub(){
   friends={};freqs={};fsent={};notifs=[];unread=0;
   feed=[];feedLoaded=false;feedDone=false;feedOldest=0;waiting=[];
   pubCache.clear();imgCache.clear();cmtCache={};openCmt={};
+  avMiss.clear();avBusy.clear();clearTimeout(avT);
   hubQ='';hubHits=null;pendingPost=null;
   paintHubBadges();
 }
@@ -3917,7 +4063,7 @@ function paintHubList(){
     box.innerHTML=ids.length
       ? ids.map(u=>{const c=friends[u];
         return `<div class="urow">
-          ${cardHTML(c,'av-40')}
+          ${avHTMLFor(u,c.n||c.u,'av-40',c.a)}
           <div class="urow-t" onclick="openUser('${u}')">
             <div class="urow-n">${esc(c.n||c.u||'Someone')}</div>
             <div class="urow-u">@${esc(c.u||'')}</div>
@@ -3933,7 +4079,7 @@ function paintHubList(){
   box.innerHTML=ids.length
     ? ids.map(u=>{const c=freqs[u];
       return `<div class="urow">
-        ${cardHTML(c,'av-40')}
+        ${avHTMLFor(u,c.n||c.u,'av-40',c.a)}
         <div class="urow-t" onclick="openUser('${u}')">
           <div class="urow-n">${esc(c.n||c.u||'Someone')}</div>
           <div class="urow-u">@${esc(c.u||'')} · ${ago(c.ts||0)}</div>
@@ -3946,6 +4092,7 @@ function paintHubList(){
     : `<div class="empty"><div class="empty-i">📭</div>
         <div class="empty-t">Nothing waiting</div>
         <div class="empty-s">Friend requests sent to you show up here.</div></div>`;
+  paintAvatars();
 }
 
 /* ═══════════ SEARCH BY USERNAME ═══════════ */
@@ -3995,13 +4142,14 @@ function paintSearch(){
     return;
   }
   res.innerHTML=hubHits.map(h=>`<div class="urow">
-    ${cardHTML(h,'av-40')}
+    ${avHTMLFor(h.uid,h.n||h.u,'av-40',h.a)}
     <div class="urow-t" onclick="openUser('${h.uid}')">
       <div class="urow-n">${esc(h.n||h.u)}</div>
       <div class="urow-u">@${esc(h.u||'')}</div>
     </div>
     ${friendBtn(h.uid)}
   </div>`).join('');
+  paintAvatars();
 }
 function friendBtn(u){
   if(u===(user&&user.uid))return '<button class="urow-b mut">You</button>';
@@ -4042,9 +4190,9 @@ async function addFriend(other,el){
   try{
     const nid=uid('n');
     await update(rootRef(),{
-      ['freq/'+other+'/'+user.uid]:{u:me.u,n:me.n,a:me.a,ts:serverNow()},
+      ['freq/'+other+'/'+user.uid]:{u:me.u,n:me.n,ts:serverNow()},
       ['fsent/'+user.uid+'/'+other]:serverNow(),
-      ['notif/'+other+'/'+nid]:{t:'req',u:user.uid,n:me.n,a:me.a,ts:serverNow(),r:false}
+      ['notif/'+other+'/'+nid]:{t:'req',u:user.uid,n:me.n,ts:serverNow(),r:false}
     });
     toast('Request sent');
   }catch(e){
@@ -4082,13 +4230,13 @@ async function acceptFriend(other){
   try{
     const nid=uid('n');
     await update(rootRef(),{
-      ['friends/'+user.uid+'/'+other]:{u:them.u||'',n:them.n||'',a:them.a||'',ts:serverNow()},
-      ['friends/'+other+'/'+user.uid]:{u:me.u,n:me.n,a:me.a,ts:serverNow()},
+      ['friends/'+user.uid+'/'+other]:{u:them.u||'',n:them.n||'',ts:serverNow()},
+      ['friends/'+other+'/'+user.uid]:{u:me.u,n:me.n,ts:serverNow()},
       ['freq/'+user.uid+'/'+other]:null,
       ['freq/'+other+'/'+user.uid]:null,
       ['fsent/'+other+'/'+user.uid]:null,
       ['fsent/'+user.uid+'/'+other]:null,
-      ['notif/'+other+'/'+nid]:{t:'acc',u:user.uid,n:me.n,a:me.a,ts:serverNow(),r:false}
+      ['notif/'+other+'/'+nid]:{t:'acc',u:user.uid,n:me.n,ts:serverNow(),r:false}
     });
     await pushShare(true);
     toast('You are now friends');
@@ -4146,7 +4294,7 @@ function mnScan(fieldId,popId){
   pop.style.display='block';
   pop.innerHTML=hits.length
     ? hits.map(f=>`<div class="mn-i" onclick="mnPick('${fieldId}','${popId}','${esc(f.u)}')">
-        ${cardHTML(f,'av-30')}
+        ${avHTMLFor(f.uid,f.n||f.u,'av-30',f.a)}
         <div class="mn-t"><b>${esc(f.n||f.u)}</b><i>@${esc(f.u)}</i></div></div>`).join('')
     : `<div class="mn-none">${friendCount()
         ? 'No friend with that username.'
@@ -4199,7 +4347,7 @@ async function notifyTagged(mn,kind,pid,txt){
   Object.keys(mn).slice(0,20).forEach(u=>{
     if(u===user.uid)return;
     w['notif/'+u+'/'+uid('n')]={
-      t:'tag',k:kind,u:user.uid,n:me.n,a:me.a,pid,
+      t:'tag',k:kind,u:user.uid,n:me.n,pid,
       txt:String(txt||'').slice(0,80),ts:serverNow(),r:false
     };
   });
@@ -4252,7 +4400,7 @@ function paintFeed(){
   let h='';
   if(waiting.length)h+=`<div class="newp"><button onclick="showWaiting()">${waiting.length} new ${waiting.length===1?'post':'posts'}</button></div>`;
   h+=`<div class="comp" onclick="openComposer()">
-    ${cardHTML({a:me.a,n:me.n},'av-40')}
+    ${avHTMLFor(user&&user.uid,me.n,'av-40')}
     <div class="comp-p">Share a lift, a meal, a win…</div>
     <div class="comp-b">+</div>
   </div>`;
@@ -4268,6 +4416,7 @@ function paintFeed(){
   }
   box.innerHTML=h;
   observeImgs();
+  paintAvatars();
 }
 function postHTML(p){
   const mine=p.uid===(user&&user.uid);
@@ -4277,7 +4426,7 @@ function postHTML(p){
   const open=!!openCmt[p.id];
   return `<div class="post" id="post-${p.id}">
     <div class="post-h">
-      ${cardHTML({a:p.a,n:p.n},'av-40')}
+      ${avHTMLFor(p.uid,p.n,'av-40',p.a)}
       <div class="post-id" onclick="openUser('${p.uid}')">
         <div class="post-n">${esc(p.n||'Someone')}</div>
         <div class="post-m">@${esc(p.u||'')} · ${ago(p.ts||0)}</div>
@@ -4319,11 +4468,21 @@ async function loadPostImg(pid){
   el.setAttribute('data-done','1');
   let d=imgCache.get(pid);
   if(d===undefined){
+    const cached=await idbGet('img',pid);          // seen before on this device
+    if(cached&&cached.t)d=cached.t;
+  }
+  if(d===undefined){
     try{
-      const s=await withTimeout(get(hubRef('postImg/'+pid)),20000);
-      d=(s&&s.exists()&&s.val().d)||'';
+      // just the thumbnail node; the full picture is a separate read
+      const s=await withTimeout(get(hubRef('postImg/'+pid+'/t')),20000);
+      d=(s&&s.exists()&&s.val())||'';
+      if(!d){                                       // a post from before thumbnails existed
+        const f=await withTimeout(get(hubRef('postImg/'+pid+'/d')),20000);
+        d=(f&&f.exists()&&f.val())||'';
+      }
     }catch(e){d='';}
     imgCache.set(pid,d);
+    if(d)idbPut('img',pid,{t:d,ts:Date.now()});
     if(imgCache.size>HUB.IMG_CACHE){
       const k=imgCache.keys().next().value;imgCache.delete(k);
     }
@@ -4334,11 +4493,25 @@ async function loadPostImg(pid){
   if(d)cur.innerHTML='<img src="'+d+'" alt="">';
   else{cur.innerHTML='';cur.style.minHeight='0';}
 }
-function openLb(pid){
-  const d=imgCache.get(pid);
-  if(!d)return;
-  document.getElementById('plb-img').src=d;
+let fullCache=new Map();
+/* Open on the thumbnail so it is instant, then quietly upgrade to full size. */
+async function openLb(pid){
+  const thumb=imgCache.get(pid);
+  const el=document.getElementById('plb-img');
+  const full=fullCache.get(pid);
+  if(!thumb&&!full)return;
+  el.src=full||thumb;
   document.getElementById('plb').classList.add('active');
+  if(full)return;
+  try{
+    const s=await withTimeout(get(hubRef('postImg/'+pid+'/d')),25000);
+    const d=(s&&s.exists()&&s.val())||'';
+    if(!d)return;
+    fullCache.set(pid,d);
+    if(fullCache.size>8){const k=fullCache.keys().next().value;fullCache.delete(k);}
+    const cur=document.getElementById('plb');
+    if(cur&&cur.classList.contains('active'))el.src=d;
+  }catch(e){}
 }
 function closeLb(){
   document.getElementById('plb').classList.remove('active');
@@ -4357,6 +4530,7 @@ function watchNewPosts(sinceTs){
       if(feed.some(x=>x.id===p.id))return;
       if(waiting.some(x=>x.id===p.id))return;
       waiting.unshift(p);
+      if(waiting.length>HUB.WAIT_MAX)waiting.length=HUB.WAIT_MAX;
       if(tab==='hub'&&hubTab==='feed')paintFeed();
     },()=>{});
   }catch(e){}
@@ -4417,13 +4591,23 @@ async function submitPost(){
   const pid=uid('p');
   const ts=serverNow();
   const mn=collectMentions(txt);
-  const post={uid:user.uid,u:me.u,n:me.n,a:me.a,txt,img:!!pendingPost,ts,cN:0};
+  const post={uid:user.uid,u:me.u,n:me.n,txt,img:!!pendingPost,ts,cN:0};
   if(mn)post.mn=mn;
   const img=pendingPost;
+  /* Scrolling past a photo used to download the full 120KB. The feed only
+     ever needs a 420px version, so store both and fetch the big one only
+     when somebody actually opens it. */
+  let thumb='';
+  if(img){
+    try{thumb=await shrink(img,HUB.FEED_PX,HUB.FEED_Q);}catch(e){}
+    if(thumb&&thumb.length>HUB.FEED_BYTES*2){
+      try{thumb=await shrink(img,320,.5);}catch(e){}
+    }
+  }
   try{
     const w={};
     w['posts/'+pid]=post;
-    if(img)w['postImg/'+pid]={d:img,uid:user.uid};
+    if(img)w['postImg/'+pid]={d:img,t:thumb||img,uid:user.uid};
     await withTimeout(update(rootRef(),w),25000);
   }catch(e){
     if(btn){btn.disabled=false;btn.textContent='Post';}
@@ -4432,7 +4616,11 @@ async function submitPost(){
   }
   lastPostAt=Date.now();
   pendingPost=null;
-  if(img)imgCache.set(pid,img);
+  if(img){
+    imgCache.set(pid,thumb||img);
+    fullCache.set(pid,img);
+    idbPut('img',pid,{t:thumb||img,ts:Date.now()});
+  }
   feed.unshift({id:pid,...post});
   closeSheet();
   if(tab==='hub'&&hubTab==='feed')paintFeed();
@@ -4452,7 +4640,7 @@ async function notifyFriends(pid,txt,hasImg,mn){
   const w={};
   ids.forEach(f=>{
     w['notif/'+f+'/'+nid]={
-      t:'post',u:user.uid,n:me.n,a:me.a,pid,
+      t:'post',u:user.uid,n:me.n,pid,
       txt:(txt||(hasImg?'shared a photo':'')).slice(0,90),
       ts:serverNow(),r:false
     };
@@ -4465,7 +4653,7 @@ async function delPost(pid){
     await update(rootRef(),{['posts/'+pid]:null,['postImg/'+pid]:null,['postCmt/'+pid]:null});
     feed=feed.filter(p=>p.id!==pid);
     waiting=waiting.filter(p=>p.id!==pid);
-    imgCache.delete(pid);
+    imgCache.delete(pid);fullCache.delete(pid);idbDel('img',pid);
     paintFeed();
     toast('Post deleted');
   }catch(e){toast('Could not delete that');}
@@ -4498,7 +4686,7 @@ async function toggleLike(pid){
     if(on&&p.uid!==user.uid){
       const me=myCard();
       await set(hubRef('notif/'+p.uid+'/'+uid('n')),
-        {t:'like',u:user.uid,n:me.n,a:me.a,pid,ts:serverNow(),r:false});
+        {t:'like',u:user.uid,n:me.n,pid,ts:serverNow(),r:false});
     }
   }catch(e){}
 }
@@ -4519,7 +4707,7 @@ async function toggleCmts(pid){
     }catch(e){cmtCache[pid]=[];}
   }
   const b=document.getElementById('cmt-'+pid);
-  if(b)b.innerHTML=cmtsHTML(pid);
+  if(b){b.innerHTML=cmtsHTML(pid);paintAvatars();}
 }
 function cmtsHTML(pid){
   const list=cmtCache[pid]||[];
@@ -4531,7 +4719,7 @@ function cmtsHTML(pid){
       // your own comment, or anything under a post of yours
       const canDel=user&&(c.uid===user.uid||post.uid===user.uid);
       return `<div class="cmt" id="c-${pid}-${c.id}">
-        ${cardHTML({a:c.a,n:c.n},'av-30')}
+        ${avHTMLFor(c.uid,c.n,'av-30',c.a)}
         <div class="cmt-b">
           <div class="cmt-n" onclick="openUser('${c.uid}')">${esc(c.n||'Someone')}</div>
           <div class="cmt-t">${renderText(c.t,c.mn)}</div>
@@ -4598,7 +4786,7 @@ async function sendCmt(pid){
   if(!t||!db||!user)return;
   const me=myCard();
   const mn=collectMentions(t);
-  const c={uid:user.uid,n:me.n,a:me.a,t,ts:serverNow()};
+  const c={uid:user.uid,n:me.n,t,ts:serverNow()};
   if(mn)c.mn=mn;
   const cid=uid('c');
   mnClose('cmn-'+pid);
@@ -4613,7 +4801,7 @@ async function sendCmt(pid){
     await set(hubRef('posts/'+pid+'/cN'),(p&&p.cN)||1);
     if(p&&p.uid!==user.uid&&!(mn&&mn[p.uid])){
       await set(hubRef('notif/'+p.uid+'/'+uid('n')),
-        {t:'cmt',u:user.uid,n:me.n,a:me.a,pid,txt:t.slice(0,70),ts:serverNow(),r:false});
+        {t:'cmt',u:user.uid,n:me.n,pid,txt:t.slice(0,70),ts:serverNow(),r:false});
     }
     notifyTagged(mn,'cmt',pid,t);
   }catch(e){toast('Comment did not send');}
@@ -4647,9 +4835,10 @@ function paintNotifs(){
     return '<b>'+esc(n.n)+' posted'+(n.txt?': '+esc(n.txt):'')+'</b>';
   };
   box.innerHTML=notifs.map(n=>`<div class="nt${n.r?'':' un'}" onclick="tapNotif('${n.id}')">
-    ${cardHTML({a:n.a,n:n.n},'av-30')}
+    ${avHTMLFor(n.u,n.n,'av-30',n.a)}
     <div class="nt-t">${line(n)}<i>${ago(n.ts||0)}</i></div>
   </div>`).join('');
+  paintAvatars();
 }
 async function markRead(){
   if(!db||!user)return;
@@ -4694,6 +4883,7 @@ async function openUser(uidStr){
   }
   if(viewUid!==uidStr)return;
   paintUser(uidStr,c,snap,flags);
+  paintAvatars();
 }
 function closeUser(){
   viewUid=null;
@@ -4732,7 +4922,7 @@ function paintUser(u,c,snap,flags){
   }
   box.innerHTML=`<button class="uv-x" onclick="closeUser()">‹ Back</button>
     <div class="uv-hero">
-      ${cardHTML(c,'av-84')}
+      ${avHTMLFor(u,c.n||c.u,'av-84',c.a)}
       <div class="pf-n" style="margin-top:12px">${esc(c.n||'Someone')}</div>
       <div class="pf-u mono">@${esc(c.u||'')}</div>
       ${c.b?`<div class="uv-bio">${esc(c.b)}</div>`:''}
