@@ -2935,12 +2935,16 @@ async function startRest(secs,name){
   paintTimer();
   clearInterval(tInt);tInt=setInterval(tick,240);
   initAudio();lockScreen();notify(secs,name);
-  if(sessId&&role==='host')pushTimer();
+  if(sessId)pushTimer();
 }
 function tick(){if(Math.ceil((tEnd-Date.now())/1000)<=0)endRest();else paintTimer();}
 function paintTimer(){
   if(!tEnd)return;
-  const left=Math.max(0,Math.ceil((tEnd-Date.now())/1000));
+  /* A deadline that outruns the rest it belongs to is a broken clock, not a
+     long rest. Clamp it, so a bad number can never be shown as 751:22. */
+  const raw=Math.ceil((tEnd-Date.now())/1000);
+  const cap=tTotal>0?tTotal:raw;
+  const left=Math.max(0,Math.min(cap,raw));
   const m=Math.floor(left/60),s=left%60,warn=left<=10;
   const te=document.getElementById('ring-time');
   te.textContent=m+':'+String(s).padStart(2,'0');
@@ -2956,13 +2960,13 @@ function endRest(){
   try{localStorage.removeItem('unit-timer');}catch(e){}
   closeTimer();chime();buzz([200,90,200,90,380]);
   toast('Rest done — next set');
-  if(sessId&&role==='host')pushTimer();
+  if(sessId)pushTimer();
 }
 function skipTimer(){
   clearInterval(tInt);tInt=null;tEnd=0;
   try{localStorage.removeItem('unit-timer');}catch(e){}
   closeTimer();buzz(14);
-  if(sessId&&role==='host')pushTimer();
+  if(sessId)pushTimer();
 }
 function closeTimer(){
   document.getElementById('fst').classList.remove('active');
@@ -2975,12 +2979,15 @@ function adjustTimer(n){
   tTotal=Math.max(tTotal+n,1);
   try{localStorage.setItem('unit-timer',JSON.stringify({e:tEnd,t:tTotal,n:tName}));}catch(e){}
   paintTimer();buzz(10);notify(Math.ceil((tEnd-Date.now())/1000),tName);
-  if(sessId&&role==='host')pushTimer();
+  if(sessId)pushTimer();
 }
 function restoreTimer(){
   try{
     const r=localStorage.getItem('unit-timer');if(!r)return;
     const{e,t,n}=JSON.parse(r);
+    // more time left than the rest ever had means the clock moved under us
+    const stale=t>0&&(e-Date.now())>(t*1000+60000);
+    if(stale){localStorage.removeItem('unit-timer');return;}
     if(e>Date.now()){tEnd=e;tTotal=t;tName=n;
       document.getElementById('fst').classList.add('active');
       document.body.style.overflow='hidden';
@@ -3276,9 +3283,12 @@ let mirroring=false;          // true while we are applying someone else's scree
 let liveEdits={};             // field key -> the characters currently in the box
 let viewT=null,lastView='',lastMirrorTs=0;
 
+/* The host drives the screen for the whole session. Handing over edit
+   control lets the guest change the workout — the data flows back and both
+   see it — but it never takes the host's screen away from them. */
 function isPresenter(){
   if(!sessId||!role)return false;
-  return role==='guest'?!!editGranted:!editGranted;
+  return role==='host';
 }
 function isFollower(){return !!sessId&&!isPresenter();}
 function docSpan(){
@@ -3469,19 +3479,32 @@ async function pushState(){
     statePending=false;return true;}
   catch(e){statePending=true;return false;}
 }
+/* The deadline used to cross as a raw Date.now() from one phone, read
+   against the clock of the other. Two devices minutes — or hours — apart
+   therefore counted down to completely different numbers. Firebase already
+   hands us the offset to the server clock, so send server time and convert
+   back on arrival; both sides then agree no matter what their clocks say. */
 async function pushTimer(){
   if(!db||!sessId||!canWrite())return;
-  try{await set(sref('timer'),tEnd?{e:tEnd,t:tTotal,n:tName,by:role}:null);}catch(e){}
+  try{
+    await set(sref('timer'),tEnd?{e:tEnd+clockSkew,t:tTotal,n:tName,by:role}:null);
+  }catch(e){}
 }
 function watchTimer(){
   if(!db||!sessId)return;
   watch('timer',snap=>{
     const v=snap&&snap.exists()?snap.val():null;
-    if(!v||!v.e||v.e<=Date.now()){if(tEnd){tEnd=0;clearInterval(tInt);closeTimer();}return;}
-    if(v.by===role)return;              // our own timer echoing back
-    if(Math.abs(v.e-tEnd)<900)return;   // already in step
-    tEnd=v.e;tTotal=v.t;tName=v.n||'Rest';
+    // back from server time into this device's own clock
+    const localEnd=v&&v.e?v.e-clockSkew:0;
+    if(!localEnd||localEnd<=Date.now()){if(tEnd){tEnd=0;clearInterval(tInt);closeTimer();}return;}
+    if(v.by===role)return;                    // our own timer echoing back
+    if(Math.abs(localEnd-tEnd)<900)return;    // already in step
+    const left=Math.ceil((localEnd-Date.now())/1000);
+    tEnd=localEnd;
+    tTotal=Math.max(v.t||0,left);             // never let the ring read past full
+    tName=v.n||'Rest';
     document.getElementById('fst').classList.add('active');
+    document.body.style.overflow='hidden';
     paintTimer();clearInterval(tInt);tInt=setInterval(tick,240);
   });
 }
