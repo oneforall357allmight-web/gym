@@ -794,6 +794,45 @@ body::after{
 .hub-load{display:flex;justify-content:center;padding:26px}
 .hub-load .sk{width:28px;height:28px;border:2.5px solid var(--surf3);border-top-color:var(--gold);
   border-radius:50%;animation:sp .8s linear infinite}
+/* ── friend request sent ── */
+.req-fx{position:fixed;z-index:9500;pointer-events:none;width:46px;height:46px;margin:-23px 0 0 -23px}
+.req-fx i{position:absolute;inset:0;border-radius:50%;border:2px solid var(--gold);
+  animation:reqRing .95s var(--ez-out) forwards}
+.req-fx i:nth-child(2){animation-delay:.16s}
+.req-fx b{position:absolute;inset:0;border-radius:50%;background:var(--molten);
+  display:flex;align-items:center;justify-content:center;
+  animation:reqPop .95s var(--ez-spring) forwards;box-shadow:0 8px 26px rgba(255,140,50,.45)}
+.req-fx svg{width:22px;height:22px;fill:none;stroke:#150E00;stroke-width:3.2;
+  stroke-linecap:round;stroke-linejoin:round}
+@keyframes reqRing{0%{transform:scale(.55);opacity:.85}100%{transform:scale(2.7);opacity:0}}
+@keyframes reqPop{0%{transform:scale(.2);opacity:0}34%{transform:scale(1.14);opacity:1}
+  74%{transform:scale(1);opacity:1}100%{transform:scale(.86);opacity:0}}
+.urow-b.sending{animation:btnPulse .5s var(--ez-spring)}
+@keyframes btnPulse{0%{transform:scale(1)}45%{transform:scale(.88)}100%{transform:scale(1)}}
+.urow-b.cancel{color:var(--txt3);border-color:var(--line2);background:var(--surf2)}
+/* ── mentions ── */
+.mn{color:var(--gold);font-weight:600;cursor:pointer}
+.mn:active{opacity:.6}
+.mn-pop{background:var(--ink3);border:1px solid var(--line2);border-radius:var(--r-m);
+  margin-top:8px;overflow:hidden;max-height:210px;overflow-y:auto}
+.mn-i{display:flex;align-items:center;gap:10px;padding:9px 11px;cursor:pointer;transition:.15s}
+.mn-i:active{background:var(--gold-d1)}
+.mn-t{min-width:0}
+.mn-t b{display:block;font-size:13px;font-weight:600}
+.mn-t i{display:block;font-style:normal;font-family:'JetBrains Mono',monospace;
+  font-size:10px;color:var(--txt3);margin-top:1px}
+.mn-none{padding:11px 12px;font-size:11.5px;color:var(--txt4);line-height:1.5}
+/* ── comment actions ── */
+.cmt-a{display:flex;align-items:center;gap:10px;margin-top:6px}
+.ca{border:0;background:transparent;padding:2px 0;cursor:pointer;
+  font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:600;
+  letter-spacing:.06em;color:var(--txt4);transition:.16s}
+.ca:active{transform:scale(.9)}
+.ca.on{color:var(--red)}
+.ca.d{color:var(--txt4)}
+.ca.d:active{color:var(--red)}
+.ca-t{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--txt4);flex:1}
+.cmt-n{cursor:pointer}
 /* ── viewing someone else ── */
 .uv{position:fixed;inset:0;z-index:8600;background:var(--ink);overflow-y:auto;display:none;
   padding:calc(var(--sat) + 14px) 16px calc(var(--sab) + 40px)}
@@ -1371,6 +1410,7 @@ function useAccountKeys(uid){
 }
 
 function setSync(state,msg){
+  const wasStuck=(syncState==='blocked'||syncState==='offline');
   syncState=state;syncMsg=msg||'';
   const pill=document.getElementById('saved-pill');
   if(!pill)return;
@@ -1386,6 +1426,9 @@ function setSync(state,msg){
   const stuck=(state==='blocked'||state==='offline');
   pill.style.pointerEvents=stuck?'auto':'none';
   if(stuck)pill.classList.add('show');
+  // Coming out of trouble used to leave the banner on screen reading "Saved",
+  // because nothing ever took the class back off again.
+  else if(wasStuck)pill.classList.remove('show');
   paintSaveBtn();
 }
 // Tap the pill to see what actually went wrong.
@@ -3146,6 +3189,7 @@ function armDisconnect(){
    can leave a stale session. We watch the socket, beat every 15s, and put
    everything back the moment we are online again. */
 let online=true,beatT=null,staleT=null,peerSeen=0,peerStale=false;
+let everOnline=false,dropT=null;
 function watchConnection(){
   if(!db)return;
   try{
@@ -3153,11 +3197,28 @@ function watchConnection(){
     onValue(r,snap=>{
       const was=online;
       online=!!(snap&&snap.val());
-      if(online&&!was){
-        if(sessId&&role)reassert();
-        flushPending();
+      if(online){
+        everOnline=true;
+        clearTimeout(dropT);dropT=null;
+        if(!was){
+          if(sessId&&role)reassert();
+          flushPending();
+          /* flushPending() is a no-op when nothing is owed, so on a clean
+             connection it never reached setSync and the banner from the
+             moment before stayed up for the rest of the session. Say so
+             plainly instead. */
+          if(!dirty&&user&&syncState!=='saving')setSync('saved');
+        }
+      }else{
+        /* .info/connected reads false the instant you subscribe, before the
+           socket has had any chance to open. Announcing an outage on that
+           first reading is what pinned "Offline — this device only" to the
+           top of the screen on every launch. Wait for a real drop. */
+        clearTimeout(dropT);
+        dropT=setTimeout(()=>{
+          if(!online&&(everOnline||!navigator.onLine))setSync('offline');
+        },6000);
       }
-      if(!online)setSync('offline');
       renderPairStrip();
     });
   }catch(e){}
@@ -3946,19 +4007,38 @@ function friendBtn(u){
   if(u===(user&&user.uid))return '<button class="urow-b mut">You</button>';
   if(friends[u])return '<button class="urow-b dn" onclick="openUser(\''+u+'\')">Friends</button>';
   if(freqs[u])return '<button class="urow-b pri" onclick="acceptFriend(\''+u+'\')">Accept</button>';
-  if(fsent[u])return '<button class="urow-b mut">Requested</button>';
-  return '<button class="urow-b pri" onclick="addFriend(\''+u+'\')">Add</button>';
+  if(fsent[u])return '<button class="urow-b cancel" onclick="cancelReq(\''+u+'\')">Cancel request</button>';
+  return '<button class="urow-b pri" onclick="addFriend(\''+u+'\',this)">Add</button>';
+}
+/* A request that vanishes into a silent "Requested" label leaves you unsure
+   it went anywhere. Burst a tick out of the button you actually pressed. */
+function requestSentFx(el){
+  try{
+    const r=el&&el.getBoundingClientRect&&el.getBoundingClientRect();
+    const x=r?r.left+r.width/2:window.innerWidth/2;
+    const y=r?r.top+r.height/2:window.innerHeight/2;
+    const fx=document.createElement('div');
+    fx.className='req-fx';
+    fx.style.left=x+'px';fx.style.top=y+'px';
+    fx.innerHTML='<i></i><i></i><b><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></b>';
+    document.body.appendChild(fx);
+    setTimeout(()=>fx.remove(),1000);
+  }catch(e){}
 }
 
 /* ═══════════ FRIENDS ═══════════ */
-async function addFriend(other){
+async function addFriend(other,el){
   if(!db||!user||other===user.uid)return;
   if(friends[other]){toast('Already friends');return;}
+  if(fsent[other]){toast('Request already sent');return;}
   if(friendCount()>=HUB.FANOUT){toast('Friend list is full');return;}
   const me=myCard();
-  buzz(12);
+  buzz([14,50,14]);
+  if(el&&el.classList)el.classList.add('sending');
+  requestSentFx(el);
   fsent[other]=serverNow();
   paintSearch();
+  if(viewUid===other)refreshUserActions();
   try{
     const nid=uid('n');
     await update(rootRef(),{
@@ -3969,7 +4049,29 @@ async function addFriend(other){
     toast('Request sent');
   }catch(e){
     delete fsent[other];paintSearch();
+    if(viewUid===other)refreshUserActions();
     toast('Could not send that request');
+  }
+}
+/* Pulling a request back: it disappears from their list as if never sent. */
+async function cancelReq(other){
+  if(!db||!user)return;
+  const had=fsent[other];
+  delete fsent[other];
+  paintSearch();
+  if(viewUid===other)refreshUserActions();
+  buzz(8);
+  try{
+    await update(rootRef(),{
+      ['freq/'+other+'/'+user.uid]:null,
+      ['fsent/'+user.uid+'/'+other]:null
+    });
+    toast('Request cancelled');
+  }catch(e){
+    if(had)fsent[other]=had;
+    paintSearch();
+    if(viewUid===other)refreshUserActions();
+    toast('Could not cancel that');
   }
 }
 async function acceptFriend(other){
@@ -4014,6 +4116,95 @@ async function unfriend(other){
     toast('Friend removed');
     if(viewUid===other)openUser(other);
   }catch(e){toast('Could not do that right now');}
+}
+
+/* ═══════════ MENTIONS — friends only ═══════════
+   Typing @ offers your friends and nobody else. A handle that is not on
+   your friend list stays plain text: it never becomes a link and it never
+   sends a notification, so tagging cannot be used to reach a stranger. */
+let mnPopOpen=null;
+function friendsByHandle(){
+  const m={};
+  Object.keys(friends).forEach(u=>{
+    const h=String(friends[u].u||'').toLowerCase();
+    if(h)m[h]=u;
+  });
+  return m;
+}
+function mnScan(fieldId,popId){
+  const el=document.getElementById(fieldId),pop=document.getElementById(popId);
+  if(!el||!pop)return;
+  const before=el.value.slice(0,el.selectionStart==null?el.value.length:el.selectionStart);
+  const m=before.match(/@([a-zA-Z0-9_.]*)$/);
+  if(!m){mnClose(popId);return;}
+  const q=m[1].toLowerCase();
+  const hits=Object.keys(friends)
+    .map(u=>({uid:u,...friends[u]}))
+    .filter(f=>String(f.u||'').toLowerCase().startsWith(q))
+    .slice(0,6);
+  mnPopOpen=popId;
+  pop.style.display='block';
+  pop.innerHTML=hits.length
+    ? hits.map(f=>`<div class="mn-i" onclick="mnPick('${fieldId}','${popId}','${esc(f.u)}')">
+        ${cardHTML(f,'av-30')}
+        <div class="mn-t"><b>${esc(f.n||f.u)}</b><i>@${esc(f.u)}</i></div></div>`).join('')
+    : `<div class="mn-none">${friendCount()
+        ? 'No friend with that username.'
+        : 'Tags only work with friends. Add someone first and you can tag them here.'}</div>`;
+}
+function mnClose(popId){
+  const pop=document.getElementById(popId);
+  if(pop){pop.style.display='none';pop.innerHTML='';}
+  if(mnPopOpen===popId)mnPopOpen=null;
+}
+function mnPick(fieldId,popId,handle){
+  const el=document.getElementById(fieldId);
+  if(!el)return;
+  const caret=el.selectionStart==null?el.value.length:el.selectionStart;
+  const before=el.value.slice(0,caret).replace(/@([a-zA-Z0-9_.]*)$/,'@'+handle+' ');
+  const after=el.value.slice(caret);
+  el.value=before+after;
+  mnClose(popId);
+  buzz(8);
+  try{el.focus();el.setSelectionRange(before.length,before.length);}catch(e){}
+  if(fieldId==='po-tx')countPost();
+}
+/* Which of the tagged handles are actually friends. Everything else is
+   dropped here, so nothing downstream can tag a non-friend. */
+function collectMentions(txt){
+  const byHandle=friendsByHandle();
+  const mn={};
+  (String(txt||'').match(/@([a-zA-Z0-9_.]{3,20})/g)||[]).forEach(tok=>{
+    const u=byHandle[tok.slice(1).toLowerCase()];
+    if(u)mn[u]=friends[u].u;
+  });
+  return Object.keys(mn).length?mn:null;
+}
+/* Escape first, then light up only the handles that were resolved to a
+   friend at the time of posting. */
+function renderText(txt,mn){
+  const h=esc(txt||'');
+  if(!mn)return h;
+  const byHandle={};
+  Object.keys(mn).forEach(u=>{byHandle[String(mn[u]||'').toLowerCase()]=u;});
+  return h.replace(/@([a-zA-Z0-9_.]{3,20})/g,(whole,handle)=>{
+    const u=byHandle[handle.toLowerCase()];
+    return u?`<span class="mn" onclick="openUser('${u}')">@${handle}</span>`:whole;
+  });
+}
+async function notifyTagged(mn,kind,pid,txt){
+  if(!mn||!user)return;
+  const me=myCard();
+  const w={};
+  Object.keys(mn).slice(0,20).forEach(u=>{
+    if(u===user.uid)return;
+    w['notif/'+u+'/'+uid('n')]={
+      t:'tag',k:kind,u:user.uid,n:me.n,a:me.a,pid,
+      txt:String(txt||'').slice(0,80),ts:serverNow(),r:false
+    };
+  });
+  if(!Object.keys(w).length)return;
+  try{await update(rootRef(),w);}catch(e){}
 }
 
 /* ═══════════ THE FEED ═══════════ */
@@ -4093,7 +4284,7 @@ function postHTML(p){
       </div>
       ${mine?`<button class="post-x" onclick="delPost('${p.id}')" aria-label="Delete post">×</button>`:''}
     </div>
-    ${p.txt?`<div class="post-tx">${esc(p.txt)}</div>`:''}
+    ${p.txt?`<div class="post-tx">${renderText(p.txt,p.mn)}</div>`:''}
     ${p.img?`<div class="post-im load" data-pid="${p.id}" onclick="openLb('${p.id}')"><div class="sk"></div></div>`:''}
     <div class="post-a">
       <button class="pa${liked?' on':''}" onclick="toggleLike('${p.id}')">
@@ -4187,7 +4378,9 @@ function openComposer(){
   openSheet(`<div class="sheet-t">New post</div>
     <div class="sheet-s">Everyone on UNIT can see this. Your friends also get a notification.</div>
     <textarea class="ta" id="po-tx" maxlength="${HUB.POST_MAX}"
-      placeholder="What did you do today?" oninput="countPost()"></textarea>
+      placeholder="What did you do today? Type @ to tag a friend."
+      oninput="countPost();mnScan('po-tx','po-mn')" onclick="mnScan('po-tx','po-mn')"></textarea>
+    <div class="mn-pop" id="po-mn" style="display:none"></div>
     <div class="cnt" id="po-cnt">0 / ${HUB.POST_MAX}</div>
     <div id="po-prev">${pendingPost?postPrevHTML():''}</div>
     <button class="add" style="margin-top:12px" onclick="pickPhoto('post')">${icoPlus()} ${pendingPost?'Change photo':'Add a photo'}</button>
@@ -4223,7 +4416,9 @@ async function submitPost(){
   const me=myCard();
   const pid=uid('p');
   const ts=serverNow();
+  const mn=collectMentions(txt);
   const post={uid:user.uid,u:me.u,n:me.n,a:me.a,txt,img:!!pendingPost,ts,cN:0};
+  if(mn)post.mn=mn;
   const img=pendingPost;
   try{
     const w={};
@@ -4243,12 +4438,14 @@ async function submitPost(){
   if(tab==='hub'&&hubTab==='feed')paintFeed();
   toast('Posted');
   buzz([12,40,12]);
-  notifyFriends(pid,txt,!!img);
+  notifyTagged(mn,'post',pid,txt);
+  notifyFriends(pid,txt,!!img,mn);
 }
 /* One small node per friend, written in a single multi-path update, so
    a post costs one round trip no matter how many friends you have. */
-async function notifyFriends(pid,txt,hasImg){
-  const ids=Object.keys(friends).slice(0,HUB.FANOUT);
+async function notifyFriends(pid,txt,hasImg,mn){
+  const tagged=mn||{};
+  const ids=Object.keys(friends).filter(f=>!tagged[f]).slice(0,HUB.FANOUT);
   if(!ids.length)return;
   const me=myCard();
   const nid=uid('n');
@@ -4326,38 +4523,99 @@ async function toggleCmts(pid){
 }
 function cmtsHTML(pid){
   const list=cmtCache[pid]||[];
+  const post=feed.find(x=>x.id===pid)||waiting.find(x=>x.id===pid)||{};
   return `<div class="cmts">
-    ${list.map(c=>`<div class="cmt">
-      ${cardHTML({a:c.a,n:c.n},'av-30')}
-      <div class="cmt-b"><div class="cmt-n">${esc(c.n||'Someone')}</div>
-        <div class="cmt-t">${esc(c.t||'')}</div></div>
-    </div>`).join('')||'<div class="hint" style="margin:0 0 11px">No comments yet.</div>'}
+    ${list.map(c=>{
+      const liked=!!(c.lk&&user&&c.lk[user.uid]);
+      const n=c.lk?Object.keys(c.lk).length:0;
+      // your own comment, or anything under a post of yours
+      const canDel=user&&(c.uid===user.uid||post.uid===user.uid);
+      return `<div class="cmt" id="c-${pid}-${c.id}">
+        ${cardHTML({a:c.a,n:c.n},'av-30')}
+        <div class="cmt-b">
+          <div class="cmt-n" onclick="openUser('${c.uid}')">${esc(c.n||'Someone')}</div>
+          <div class="cmt-t">${renderText(c.t,c.mn)}</div>
+          <div class="cmt-a">
+            <button class="ca${liked?' on':''}" onclick="likeCmt('${pid}','${c.id}')">${liked?'♥':'♡'} ${n||''}</button>
+            <span class="ca-t">${ago(c.ts||0)}</span>
+            ${canDel?`<button class="ca d" onclick="delCmt('${pid}','${c.id}')">Delete</button>`:''}
+          </div>
+        </div>
+      </div>`;}).join('')||'<div class="hint" style="margin:0 0 11px">No comments yet.</div>'}
+    <div class="mn-pop" id="cmn-${pid}" style="display:none"></div>
     <div class="cmt-in">
-      <input id="ci-${pid}" maxlength="${HUB.CMT_MAX}" placeholder="Add a comment"
+      <input id="ci-${pid}" maxlength="${HUB.CMT_MAX}" placeholder="Add a comment — @ to tag a friend"
+        oninput="mnScan('ci-${pid}','cmn-${pid}')" onclick="mnScan('ci-${pid}','cmn-${pid}')"
         onkeydown="if(event.key==='Enter')sendCmt('${pid}')">
       <button onclick="sendCmt('${pid}')">Send</button>
     </div>
   </div>`;
+}
+async function likeCmt(pid,cid){
+  if(!db||!user)return;
+  const list=cmtCache[pid]||[];
+  const c=list.find(x=>x.id===cid);
+  if(!c)return;
+  c.lk=c.lk||{};
+  const on=!c.lk[user.uid];
+  if(on)c.lk[user.uid]=true; else delete c.lk[user.uid];
+  buzz(on?12:6);
+  const box=document.getElementById('cmt-'+pid);
+  if(box)box.innerHTML=cmtsHTML(pid);
+  try{
+    await set(hubRef('postCmt/'+pid+'/'+cid+'/lk/'+user.uid),on?true:null);
+  }catch(e){
+    if(on)delete c.lk[user.uid]; else c.lk[user.uid]=true;
+    const b2=document.getElementById('cmt-'+pid);
+    if(b2)b2.innerHTML=cmtsHTML(pid);
+    toast('Could not do that');
+  }
+}
+async function delCmt(pid,cid){
+  if(!db||!user)return;
+  if(!confirm('Delete this comment?'))return;
+  const before=(cmtCache[pid]||[]).slice();
+  cmtCache[pid]=(cmtCache[pid]||[]).filter(x=>x.id!==cid);
+  const p=feed.find(x=>x.id===pid);
+  if(p)p.cN=Math.max(0,(p.cN||1)-1);
+  const box=document.getElementById('cmt-'+pid);
+  if(box)box.innerHTML=cmtsHTML(pid);
+  try{
+    await set(hubRef('postCmt/'+pid+'/'+cid),null);
+    await set(hubRef('posts/'+pid+'/cN'),(p&&p.cN)||0);
+    toast('Comment deleted');
+  }catch(e){
+    cmtCache[pid]=before;
+    if(p)p.cN=(p.cN||0)+1;
+    const b2=document.getElementById('cmt-'+pid);
+    if(b2)b2.innerHTML=cmtsHTML(pid);
+    toast('Could not delete that');
+  }
 }
 async function sendCmt(pid){
   const i=document.getElementById('ci-'+pid);
   const t=((i&&i.value)||'').trim().slice(0,HUB.CMT_MAX);
   if(!t||!db||!user)return;
   const me=myCard();
+  const mn=collectMentions(t);
   const c={uid:user.uid,n:me.n,a:me.a,t,ts:serverNow()};
+  if(mn)c.mn=mn;
   const cid=uid('c');
+  mnClose('cmn-'+pid);
   cmtCache[pid]=(cmtCache[pid]||[]).concat({id:cid,...c});
   const p=feed.find(x=>x.id===pid);
   if(p)p.cN=(p.cN||0)+1;
+  if(i)i.value='';
   const box=document.getElementById('cmt-'+pid);
   if(box)box.innerHTML=cmtsHTML(pid);
   try{
     await set(hubRef('postCmt/'+pid+'/'+cid),c);
     await set(hubRef('posts/'+pid+'/cN'),(p&&p.cN)||1);
-    if(p&&p.uid!==user.uid){
+    if(p&&p.uid!==user.uid&&!(mn&&mn[p.uid])){
       await set(hubRef('notif/'+p.uid+'/'+uid('n')),
         {t:'cmt',u:user.uid,n:me.n,a:me.a,pid,txt:t.slice(0,70),ts:serverNow(),r:false});
     }
+    notifyTagged(mn,'cmt',pid,t);
   }catch(e){toast('Comment did not send');}
 }
 
@@ -4384,6 +4642,8 @@ function paintNotifs(){
     if(n.t==='acc')return '<b>'+esc(n.n)+' accepted your friend request</b>';
     if(n.t==='like')return '<b>'+esc(n.n)+' liked your post</b>';
     if(n.t==='cmt')return '<b>'+esc(n.n)+' commented: '+esc(n.txt||'')+'</b>';
+    if(n.t==='tag')return '<b>'+esc(n.n)+' tagged you in a '+(n.k==='cmt'?'comment':'post')+
+      (n.txt?': '+esc(n.txt):'')+'</b>';
     return '<b>'+esc(n.n)+' posted'+(n.txt?': '+esc(n.txt):'')+'</b>';
   };
   box.innerHTML=notifs.map(n=>`<div class="nt${n.r?'':' un'}" onclick="tapNotif('${n.id}')">
@@ -4440,16 +4700,22 @@ function closeUser(){
   document.getElementById('uv').classList.remove('active');
   document.body.style.overflow='';
 }
+function userActions(u,fr){
+  if(fr)return `<button class="btn ghost" onclick="unfriend('${u}')">Remove friend</button>`;
+  if(freqs[u])return `<button class="btn pri" onclick="acceptFriend('${u}')">Accept request</button>
+      <button class="btn ghost" onclick="declineFriend('${u}')">Ignore</button>`;
+  if(fsent[u])return `<button class="btn ghost" onclick="cancelReq('${u}')">Cancel request</button>`;
+  return `<button class="btn pri" onclick="addFriend('${u}',this)">Add friend</button>`;
+}
+function refreshUserActions(){
+  const box=document.getElementById('uv-act');
+  if(box&&viewUid)box.innerHTML=userActions(viewUid,!!friends[viewUid]);
+}
 function paintUser(u,c,snap,flags){
   const box=document.getElementById('uv-body');
   if(!box)return;
   const fr=!!friends[u];
-  let act='';
-  if(fr)act=`<button class="btn ghost" onclick="unfriend('${u}')">Remove friend</button>`;
-  else if(freqs[u])act=`<button class="btn pri" onclick="acceptFriend('${u}')">Accept request</button>
-      <button class="btn ghost" onclick="declineFriend('${u}')">Ignore</button>`;
-  else if(fsent[u])act=`<button class="btn ghost" disabled>Request sent</button>`;
-  else act=`<button class="btn pri" onclick="addFriend('${u}')">Add friend</button>`;
+  const act=userActions(u,fr);
 
   let body='';
   if(!fr){
@@ -4470,7 +4736,7 @@ function paintUser(u,c,snap,flags){
       <div class="pf-n" style="margin-top:12px">${esc(c.n||'Someone')}</div>
       <div class="pf-u mono">@${esc(c.u||'')}</div>
       ${c.b?`<div class="uv-bio">${esc(c.b)}</div>`:''}
-      <div class="uv-a">${act}</div>
+      <div class="uv-a" id="uv-act">${act}</div>
     </div>
     ${body}`;
 }
@@ -4548,7 +4814,8 @@ Object.assign(window,{
   clearPostImg,delPost,toggleLike,toggleCmts,sendCmt,loadFeed,showWaiting,
   openLb,closeLb,openUser,closeUser,addFriend,acceptFriend,declineFriend,unfriend,
   openNotifs,tapNotif,clearNotifs,openShareSheet,toggleShare,openBioSheet,saveBio,
-  paintHubBadges,friendCount
+  paintHubBadges,friendCount,
+  cancelReq,mnScan,mnPick,mnClose,likeCmt,delCmt,refreshUserActions
 });
 
 /* ═══════════════════════════════════════════════════════════
