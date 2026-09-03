@@ -324,7 +324,7 @@ body::after{
    CONTENT + BOTTOM NAV
 ═══════════════════════════════════════════════════════════ */
 .main{position:relative;z-index:2;padding:4px 16px calc(var(--navh) + var(--sab) + 30px)}
-.nav{position:fixed;left:0;right:0;bottom:0;z-index:500;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:500;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));
   gap:2px;padding:8px 12px calc(var(--sab) + 8px);
   background:var(--nav-bg);
   backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);border-top:1px solid var(--line)}
@@ -713,6 +713,136 @@ body::after{
 /* ═══════════════════════════════════════════════════════════
    TOAST / MISC
 ═══════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════
+   HUB — community, friends, profiles
+═══════════════════════════════════════════════════════════ */
+.nav-i .badge{top:1px;right:auto;left:calc(50% + 6px);font-family:'JetBrains Mono',monospace;
+  font-size:9px;letter-spacing:0;text-transform:none}
+.hub-srch{position:relative;margin:6px 0 12px}
+.hub-srch input{width:100%;background:var(--well2);border:1px solid var(--line);border-radius:var(--r-m);
+  padding:13px 40px 13px 40px;color:var(--txt);font-size:14px;outline:none;transition:.2s var(--ez)}
+.hub-srch input::placeholder{color:var(--txt4)}
+.hub-srch input:focus{border-color:var(--gold-d3);background:var(--well3);box-shadow:0 0 0 3px var(--gold-d1)}
+.hub-srch .s-ico{position:absolute;left:14px;top:50%;transform:translateY(-50%);width:16px;height:16px;
+  color:var(--txt4);pointer-events:none}
+.hub-srch .s-ico svg{width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+.hub-srch .s-x{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:28px;height:28px;
+  border:0;background:var(--surf3);color:var(--txt3);border-radius:50%;font-size:15px;cursor:pointer;display:none}
+.hub-srch.has .s-x{display:block}
+.hseg{display:flex;gap:4px;background:var(--well2);border-radius:var(--r-m);padding:4px;margin-bottom:14px}
+.hseg button{flex:1;padding:9px 6px;border:0;background:transparent;color:var(--txt3);border-radius:10px;
+  font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;letter-spacing:.08em;
+  text-transform:uppercase;cursor:pointer;transition:.22s var(--ez);position:relative}
+.hseg button.on{background:var(--surf3);color:var(--txt)}
+.hseg button .sb{position:absolute;top:3px;right:6px;min-width:15px;height:15px;padding:0 4px;border-radius:8px;
+  background:var(--molten);color:#150E00;font-size:8.5px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.comp{display:flex;align-items:center;gap:11px;background:var(--surf);border:1px solid var(--line);
+  border-radius:var(--r-l);padding:12px 14px;margin-bottom:13px;cursor:pointer;transition:.2s var(--ez)}
+.comp:active{transform:scale(.985);background:var(--surf2)}
+.comp-p{flex:1;font-size:13.5px;color:var(--txt3)}
+.comp-b{width:34px;height:34px;border-radius:11px;background:var(--molten);color:#150E00;display:flex;
+  align-items:center;justify-content:center;font-size:19px;font-weight:700;flex-shrink:0}
+.post{background:var(--surf);border:1px solid var(--line);border-radius:var(--r-l);margin-bottom:11px;overflow:hidden}
+.post-h{display:flex;align-items:center;gap:10px;padding:13px 14px 10px}
+.post-id{flex:1;min-width:0;cursor:pointer}
+.post-n{font-size:13.5px;font-weight:600;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.post-m{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--txt4);margin-top:2px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.post-x{border:0;background:transparent;color:var(--txt4);font-size:18px;line-height:1;padding:4px 6px;
+  cursor:pointer;border-radius:8px;flex-shrink:0}
+.post-tx{padding:0 14px 12px;font-size:14px;line-height:1.6;color:var(--txt);white-space:pre-wrap;word-break:break-word}
+.post-im{position:relative;background:var(--well2);min-height:120px;display:block;width:100%;cursor:zoom-in}
+.post-im img{width:100%;display:block;max-height:70vh;object-fit:cover}
+.post-im.load{display:flex;align-items:center;justify-content:center;min-height:180px}
+.post-im .sk{width:26px;height:26px;border:2.5px solid var(--surf3);border-top-color:var(--gold);
+  border-radius:50%;animation:sp .8s linear infinite}
+.post-a{display:flex;align-items:center;gap:6px;padding:9px 10px;border-top:1px solid var(--line)}
+.pa{display:flex;align-items:center;gap:6px;border:0;background:transparent;color:var(--txt3);
+  padding:7px 10px;border-radius:10px;font-family:'JetBrains Mono',monospace;font-size:10.5px;
+  font-weight:600;cursor:pointer;transition:.18s var(--ez)}
+.pa:active{transform:scale(.92)}
+.pa svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.pa.on{color:var(--red)}
+.pa.on svg{fill:var(--red);stroke:var(--red)}
+.cmts{border-top:1px solid var(--line);padding:11px 14px;background:var(--well)}
+.cmt{display:flex;gap:9px;margin-bottom:11px}
+.cmt-b{flex:1;min-width:0;background:var(--surf2);border-radius:12px;padding:8px 11px}
+.cmt-n{font-size:11.5px;font-weight:600;color:var(--gold)}
+.cmt-t{font-size:12.5px;line-height:1.5;margin-top:2px;word-break:break-word}
+.cmt-in{display:flex;gap:7px;align-items:center}
+.cmt-in input{flex:1;min-width:0;background:var(--well3);border:1px solid var(--line);border-radius:11px;
+  padding:10px 12px;color:var(--txt);font-size:13px;outline:none}
+.cmt-in input:focus{border-color:var(--gold-d3)}
+.cmt-in button{border:0;background:var(--molten);color:#150E00;border-radius:11px;padding:10px 14px;
+  font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0}
+.urow{display:flex;align-items:center;gap:11px;padding:11px 13px;background:var(--surf);
+  border:1px solid var(--line);border-radius:var(--r-m);margin-bottom:8px}
+.urow-t{flex:1;min-width:0;cursor:pointer}
+.urow-n{font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.urow-u{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--txt3);margin-top:2px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.urow-b{border:1px solid var(--line2);background:var(--surf2);color:var(--txt2);border-radius:10px;
+  padding:8px 12px;font-size:11.5px;font-weight:600;cursor:pointer;flex-shrink:0;transition:.18s var(--ez)}
+.urow-b:active{transform:scale(.94)}
+.urow-b.pri{background:var(--molten);border-color:transparent;color:#150E00;font-weight:700}
+.urow-b.mut{opacity:.5;pointer-events:none}
+.urow-b.dn{color:var(--green);border-color:rgba(47,217,138,.32);background:var(--green-d)}
+.urow-2{display:flex;gap:6px;flex-shrink:0}
+.newp{position:sticky;top:0;z-index:60;display:flex;justify-content:center;margin-bottom:10px}
+.newp button{border:0;background:var(--molten);color:#150E00;border-radius:999px;padding:9px 18px;
+  font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 6px 20px rgba(255,140,50,.32)}
+.hub-load{display:flex;justify-content:center;padding:26px}
+.hub-load .sk{width:28px;height:28px;border:2.5px solid var(--surf3);border-top-color:var(--gold);
+  border-radius:50%;animation:sp .8s linear infinite}
+/* ── viewing someone else ── */
+.uv{position:fixed;inset:0;z-index:8600;background:var(--ink);overflow-y:auto;display:none;
+  padding:calc(var(--sat) + 14px) 16px calc(var(--sab) + 40px)}
+.uv.active{display:block;animation:uvIn .3s var(--ez-out)}
+@keyframes uvIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.uv-x{position:sticky;top:0;margin-bottom:10px;border:1px solid var(--line);background:var(--surf);
+  color:var(--txt2);border-radius:12px;padding:9px 14px;font-size:12.5px;font-weight:600;cursor:pointer}
+.uv-hero{text-align:center;padding:22px 18px 20px;background:var(--surf);border:1px solid var(--line);
+  border-radius:var(--r-xl);margin-bottom:14px}
+.uv-bio{font-size:13px;color:var(--txt2);line-height:1.6;margin-top:11px;max-width:340px;
+  margin-left:auto;margin-right:auto;white-space:pre-wrap;word-break:break-word}
+.uv-a{display:flex;gap:8px;justify-content:center;margin-top:16px}
+.lock{text-align:center;padding:26px 20px;background:var(--surf);border:1px dashed var(--line2);
+  border-radius:var(--r-l);color:var(--txt3);font-size:12.5px;line-height:1.6}
+.lock b{display:block;color:var(--txt2);font-size:13.5px;margin-bottom:6px}
+.sh-row{display:flex;align-items:center;gap:12px;padding:13px 14px;background:var(--surf);
+  border:1px solid var(--line);border-radius:var(--r-m);margin-bottom:8px}
+.sh-t{flex:1;min-width:0}
+.sh-t b{display:block;font-size:13.5px;font-weight:600}
+.sh-t i{display:block;font-style:normal;font-size:11.5px;color:var(--txt3);margin-top:2px;line-height:1.4}
+.sw{width:46px;height:27px;border-radius:14px;background:var(--track);border:1px solid var(--line2);
+  position:relative;cursor:pointer;flex-shrink:0;transition:.24s var(--ez)}
+.sw::after{content:'';position:absolute;top:2px;left:2px;width:21px;height:21px;border-radius:50%;
+  background:var(--txt3);transition:.24s var(--ez-spring)}
+.sw.on{background:var(--gold-d2);border-color:var(--gold)}
+.sw.on::after{transform:translateX(19px);background:var(--molten)}
+.nt{display:flex;align-items:flex-start;gap:11px;padding:12px 13px;background:var(--surf);
+  border:1px solid var(--line);border-radius:var(--r-m);margin-bottom:8px;cursor:pointer}
+.nt.un{border-color:var(--gold-d3);background:var(--gold-d1)}
+.nt-t{flex:1;min-width:0}
+.nt-t b{display:block;font-size:13px;font-weight:600;line-height:1.4}
+.nt-t i{display:block;font-style:normal;font-family:'JetBrains Mono',monospace;font-size:9.5px;
+  color:var(--txt4);margin-top:4px}
+.plb{position:fixed;inset:0;z-index:9300;background:var(--photo-fade);backdrop-filter:blur(14px);
+  display:none;align-items:center;justify-content:center;padding:20px}
+.plb.active{display:flex}
+.plb img{max-width:100%;max-height:86vh;border-radius:var(--r-m);object-fit:contain}
+.plb-x{position:absolute;top:calc(var(--sat) + 16px);right:16px;width:40px;height:40px;border-radius:50%;
+  border:0;background:rgba(255,255,255,.14);color:#fff;font-size:20px;cursor:pointer}
+.ta{width:100%;background:var(--well2);border:1px solid var(--line);border-radius:var(--r-m);
+  padding:13px 14px;color:var(--txt);font-size:14px;outline:none;resize:vertical;min-height:110px;
+  font-family:inherit;line-height:1.6}
+.ta:focus{border-color:var(--gold-d3);background:var(--well3);box-shadow:0 0 0 3px var(--gold-d1)}
+.cnt{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--txt4);text-align:right;margin-top:6px}
+.cnt.over{color:var(--red)}
+.pv-prev{position:relative;margin-top:12px;border-radius:var(--r-m);overflow:hidden;border:1px solid var(--line)}
+.pv-prev img{width:100%;display:block;max-height:38vh;object-fit:cover}
+.pv-prev button{position:absolute;top:8px;right:8px;width:30px;height:30px;border-radius:50%;border:0;
+  background:rgba(0,0,0,.6);color:#fff;font-size:16px;cursor:pointer}
 .toast{position:fixed;left:50%;bottom:calc(var(--navh) + var(--sab) + 20px);transform:translate(-50%,26px);
   z-index:9800;background:var(--toast-bg);border:1px solid var(--line2);border-radius:14px;
   padding:13px 20px;font-size:13px;font-weight:500;opacity:0;pointer-events:none;
@@ -859,6 +989,10 @@ body::after{
         <svg viewBox="0 0 24 24" id="save-ico-warn" style="display:none"><path d="M10.29 3.86 1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
         <span class="save-dot" id="save-dot"></span>
       </button>
+      <button class="ico-btn" id="btn-bell" onclick="openNotifs()" aria-label="Notifications">
+        <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+        <span class="badge" id="bell-badge">0</span>
+      </button>
       <button class="ico-btn" id="btn-pair" onclick="openPair()" aria-label="Train with a friend">
         <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
       </button>
@@ -885,6 +1019,9 @@ body::after{
     <svg viewBox="0 0 24 24"><path d="M3 2v7a3 3 0 003 3 3 3 0 003-3V2M6 2v6M18 2c-1.7 0-3 2.2-3 5s1.3 4 3 4"/><path d="M6 12v10M18 11v11"/></svg><span>Fuel</span></button>
   <button class="nav-i" id="nav-cal" onclick="setTab('cal')">
     <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><span>Streak</span></button>
+  <button class="nav-i" id="nav-hub" onclick="setTab('hub')">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3.6 9h16.8M3.6 15h16.8M12 3a15 15 0 010 18M12 3a15 15 0 000 18"/></svg><span>Hub</span>
+    <span class="badge" id="nav-hub-badge">0</span></button>
   <button class="nav-i" id="nav-profile" onclick="setTab('profile')">
     <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>You</span></button>
 </nav>
@@ -935,12 +1072,24 @@ body::after{
     <button class="btn danger" id="pv-del">Delete</button></div>
 </div>
 
+<!-- ═══════════ SOMEONE ELSE'S PROFILE ═══════════ -->
+<div class="uv" id="uv"><div id="uv-body"></div></div>
+
+<!-- ═══════════ POST IMAGE LIGHTBOX ═══════════ -->
+<div class="plb" id="plb" onclick="closeLb()">
+  <button class="plb-x" onclick="closeLb()">×</button>
+  <img id="plb-img" src="" alt="">
+</div>
+
 <input type="file" id="file-in" accept="image/*">
 <div class="toast" id="toast"></div>
 
 <script type="module" onerror="document.getElementById('loader').style.display='none'">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-import { getDatabase, ref, set, onValue, off, get, onDisconnect, remove } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
+import { getDatabase, ref, set, onValue, off, get, onDisconnect, remove,
+         update, push, child, query, orderByChild, orderByKey, limitToLast, limitToFirst,
+         startAt, endAt, endBefore, onChildAdded, serverTimestamp }
+  from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 
 const firebaseConfig={
@@ -1330,6 +1479,7 @@ async function cloudSave(){
       try{await withTimeout(set(ref(db,'users/'+user.uid+'/profile'),p),15000);}catch(e){}
     }
     dirty=false;setSync('saved');
+    pushShare();          // throttled inside — friends see a fresh snapshot, not every keystroke
     return true;
   }catch(e){
     dirty=true;
@@ -1693,8 +1843,14 @@ function render(){
   if(tab==='train')m.innerHTML=viewTrain();
   else if(tab==='food')m.innerHTML=viewFood();
   else if(tab==='cal')m.innerHTML=viewCal();
+  else if(tab==='hub'){
+    /* The hub owns its own DOM. A save landing mid-sentence must not wipe
+       a half-typed comment, so it is only rebuilt when it is not there. */
+    if(!document.getElementById('hub-shell')){m.innerHTML=viewHub();afterHub();}
+    else paintHubBadges();
+  }
   else m.innerHTML=viewProfile();
-  ['train','food','cal','profile'].forEach(t=>{
+  ['train','food','cal','hub','profile'].forEach(t=>{
     const b=document.getElementById('nav-'+t);
     if(b){b.classList.toggle('on',tab===t);b.style.display=(role==='guest'&&t!=='train')?'none':'';}
   });
@@ -1726,6 +1882,7 @@ function renderHeader(){
     }).join('');
   }
   renderPairStrip();
+  paintHubBadges();
 }
 function greeting(){
   const h=new Date().getHours();
@@ -1761,7 +1918,12 @@ function renderPairStrip(){
 }
 function setTab(t){
   if(role==='guest'&&t!=='train'){toast('You are watching a session');return;}
+  /* The "new posts" listener is the one open socket the hub keeps. Close it
+     the moment you leave the tab — with a few hundred people on one database
+     that is the difference between a live feed and a permanent one. */
+  if(tab==='hub'&&t!=='hub')stopNewPosts();
   tab=t;buzz(8);jumpTop=true;render();
+  if(t==='hub'&&feedLoaded&&!newPostRef)watchNewPosts(feed.length?feed[0].ts:serverNow());
 }
 function setDay(d){day=d;buzz(8);jumpTop=true;render();}
 
@@ -2171,6 +2333,27 @@ function viewProfile(){
       <div class="pf-row-v">›</div>
     </div>
 
+    <div class="pf-sec">Community</div>
+    <div class="pf-row" onclick="openBioSheet()">
+      <div class="pf-row-i">🌐</div>
+      <div class="pf-row-t"><b>Community profile</b><i>${esc(p.bio||'Add a short bio — everyone can see this')}</i></div>
+      <div class="pf-row-v">›</div>
+    </div>
+    <div class="pf-row" onclick="openShareSheet()">
+      <div class="pf-row-i">🔐</div>
+      <div class="pf-row-t"><b>What friends can see</b><i>${
+        (()=>{const on=[['routine','Routine'],['fuel','Nutrition'],['groc','Groceries'],['streak','Streak']]
+          .filter(([k])=>SHARE[k]).map(([,l])=>l);
+        return on.length?on.join(', '):'Nothing beyond your public card';})()
+      }</i></div>
+      <div class="pf-row-v">›</div>
+    </div>
+    <div class="pf-row" onclick="setTab('hub');setTimeout(()=>hubGo('friends'),60)">
+      <div class="pf-row-i">👥</div>
+      <div class="pf-row-t"><b>Friends</b><i>${friendCount()?friendCount()+(friendCount()===1?' friend':' friends'):'Search a username in the Hub to add someone'}</i></div>
+      <div class="pf-row-v mono">${friendCount()||'›'}</div>
+    </div>
+
     <div class="pf-sec">Account</div>
     <div class="pf-row" onclick="openDetailsSheet()">
       <div class="pf-row-i">👤</div>
@@ -2541,6 +2724,7 @@ async function saveDetails(){
   profile.lastName=(document.getElementById('d-l').value||'').trim();
   profile.email=(document.getElementById('d-e').value||'').trim();
   await saveProfileCloud();
+  await pushPub();                     // the name on your posts changes too
   if(sessId)pushMyProfile();
   closeSheet();render();toast('Details saved');
 }
@@ -2561,11 +2745,23 @@ document.getElementById('file-in').addEventListener('change',async e=>{
     if(photoMode==='profile'){
       const d=await resizeImg(f,320,.82);
       profile=profile||{};profile.avatar=d;
+      // the public copy is 96px, so a feed of thirty posts is not thirty full avatars
+      profile.pubAvatar=await shrink(d,HUB.THUMB_PX,.7);
       await saveProfileCloud();
+      await pushPub();
       if(sessId)pushMyProfile();
       const s=document.getElementById('sheet-bd');
-      if(s.classList.contains('active'))openDetailsSheet();
+      if(s.classList.contains('active')){
+        if(document.getElementById('bio-in'))openBioSheet();else openDetailsSheet();
+      }
       render();toast('Photo updated');buzz([12,30,12]);
+    }else if(photoMode==='post'){
+      toast('Preparing photo…');
+      pendingPost=await fitImage(f);
+      const box=document.getElementById('po-prev');
+      if(box)box.innerHTML=postPrevHTML();
+      else openComposer();
+      buzz(10);
     }else{
       const d=await resizeImg(f,1100,.8);
       pendingPhoto=d;
@@ -2601,7 +2797,11 @@ function resizeImg(file,max,q){
   });
 }
 async function clearAvatar(){
-  if(profile){delete profile.avatar;await saveProfileCloud();if(sessId)pushMyProfile();}
+  if(profile){
+    delete profile.avatar;delete profile.pubAvatar;
+    await saveProfileCloud();await pushPub();
+    if(sessId)pushMyProfile();
+  }
   openDetailsSheet();render();toast('Photo removed');
 }
 function openPhotoDB(){
@@ -3213,6 +3413,7 @@ async function doSignup(){
   saveLocal();
   refreshIdToken(true);
   watchOwnData(user.uid);       // this account is live on every device from here
+  startHub();                   // and findable in the community from here
   render();
   toast('Welcome to UNIT, '+first);
   // Say this after the welcome, or it gets overwritten and never read.
@@ -3242,6 +3443,9 @@ async function doSignOut(){
   saveLocal({force:true});saveProfileLocal();
   tearing=true;                       // block writes while the state is torn down
   stopWatchOwnData();
+  stopHub();
+  if(tab==='hub')tab='train';
+  closeUser();
   idToken='';idTokenTs=0;
   if(sessId)await leaveSession();
   try{if(auth)await signOut(auth);}catch(e){}
@@ -3317,6 +3521,1010 @@ function obFinish(){
 }
 
 /* ═══════════════════════════════════════════════════════════
+   HUB — community feed, friends, public profiles, notifications
+
+   Built for a few hundred people on one Realtime Database, so every
+   read is bounded and every image is fetched only when it is about to
+   be looked at:
+
+     · the feed pulls 15 posts at a time, never the whole node
+     · post images live under postImg/ and are lazy-loaded on scroll,
+       then cached in memory — the list itself stays a few KB
+     · author name and photo are copied onto each post, so rendering a
+       page of the feed costs one query instead of fifteen lookups
+     · notifications are written by the poster, one small node per
+       friend, so nobody has to listen to the whole feed to be told
+     · what a friend may see is a separate snapshot under share/, so
+       private training data is never opened up wholesale
+═══════════════════════════════════════════════════════════ */
+const HUB={
+  POST_MAX:600, BIO_MAX:200, CMT_MAX:280,
+  PAGE:15, IMG_PX:1080, IMG_BYTES:120000, THUMB_PX:96,
+  FANOUT:150, COOLDOWN:15000, IMG_CACHE:45, NOTIF_KEEP:40
+};
+
+let hubTab='feed';                 // feed | friends | reqs
+let feed=[], feedOldest=0, feedBusy=false, feedDone=false, feedLoaded=false;
+let waiting=[];                    // posts that arrived while you were reading
+let friends={}, freqs={}, fsent={};
+let notifs=[], unread=0;
+let pubCache=new Map(), imgCache=new Map(), cmtCache={};
+let openCmt={}, hubQ='', hubHits=null, hubSearching=false;
+let SHARE={routine:false,fuel:false,groc:false,streak:false};
+let sharePushed=0, lastPostAt=0, pendingPost=null, viewUid=null;
+let hubOn=[], imgObs=null, searchT=null, newPostRef=null, newPostCb=null;
+
+/* ── small helpers ─────────────────────────────────────────── */
+function hubRef(p){return ref(db,p);}
+function rootRef(){return ref(db);}
+function ago(t){
+  const s=Math.max(0,Math.floor((serverNow()-t)/1000));
+  if(s<60)return 'just now';
+  const m=Math.floor(s/60); if(m<60)return m+'m ago';
+  const h=Math.floor(m/60); if(h<24)return h+'h ago';
+  const d=Math.floor(h/24); if(d<7)return d+'d ago';
+  return new Date(t).toLocaleDateString(undefined,{month:'short',day:'numeric'});
+}
+function fullName(c){return [c&&c.firstName,c&&c.lastName].filter(Boolean).join(' ')||(c&&c.n)||'';}
+/* A 320px avatar is fine on a profile and far too heavy to repeat on
+   every post in a feed. Everything public carries a 96px copy instead. */
+function shrink(dataUrl,max,q){
+  return new Promise(res=>{
+    if(!dataUrl)return res('');
+    const img=new Image();
+    img.onerror=()=>res('');
+    img.onload=()=>{
+      try{
+        let w=img.width,h=img.height;
+        if(w>h&&w>max){h=Math.round(h*max/w);w=max;}
+        else if(h>max){w=Math.round(w*max/h);h=max;}
+        const c=document.createElement('canvas');c.width=w;c.height=h;
+        const x=c.getContext('2d');x.imageSmoothingQuality='high';x.drawImage(img,0,0,w,h);
+        res(c.toDataURL('image/jpeg',q));
+      }catch(e){res('');}
+    };
+    img.src=dataUrl;
+  });
+}
+/* Squeeze until it fits. A 4MB phone photo would otherwise cost every
+   reader of the feed 4MB of download. */
+async function fitImage(file){
+  let q=.72,d=await resizeImg(file,HUB.IMG_PX,q);
+  let guard=0;
+  while(d.length>HUB.IMG_BYTES&&guard++<5){
+    q-=.12;
+    if(q<.3){d=await resizeImg(file,720,.5);break;}
+    d=await resizeImg(file,HUB.IMG_PX,q);
+  }
+  if(d.length>HUB.IMG_BYTES*1.9)d=await resizeImg(file,640,.45);
+  return d;
+}
+function myCard(){
+  const p=profile||{};
+  return{u:p.username||'',n:fullName(p)||p.username||'Someone',a:p.pubAvatar||''};
+}
+function isFriend(u){return !!friends[u];}
+function friendCount(){return Object.keys(friends).length;}
+
+/* ── the public card: name, photo, bio. Nothing else. ─────── */
+async function pushPub(){
+  if(!db||!user||!profile)return;
+  try{
+    if(profile.avatar&&!profile.pubAvatar)
+      profile.pubAvatar=await shrink(profile.avatar,HUB.THUMB_PX,.7);
+    if(!profile.avatar&&profile.pubAvatar)delete profile.pubAvatar;
+    const card={
+      u:(profile.username||'').toLowerCase(),
+      n:fullName(profile)||profile.username||'',
+      a:profile.pubAvatar||'',
+      b:(profile.bio||'').slice(0,HUB.BIO_MAX),
+      ts:serverNow()
+    };
+    await set(hubRef('pub/'+user.uid),card);
+    pubCache.set(user.uid,card);
+    saveProfileLocal();
+  }catch(e){}
+}
+async function getPub(uidStr){
+  if(pubCache.has(uidStr))return pubCache.get(uidStr);
+  try{
+    const s=await withTimeout(get(hubRef('pub/'+uidStr)),12000);
+    const v=s&&s.exists()?s.val():null;
+    if(v)pubCache.set(uidStr,v);
+    return v;
+  }catch(e){return null;}
+}
+function cardHTML(c,cls){
+  const av=c&&(c.a||c.avatar);
+  const initial=esc(((c&&(c.n||c.u))||'?').trim().charAt(0).toUpperCase()||'?');
+  if(av)return `<div class="av ${cls} ring" style="background-image:url('${esc(av)}')"></div>`;
+  return `<div class="av ${cls}">${initial}</div>`;
+}
+
+/* ── start / stop ──────────────────────────────────────────
+   Three tiny listeners run for the whole session: friends, incoming
+   requests, and the last 40 notifications. The feed is deliberately
+   not one of them — it is fetched, not subscribed to. */
+function startHub(){
+  if(!db||!user)return;
+  stopHub();
+  pushPub();
+  loadShare();
+  hubListen('friends/'+user.uid,s=>{
+    friends=(s&&s.val())||{};
+    if(tab==='hub'&&hubTab==='friends')paintHubList();
+    paintSearch();               // an Add button that just became Friends
+    paintHubBadges();
+  });
+  hubListen('freq/'+user.uid,s=>{
+    freqs=(s&&s.val())||{};
+    if(tab==='hub'&&hubTab==='reqs')paintHubList();
+    paintSearch();
+    paintHubBadges();
+  });
+  hubListen('fsent/'+user.uid,s=>{fsent=(s&&s.val())||{};paintSearch();});
+  try{
+    const q=query(hubRef('notif/'+user.uid),orderByChild('ts'),limitToLast(HUB.NOTIF_KEEP));
+    const l=onValue(q,s=>{
+      const v=(s&&s.val())||{};
+      notifs=Object.keys(v).map(k=>({id:k,...v[k]})).sort((a,b)=>(b.ts||0)-(a.ts||0));
+      unread=notifs.filter(n=>!n.r).length;
+      paintHubBadges();
+      if(document.getElementById('nt-list'))paintNotifs();
+    },()=>{});
+    hubOn.push({r:q,l});
+  }catch(e){}
+}
+function hubListen(path,cb){
+  try{
+    const r=hubRef(path);
+    const l=onValue(r,cb,()=>{});
+    hubOn.push({r,l});
+  }catch(e){}
+}
+function stopHub(){
+  hubOn.forEach(({r,l})=>{try{off(r,'value',l);}catch(e){}});
+  hubOn=[];
+  stopNewPosts();
+  friends={};freqs={};fsent={};notifs=[];unread=0;
+  feed=[];feedLoaded=false;feedDone=false;feedOldest=0;waiting=[];
+  pubCache.clear();imgCache.clear();cmtCache={};openCmt={};
+  hubQ='';hubHits=null;pendingPost=null;
+  paintHubBadges();
+}
+function paintHubBadges(){
+  const pend=Object.keys(freqs).length;
+  const b=document.getElementById('bell-badge');
+  if(b){b.textContent=unread>99?'99+':unread;b.classList.toggle('show',unread>0);}
+  const n=document.getElementById('nav-hub-badge');
+  if(n){const t=unread+pend;n.textContent=t>99?'99+':t;n.classList.toggle('show',t>0);}
+  const s=document.getElementById('seg-reqs-b');
+  if(s){s.textContent=pend;s.style.display=pend?'':'none';}
+}
+
+/* ── privacy: what friends are allowed to see ─────────────── */
+async function loadShare(){
+  if(!db||!user)return;
+  try{
+    const s=await withTimeout(get(hubRef('share/'+user.uid+'/set')),12000);
+    if(s&&s.exists())SHARE={...SHARE,...(s.val()||{})};
+  }catch(e){}
+}
+function shareSnap(){
+  const s={ts:serverNow()};
+  if(SHARE.routine){
+    const ex={};
+    DAYS.forEach(d=>{
+      const list=EX[d]||[];
+      if(list.length)ex[d]=list.slice(0,30).map(e=>({
+        n:String(e.n||'').slice(0,60),
+        s:(e.sets||[]).length,
+        r:String(e.reps||'').slice(0,20)
+      }));
+    });
+    s.routine={days:PREFS.trainDays||[],split:PREFS.split||'',ex};
+  }
+  if(SHARE.fuel){
+    s.fuel={
+      macros:{cal:MACROS.cal||'',protein:MACROS.protein||'',carbs:MACROS.carbs||'',fat:MACROS.fat||''},
+      meals:MEALS.slice(0,20).map(m=>({
+        l:String(m.label||'').slice(0,40),
+        t:String(m.time||'').slice(0,20),
+        c:String(m.cal||'').slice(0,20),
+        i:(m.items||[]).slice(0,25).map(x=>String(x).slice(0,60))
+      })),
+      supps:SUPPS.slice(0,25).map(x=>String(x).slice(0,40))
+    };
+  }
+  if(SHARE.groc)s.groc=GROCERY.slice(0,80).map(g=>({
+    n:String(g.name||'').slice(0,50),q:String(g.qty||'').slice(0,20),
+    c:g.cat||'Other',d:!!grChecked[g.id]
+  }));
+  if(SHARE.streak)s.streak=streaks();
+  return s;
+}
+/* Rewriting the snapshot on every keystroke would be a write storm with
+   500 people on one database. Once every 25 seconds is plenty. */
+async function pushShare(force){
+  if(!db||!user)return;
+  const anyOn=Object.values(SHARE).some(Boolean);
+  const now=Date.now();
+  if(!force&&now-sharePushed<25000)return;
+  sharePushed=now;
+  try{
+    await set(hubRef('share/'+user.uid),{set:SHARE,snap:anyOn?shareSnap():null});
+  }catch(e){}
+}
+function openShareSheet(){
+  const rows=[
+    ['routine','🏋️','Routine','Your training days, split and the exercises on each one'],
+    ['fuel','🍽️','Nutrition','Calorie and macro targets, your meals and supplements'],
+    ['groc','🛒','Grocery list','What you are buying this week'],
+    ['streak','🔥','Streak','Current run, best run and total days logged']
+  ];
+  openSheet(`<div class="sheet-t">What friends can see</div>
+    <div class="sheet-s">Everyone can see your photo, name and bio. Everything below is off until you turn it on, and only friends ever see it — never the public feed.</div>
+    ${rows.map(([k,i,t,d])=>`<div class="sh-row">
+      <div class="pf-row-i">${i}</div>
+      <div class="sh-t"><b>${t}</b><i>${d}</i></div>
+      <div class="sw${SHARE[k]?' on':''}" id="sw-${k}" onclick="toggleShare('${k}')"></div>
+    </div>`).join('')}
+    <div class="hint">Turn one off and the copy on the server is erased the moment you do.</div>
+    <div class="sheet-a"><button class="btn btn-full" onclick="closeSheet()">Done</button></div>`);
+}
+async function toggleShare(k){
+  SHARE[k]=!SHARE[k];
+  const el=document.getElementById('sw-'+k);
+  if(el)el.classList.toggle('on',SHARE[k]);
+  buzz(10);
+  await pushShare(true);
+  toast(SHARE[k]?'Friends can now see this':'Hidden from friends again');
+  if(tab==='profile')render();
+}
+function openBioSheet(){
+  const p=profile||{};
+  openSheet(`<div class="sheet-t">Your community profile</div>
+    <div class="sheet-s">This is what anyone on UNIT sees when they find you — your photo, your name and a short line about yourself.</div>
+    <div style="text-align:center;margin-bottom:18px">
+      <div class="pf-av-w">${avHTML(p,'av-84')}
+        <div class="pf-cam" onclick="pickPhoto('profile')"><svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg></div>
+      </div>
+    </div>
+    <div class="fld"><label class="fld-lbl">Bio</label>
+      <textarea class="ta" id="bio-in" maxlength="${HUB.BIO_MAX}" style="min-height:90px"
+        placeholder="e.g. Powerlifting, 4 days a week. Chasing a 200kg deadlift."
+        oninput="countBio()">${esc(p.bio||'')}</textarea>
+      <div class="cnt" id="bio-cnt">0 / ${HUB.BIO_MAX}</div></div>
+    <div class="hint">Your username is @${esc(p.username||'you')} — that is how friends find you.</div>
+    <div class="sheet-a"><button class="btn ghost" onclick="closeSheet()">Cancel</button>
+      <button class="btn pri" onclick="saveBio()">Save</button></div>`);
+  countBio();
+}
+function countBio(){
+  const t=document.getElementById('bio-in'),c=document.getElementById('bio-cnt');
+  if(t&&c)c.textContent=t.value.length+' / '+HUB.BIO_MAX;
+}
+async function saveBio(){
+  profile=profile||{};
+  profile.bio=(document.getElementById('bio-in').value||'').trim().slice(0,HUB.BIO_MAX);
+  await saveProfileCloud();
+  await pushPub();
+  closeSheet();render();toast('Profile updated');
+}
+
+/* ═══════════ THE HUB SCREEN ═══════════ */
+function viewHub(){
+  return `<div id="hub-shell">
+    <div class="hub-srch${hubQ?' has':''}" id="hub-srch">
+      <span class="s-ico"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg></span>
+      <input id="hub-q" type="search" autocomplete="off" autocapitalize="none" spellcheck="false"
+        placeholder="Find someone by username" value="${esc(hubQ)}" oninput="hubType(this.value)">
+      <button class="s-x" onclick="clearHubSearch()">×</button>
+    </div>
+    <div id="hub-res"></div>
+    <div id="hub-main">
+      <div class="hseg">
+        <button id="seg-feed" class="${hubTab==='feed'?'on':''}" onclick="hubGo('feed')">Feed</button>
+        <button id="seg-friends" class="${hubTab==='friends'?'on':''}" onclick="hubGo('friends')">Friends</button>
+        <button id="seg-reqs" class="${hubTab==='reqs'?'on':''}" onclick="hubGo('reqs')">Requests<span class="sb" id="seg-reqs-b" style="display:none">0</span></button>
+      </div>
+      <div id="hub-body"><div class="hub-load"><div class="sk"></div></div></div>
+    </div>
+  </div>`;
+}
+function afterHub(){
+  paintHubBadges();
+  paintSearch();
+  paintHubList();
+  if(hubTab==='feed'&&!feedLoaded)loadFeed(true);
+}
+function hubGo(t){
+  hubTab=t;buzz(8);
+  ['feed','friends','reqs'].forEach(x=>{
+    const b=document.getElementById('seg-'+x);
+    if(b)b.classList.toggle('on',x===t);
+  });
+  paintHubList();
+  if(t==='feed'&&!feedLoaded)loadFeed(true);
+}
+function paintHubList(){
+  const box=document.getElementById('hub-body');
+  if(!box)return;
+  if(hubTab==='feed')return paintFeed();
+  if(hubTab==='friends'){
+    const ids=Object.keys(friends).sort((a,b)=>(friends[b].ts||0)-(friends[a].ts||0));
+    box.innerHTML=ids.length
+      ? ids.map(u=>{const c=friends[u];
+        return `<div class="urow">
+          ${cardHTML(c,'av-40')}
+          <div class="urow-t" onclick="openUser('${u}')">
+            <div class="urow-n">${esc(c.n||c.u||'Someone')}</div>
+            <div class="urow-u">@${esc(c.u||'')}</div>
+          </div>
+          <button class="urow-b" onclick="openUser('${u}')">View</button>
+        </div>`;}).join('')
+      : `<div class="empty"><div class="empty-i">🤝</div>
+          <div class="empty-t">No friends yet</div>
+          <div class="empty-s">Search a username above to send a request. Once they accept, you will see their posts and whatever they choose to share with you.</div></div>`;
+    return;
+  }
+  const ids=Object.keys(freqs).sort((a,b)=>(freqs[b].ts||0)-(freqs[a].ts||0));
+  box.innerHTML=ids.length
+    ? ids.map(u=>{const c=freqs[u];
+      return `<div class="urow">
+        ${cardHTML(c,'av-40')}
+        <div class="urow-t" onclick="openUser('${u}')">
+          <div class="urow-n">${esc(c.n||c.u||'Someone')}</div>
+          <div class="urow-u">@${esc(c.u||'')} · ${ago(c.ts||0)}</div>
+        </div>
+        <div class="urow-2">
+          <button class="urow-b pri" onclick="acceptFriend('${u}')">Accept</button>
+          <button class="urow-b" onclick="declineFriend('${u}')">Ignore</button>
+        </div>
+      </div>`;}).join('')
+    : `<div class="empty"><div class="empty-i">📭</div>
+        <div class="empty-t">Nothing waiting</div>
+        <div class="empty-s">Friend requests sent to you show up here.</div></div>`;
+}
+
+/* ═══════════ SEARCH BY USERNAME ═══════════ */
+function hubType(v){
+  hubQ=v;
+  const w=document.getElementById('hub-srch');
+  if(w)w.classList.toggle('has',!!v);
+  clearTimeout(searchT);
+  const s=v.trim().toLowerCase().replace(/^@/,'');
+  if(!s){hubHits=null;paintSearch();return;}
+  searchT=setTimeout(()=>runSearch(s),320);
+}
+function clearHubSearch(){
+  hubQ='';hubHits=null;
+  const i=document.getElementById('hub-q');if(i)i.value='';
+  const w=document.getElementById('hub-srch');if(w)w.classList.remove('has');
+  paintSearch();
+}
+/* A prefix query on an indexed child, capped at 15 rows. Never a scan
+   of every account on the database. */
+async function runSearch(s){
+  if(!db||!user)return;
+  hubSearching=true;paintSearch();
+  try{
+    const q=query(hubRef('pub'),orderByChild('u'),startAt(s),endAt(s+'\uf8ff'),limitToFirst(15));
+    const snap=await withTimeout(get(q),12000);
+    const v=(snap&&snap.val())||{};
+    hubHits=Object.keys(v).filter(u=>u!==user.uid).map(u=>({uid:u,...v[u]}));
+    hubHits.forEach(h=>pubCache.set(h.uid,h));
+  }catch(e){
+    hubHits=[];
+    toast('Search is unavailable — check the database rules');
+  }
+  hubSearching=false;paintSearch();
+}
+function paintSearch(){
+  const res=document.getElementById('hub-res');
+  const main=document.getElementById('hub-main');
+  if(!res||!main)return;
+  if(hubHits===null&&!hubSearching){res.innerHTML='';main.style.display='';return;}
+  main.style.display='none';
+  if(hubSearching){res.innerHTML='<div class="hub-load"><div class="sk"></div></div>';return;}
+  if(!hubHits.length){
+    res.innerHTML=`<div class="empty"><div class="empty-i">🔍</div>
+      <div class="empty-t">No one found</div>
+      <div class="empty-s">Usernames have to match from the start. Ask your friend to check theirs under You → Community profile.</div></div>`;
+    return;
+  }
+  res.innerHTML=hubHits.map(h=>`<div class="urow">
+    ${cardHTML(h,'av-40')}
+    <div class="urow-t" onclick="openUser('${h.uid}')">
+      <div class="urow-n">${esc(h.n||h.u)}</div>
+      <div class="urow-u">@${esc(h.u||'')}</div>
+    </div>
+    ${friendBtn(h.uid)}
+  </div>`).join('');
+}
+function friendBtn(u){
+  if(u===(user&&user.uid))return '<button class="urow-b mut">You</button>';
+  if(friends[u])return '<button class="urow-b dn" onclick="openUser(\''+u+'\')">Friends</button>';
+  if(freqs[u])return '<button class="urow-b pri" onclick="acceptFriend(\''+u+'\')">Accept</button>';
+  if(fsent[u])return '<button class="urow-b mut">Requested</button>';
+  return '<button class="urow-b pri" onclick="addFriend(\''+u+'\')">Add</button>';
+}
+
+/* ═══════════ FRIENDS ═══════════ */
+async function addFriend(other){
+  if(!db||!user||other===user.uid)return;
+  if(friends[other]){toast('Already friends');return;}
+  if(friendCount()>=HUB.FANOUT){toast('Friend list is full');return;}
+  const me=myCard();
+  buzz(12);
+  fsent[other]=serverNow();
+  paintSearch();
+  try{
+    const nid=uid('n');
+    await update(rootRef(),{
+      ['freq/'+other+'/'+user.uid]:{u:me.u,n:me.n,a:me.a,ts:serverNow()},
+      ['fsent/'+user.uid+'/'+other]:serverNow(),
+      ['notif/'+other+'/'+nid]:{t:'req',u:user.uid,n:me.n,a:me.a,ts:serverNow(),r:false}
+    });
+    toast('Request sent');
+  }catch(e){
+    delete fsent[other];paintSearch();
+    toast('Could not send that request');
+  }
+}
+async function acceptFriend(other){
+  if(!db||!user)return;
+  const them=freqs[other]||await getPub(other)||{};
+  const me=myCard();
+  buzz([12,40,12]);
+  try{
+    const nid=uid('n');
+    await update(rootRef(),{
+      ['friends/'+user.uid+'/'+other]:{u:them.u||'',n:them.n||'',a:them.a||'',ts:serverNow()},
+      ['friends/'+other+'/'+user.uid]:{u:me.u,n:me.n,a:me.a,ts:serverNow()},
+      ['freq/'+user.uid+'/'+other]:null,
+      ['freq/'+other+'/'+user.uid]:null,
+      ['fsent/'+other+'/'+user.uid]:null,
+      ['fsent/'+user.uid+'/'+other]:null,
+      ['notif/'+other+'/'+nid]:{t:'acc',u:user.uid,n:me.n,a:me.a,ts:serverNow(),r:false}
+    });
+    await pushShare(true);
+    toast('You are now friends');
+    if(viewUid===other)openUser(other);
+  }catch(e){toast('Could not accept that right now');}
+}
+async function declineFriend(other){
+  if(!db||!user)return;
+  try{
+    await update(rootRef(),{
+      ['freq/'+user.uid+'/'+other]:null,
+      ['fsent/'+other+'/'+user.uid]:null
+    });
+    toast('Request ignored');
+  }catch(e){}
+}
+async function unfriend(other){
+  if(!db||!user)return;
+  if(!confirm('Remove this friend? They will no longer see anything you share with friends.'))return;
+  try{
+    await update(rootRef(),{
+      ['friends/'+user.uid+'/'+other]:null,
+      ['friends/'+other+'/'+user.uid]:null
+    });
+    toast('Friend removed');
+    if(viewUid===other)openUser(other);
+  }catch(e){toast('Could not do that right now');}
+}
+
+/* ═══════════ THE FEED ═══════════ */
+async function loadFeed(reset){
+  if(!db||!user||feedBusy)return;
+  feedBusy=true;
+  if(reset){feed=[];feedDone=false;feedOldest=0;waiting=[];}
+  const box=document.getElementById('hub-body');
+  if(box&&reset&&hubTab==='feed')box.innerHTML='<div class="hub-load"><div class="sk"></div></div>';
+  try{
+    const q=reset
+      ? query(hubRef('posts'),orderByChild('ts'),limitToLast(HUB.PAGE))
+      : query(hubRef('posts'),orderByChild('ts'),endBefore(feedOldest),limitToLast(HUB.PAGE));
+    const s=await withTimeout(get(q),18000);
+    const v=(s&&s.val())||{};
+    const page=Object.keys(v).map(k=>({id:k,...v[k]})).sort((a,b)=>(b.ts||0)-(a.ts||0));
+    if(page.length<HUB.PAGE)feedDone=true;
+    if(page.length){
+      feedOldest=page[page.length-1].ts||0;
+      const have=new Set(feed.map(p=>p.id));
+      feed=feed.concat(page.filter(p=>!have.has(p.id)));
+    }
+    feedLoaded=true;
+    if(reset)watchNewPosts(feed.length?feed[0].ts:serverNow());
+  }catch(e){
+    feedLoaded=true;
+    if(box&&hubTab==='feed'){
+      box.innerHTML=`<div class="empty"><div class="empty-i">📡</div>
+        <div class="empty-t">Could not load the feed</div>
+        <div class="empty-s">${esc(classifyErr(e)==='blocked'
+          ?'The database is refusing to read posts. The rules in the Firebase console need updating.'
+          :'No connection right now. Pull the tab again in a moment.')}</div>
+        <div class="empty-a"><button class="btn pri" onclick="loadFeed(true)">Try again</button></div></div>`;
+    }
+    feedBusy=false;return;
+  }
+  feedBusy=false;
+  if(hubTab==='feed')paintFeed();
+}
+function paintFeed(){
+  const box=document.getElementById('hub-body');
+  if(!box)return;
+  if(!feedLoaded){box.innerHTML='<div class="hub-load"><div class="sk"></div></div>';return;}
+  const me=myCard();
+  let h='';
+  if(waiting.length)h+=`<div class="newp"><button onclick="showWaiting()">${waiting.length} new ${waiting.length===1?'post':'posts'}</button></div>`;
+  h+=`<div class="comp" onclick="openComposer()">
+    ${cardHTML({a:me.a,n:me.n},'av-40')}
+    <div class="comp-p">Share a lift, a meal, a win…</div>
+    <div class="comp-b">+</div>
+  </div>`;
+  if(!feed.length){
+    h+=`<div class="empty"><div class="empty-i">🌱</div>
+      <div class="empty-t">Nothing here yet</div>
+      <div class="empty-s">Be the first to post. Anything you share here is visible to everyone on UNIT.</div></div>`;
+  }else{
+    h+=feed.map(postHTML).join('');
+    h+=feedDone
+      ? '<div class="hint" style="text-align:center;padding:16px">You have reached the beginning.</div>'
+      : '<button class="add" id="more-btn" onclick="loadFeed(false)">Load older posts</button>';
+  }
+  box.innerHTML=h;
+  observeImgs();
+}
+function postHTML(p){
+  const mine=p.uid===(user&&user.uid);
+  const liked=!!(p.lk&&user&&p.lk[user.uid]);
+  const likes=p.lk?Object.keys(p.lk).length:0;
+  const cn=p.cN||0;
+  const open=!!openCmt[p.id];
+  return `<div class="post" id="post-${p.id}">
+    <div class="post-h">
+      ${cardHTML({a:p.a,n:p.n},'av-40')}
+      <div class="post-id" onclick="openUser('${p.uid}')">
+        <div class="post-n">${esc(p.n||'Someone')}</div>
+        <div class="post-m">@${esc(p.u||'')} · ${ago(p.ts||0)}</div>
+      </div>
+      ${mine?`<button class="post-x" onclick="delPost('${p.id}')" aria-label="Delete post">×</button>`:''}
+    </div>
+    ${p.txt?`<div class="post-tx">${esc(p.txt)}</div>`:''}
+    ${p.img?`<div class="post-im load" data-pid="${p.id}" onclick="openLb('${p.id}')"><div class="sk"></div></div>`:''}
+    <div class="post-a">
+      <button class="pa${liked?' on':''}" onclick="toggleLike('${p.id}')">
+        <svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 00-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 00-7.8 7.8l1.1 1L12 21.2l7.7-7.8 1.1-1a5.5 5.5 0 000-7.8z"/></svg>
+        ${likes||''}
+      </button>
+      <button class="pa${open?' on':''}" onclick="toggleCmts('${p.id}')" style="${open?'color:var(--gold)':''}">
+        <svg viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.4 8.4 0 01-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.4 8.4 0 013.8-.9h.5a8.5 8.5 0 018 8v.5z"/></svg>
+        ${cn||''}
+      </button>
+    </div>
+    <div id="cmt-${p.id}">${open?cmtsHTML(p.id):''}</div>
+  </div>`;
+}
+
+/* ── images: fetched only as they come into view ─────────── */
+function observeImgs(){
+  if(!('IntersectionObserver'in window)){
+    document.querySelectorAll('.post-im[data-pid]:not([data-done])').forEach(el=>loadPostImg(el.dataset.pid));
+    return;
+  }
+  if(!imgObs)imgObs=new IntersectionObserver(entries=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){imgObs.unobserve(e.target);loadPostImg(e.target.dataset.pid);}
+    });
+  },{rootMargin:'500px 0px'});
+  document.querySelectorAll('.post-im[data-pid]:not([data-done])').forEach(el=>imgObs.observe(el));
+}
+async function loadPostImg(pid){
+  const el=document.querySelector('.post-im[data-pid="'+pid+'"]');
+  if(!el||el.getAttribute('data-done'))return;
+  el.setAttribute('data-done','1');
+  let d=imgCache.get(pid);
+  if(d===undefined){
+    try{
+      const s=await withTimeout(get(hubRef('postImg/'+pid)),20000);
+      d=(s&&s.exists()&&s.val().d)||'';
+    }catch(e){d='';}
+    imgCache.set(pid,d);
+    if(imgCache.size>HUB.IMG_CACHE){
+      const k=imgCache.keys().next().value;imgCache.delete(k);
+    }
+  }
+  const cur=document.querySelector('.post-im[data-pid="'+pid+'"]');
+  if(!cur)return;
+  cur.classList.remove('load');
+  if(d)cur.innerHTML='<img src="'+d+'" alt="">';
+  else{cur.innerHTML='';cur.style.minHeight='0';}
+}
+function openLb(pid){
+  const d=imgCache.get(pid);
+  if(!d)return;
+  document.getElementById('plb-img').src=d;
+  document.getElementById('plb').classList.add('active');
+}
+function closeLb(){
+  document.getElementById('plb').classList.remove('active');
+  document.getElementById('plb-img').src='';
+}
+
+/* ── new posts arriving while you read ───────────────────── */
+function watchNewPosts(sinceTs){
+  stopNewPosts();
+  if(!db||!user)return;
+  try{
+    newPostRef=query(hubRef('posts'),orderByChild('ts'),startAt((sinceTs||serverNow())+1));
+    newPostCb=onChildAdded(newPostRef,s=>{
+      const p={id:s.key,...(s.val()||{})};
+      if(p.uid===user.uid)return;                 // our own, already on screen
+      if(feed.some(x=>x.id===p.id))return;
+      if(waiting.some(x=>x.id===p.id))return;
+      waiting.unshift(p);
+      if(tab==='hub'&&hubTab==='feed')paintFeed();
+    },()=>{});
+  }catch(e){}
+}
+function stopNewPosts(){
+  try{if(newPostRef&&newPostCb)off(newPostRef,'child_added',newPostCb);}catch(e){}
+  newPostRef=null;newPostCb=null;
+}
+function showWaiting(){
+  if(!waiting.length)return;
+  feed=waiting.concat(feed);
+  waiting=[];
+  paintFeed();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+/* ── composing ───────────────────────────────────────────── */
+function openComposer(){
+  openSheet(`<div class="sheet-t">New post</div>
+    <div class="sheet-s">Everyone on UNIT can see this. Your friends also get a notification.</div>
+    <textarea class="ta" id="po-tx" maxlength="${HUB.POST_MAX}"
+      placeholder="What did you do today?" oninput="countPost()"></textarea>
+    <div class="cnt" id="po-cnt">0 / ${HUB.POST_MAX}</div>
+    <div id="po-prev">${pendingPost?postPrevHTML():''}</div>
+    <button class="add" style="margin-top:12px" onclick="pickPhoto('post')">${icoPlus()} ${pendingPost?'Change photo':'Add a photo'}</button>
+    <div class="sheet-a"><button class="btn ghost" onclick="cancelPost()">Cancel</button>
+      <button class="btn pri" id="po-go" onclick="submitPost()">Post</button></div>`);
+  setTimeout(()=>{const t=document.getElementById('po-tx');if(t)t.focus();},330);
+  countPost();
+}
+function postPrevHTML(){
+  return `<div class="pv-prev"><img src="${pendingPost}" alt="">
+    <button onclick="clearPostImg()">×</button></div>`;
+}
+function clearPostImg(){
+  pendingPost=null;
+  const b=document.getElementById('po-prev');if(b)b.innerHTML='';
+}
+function countPost(){
+  const t=document.getElementById('po-tx'),c=document.getElementById('po-cnt');
+  if(!t||!c)return;
+  c.textContent=t.value.length+' / '+HUB.POST_MAX;
+  c.classList.toggle('over',t.value.length>=HUB.POST_MAX);
+}
+function cancelPost(){pendingPost=null;closeSheet();}
+async function submitPost(){
+  const t=document.getElementById('po-tx');
+  const txt=((t&&t.value)||'').trim().slice(0,HUB.POST_MAX);
+  if(!txt&&!pendingPost){toast('Write something or add a photo');return;}
+  if(!db||!user){toast('You need to be signed in');return;}
+  const since=Date.now()-lastPostAt;
+  if(since<HUB.COOLDOWN){toast('Give it '+Math.ceil((HUB.COOLDOWN-since)/1000)+'s before posting again');return;}
+  const btn=document.getElementById('po-go');
+  if(btn){btn.disabled=true;btn.textContent='Posting…';}
+  const me=myCard();
+  const pid=uid('p');
+  const ts=serverNow();
+  const post={uid:user.uid,u:me.u,n:me.n,a:me.a,txt,img:!!pendingPost,ts,cN:0};
+  const img=pendingPost;
+  try{
+    const w={};
+    w['posts/'+pid]=post;
+    if(img)w['postImg/'+pid]={d:img,uid:user.uid};
+    await withTimeout(update(rootRef(),w),25000);
+  }catch(e){
+    if(btn){btn.disabled=false;btn.textContent='Post';}
+    toast(classifyErr(e)==='blocked'?'The database refused that post':'Could not reach the server');
+    return;
+  }
+  lastPostAt=Date.now();
+  pendingPost=null;
+  if(img)imgCache.set(pid,img);
+  feed.unshift({id:pid,...post});
+  closeSheet();
+  if(tab==='hub'&&hubTab==='feed')paintFeed();
+  toast('Posted');
+  buzz([12,40,12]);
+  notifyFriends(pid,txt,!!img);
+}
+/* One small node per friend, written in a single multi-path update, so
+   a post costs one round trip no matter how many friends you have. */
+async function notifyFriends(pid,txt,hasImg){
+  const ids=Object.keys(friends).slice(0,HUB.FANOUT);
+  if(!ids.length)return;
+  const me=myCard();
+  const nid=uid('n');
+  const w={};
+  ids.forEach(f=>{
+    w['notif/'+f+'/'+nid]={
+      t:'post',u:user.uid,n:me.n,a:me.a,pid,
+      txt:(txt||(hasImg?'shared a photo':'')).slice(0,90),
+      ts:serverNow(),r:false
+    };
+  });
+  try{await update(rootRef(),w);}catch(e){}
+}
+async function delPost(pid){
+  if(!confirm('Delete this post?'))return;
+  try{
+    await update(rootRef(),{['posts/'+pid]:null,['postImg/'+pid]:null,['postCmt/'+pid]:null});
+    feed=feed.filter(p=>p.id!==pid);
+    waiting=waiting.filter(p=>p.id!==pid);
+    imgCache.delete(pid);
+    paintFeed();
+    toast('Post deleted');
+  }catch(e){toast('Could not delete that');}
+}
+
+/* ── likes: a set of uids, no counter to keep in step ────── */
+async function toggleLike(pid){
+  if(!db||!user)return;
+  const p=feed.find(x=>x.id===pid);
+  if(!p)return;
+  p.lk=p.lk||{};
+  const on=!p.lk[user.uid];
+  if(on)p.lk[user.uid]=true; else delete p.lk[user.uid];
+  buzz(on?12:6);
+  // repaint just this post so the whole feed does not flash
+  const el=document.getElementById('post-'+pid);
+  if(el){
+    const wrap=document.createElement('div');
+    wrap.innerHTML=postHTML(p);
+    el.replaceWith(wrap.firstElementChild);
+    if(p.img&&imgCache.has(pid)){
+      const box=document.querySelector('.post-im[data-pid="'+pid+'"]');
+      if(box){box.setAttribute('data-done','1');box.classList.remove('load');
+        const d=imgCache.get(pid);
+        if(d)box.innerHTML='<img src="'+d+'" alt="">';else{box.innerHTML='';box.style.minHeight='0';}}
+    }else observeImgs();
+  }
+  try{
+    await set(hubRef('posts/'+pid+'/lk/'+user.uid),on?true:null);
+    if(on&&p.uid!==user.uid){
+      const me=myCard();
+      await set(hubRef('notif/'+p.uid+'/'+uid('n')),
+        {t:'like',u:user.uid,n:me.n,a:me.a,pid,ts:serverNow(),r:false});
+    }
+  }catch(e){}
+}
+
+/* ── comments: loaded per post, never with the feed ──────── */
+async function toggleCmts(pid){
+  openCmt[pid]=!openCmt[pid];
+  const box=document.getElementById('cmt-'+pid);
+  if(!box)return;
+  if(!openCmt[pid]){box.innerHTML='';return;}
+  box.innerHTML='<div class="cmts"><div class="hub-load" style="padding:12px"><div class="sk"></div></div></div>';
+  if(!cmtCache[pid]){
+    try{
+      const q=query(hubRef('postCmt/'+pid),orderByChild('ts'),limitToLast(40));
+      const s=await withTimeout(get(q),15000);
+      const v=(s&&s.val())||{};
+      cmtCache[pid]=Object.keys(v).map(k=>({id:k,...v[k]})).sort((a,b)=>(a.ts||0)-(b.ts||0));
+    }catch(e){cmtCache[pid]=[];}
+  }
+  const b=document.getElementById('cmt-'+pid);
+  if(b)b.innerHTML=cmtsHTML(pid);
+}
+function cmtsHTML(pid){
+  const list=cmtCache[pid]||[];
+  return `<div class="cmts">
+    ${list.map(c=>`<div class="cmt">
+      ${cardHTML({a:c.a,n:c.n},'av-30')}
+      <div class="cmt-b"><div class="cmt-n">${esc(c.n||'Someone')}</div>
+        <div class="cmt-t">${esc(c.t||'')}</div></div>
+    </div>`).join('')||'<div class="hint" style="margin:0 0 11px">No comments yet.</div>'}
+    <div class="cmt-in">
+      <input id="ci-${pid}" maxlength="${HUB.CMT_MAX}" placeholder="Add a comment"
+        onkeydown="if(event.key==='Enter')sendCmt('${pid}')">
+      <button onclick="sendCmt('${pid}')">Send</button>
+    </div>
+  </div>`;
+}
+async function sendCmt(pid){
+  const i=document.getElementById('ci-'+pid);
+  const t=((i&&i.value)||'').trim().slice(0,HUB.CMT_MAX);
+  if(!t||!db||!user)return;
+  const me=myCard();
+  const c={uid:user.uid,n:me.n,a:me.a,t,ts:serverNow()};
+  const cid=uid('c');
+  cmtCache[pid]=(cmtCache[pid]||[]).concat({id:cid,...c});
+  const p=feed.find(x=>x.id===pid);
+  if(p)p.cN=(p.cN||0)+1;
+  const box=document.getElementById('cmt-'+pid);
+  if(box)box.innerHTML=cmtsHTML(pid);
+  try{
+    await set(hubRef('postCmt/'+pid+'/'+cid),c);
+    await set(hubRef('posts/'+pid+'/cN'),(p&&p.cN)||1);
+    if(p&&p.uid!==user.uid){
+      await set(hubRef('notif/'+p.uid+'/'+uid('n')),
+        {t:'cmt',u:user.uid,n:me.n,a:me.a,pid,txt:t.slice(0,70),ts:serverNow(),r:false});
+    }
+  }catch(e){toast('Comment did not send');}
+}
+
+/* ═══════════ NOTIFICATIONS ═══════════ */
+function openNotifs(){
+  openSheet(`<div class="sheet-t">Notifications</div>
+    <div class="sheet-s">Friend requests, and what the people you follow are posting.</div>
+    <div id="nt-list"></div>
+    <div class="sheet-a">
+      <button class="btn ghost" onclick="clearNotifs()">Clear all</button>
+      <button class="btn" onclick="closeSheet()">Done</button></div>`);
+  paintNotifs();
+  markRead();
+}
+function paintNotifs(){
+  const box=document.getElementById('nt-list');
+  if(!box)return;
+  if(!notifs.length){
+    box.innerHTML='<div class="hint" style="text-align:center;padding:22px">Nothing yet. When a friend posts, it shows up here.</div>';
+    return;
+  }
+  const line=n=>{
+    if(n.t==='req')return '<b>'+esc(n.n)+' sent you a friend request</b>';
+    if(n.t==='acc')return '<b>'+esc(n.n)+' accepted your friend request</b>';
+    if(n.t==='like')return '<b>'+esc(n.n)+' liked your post</b>';
+    if(n.t==='cmt')return '<b>'+esc(n.n)+' commented: '+esc(n.txt||'')+'</b>';
+    return '<b>'+esc(n.n)+' posted'+(n.txt?': '+esc(n.txt):'')+'</b>';
+  };
+  box.innerHTML=notifs.map(n=>`<div class="nt${n.r?'':' un'}" onclick="tapNotif('${n.id}')">
+    ${cardHTML({a:n.a,n:n.n},'av-30')}
+    <div class="nt-t">${line(n)}<i>${ago(n.ts||0)}</i></div>
+  </div>`).join('');
+}
+async function markRead(){
+  if(!db||!user)return;
+  const un=notifs.filter(n=>!n.r);
+  if(!un.length)return;
+  const w={};
+  un.forEach(n=>{w['notif/'+user.uid+'/'+n.id+'/r']=true;});
+  try{await update(rootRef(),w);}catch(e){}
+}
+function tapNotif(id){
+  const n=notifs.find(x=>x.id===id);
+  if(!n)return;
+  closeSheet();
+  if(n.t==='req'){setTab('hub');setTimeout(()=>hubGo('reqs'),60);return;}
+  if(n.u)openUser(n.u);
+}
+async function clearNotifs(){
+  if(!db||!user)return;
+  try{await remove(hubRef('notif/'+user.uid));notifs=[];unread=0;paintNotifs();paintHubBadges();}catch(e){}
+}
+
+/* ═══════════ SOMEONE ELSE'S PROFILE ═══════════
+   The public card is all anyone gets by default. Only once you are
+   friends does their share/ snapshot come into play, and only the
+   parts they switched on. */
+async function openUser(uidStr){
+  if(!uidStr)return;
+  if(user&&uidStr===user.uid){closeUser();setTab('profile');return;}
+  viewUid=uidStr;
+  const el=document.getElementById('uv');
+  const box=document.getElementById('uv-body');
+  box.innerHTML='<button class="uv-x" onclick="closeUser()">‹ Back</button><div class="hub-load"><div class="sk"></div></div>';
+  el.classList.add('active');
+  document.body.style.overflow='hidden';
+  const c=await getPub(uidStr)||{};
+  let snap=null,flags=null;
+  if(friends[uidStr]){
+    try{
+      const s=await withTimeout(get(hubRef('share/'+uidStr)),15000);
+      if(s&&s.exists()){const v=s.val()||{};snap=v.snap||null;flags=v.set||null;}
+    }catch(e){}
+  }
+  if(viewUid!==uidStr)return;
+  paintUser(uidStr,c,snap,flags);
+}
+function closeUser(){
+  viewUid=null;
+  document.getElementById('uv').classList.remove('active');
+  document.body.style.overflow='';
+}
+function paintUser(u,c,snap,flags){
+  const box=document.getElementById('uv-body');
+  if(!box)return;
+  const fr=!!friends[u];
+  let act='';
+  if(fr)act=`<button class="btn ghost" onclick="unfriend('${u}')">Remove friend</button>`;
+  else if(freqs[u])act=`<button class="btn pri" onclick="acceptFriend('${u}')">Accept request</button>
+      <button class="btn ghost" onclick="declineFriend('${u}')">Ignore</button>`;
+  else if(fsent[u])act=`<button class="btn ghost" disabled>Request sent</button>`;
+  else act=`<button class="btn pri" onclick="addFriend('${u}')">Add friend</button>`;
+
+  let body='';
+  if(!fr){
+    body=`<div class="lock"><b>${esc(c.n||'This person')} shares more with friends</b>
+      Send a friend request. If they accept, you will see whatever they choose to share — routine, nutrition, grocery list or streak.</div>`;
+  }else{
+    const parts=[];
+    if(snap&&snap.routine)parts.push(routineHTML(snap.routine));
+    if(snap&&snap.fuel)parts.push(fuelHTML(snap.fuel));
+    if(snap&&snap.groc)parts.push(grocHTML(snap.groc));
+    if(snap&&snap.streak)parts.push(streakHTML(snap.streak));
+    body=parts.length?parts.join(''):`<div class="lock"><b>Nothing shared yet</b>
+      You are friends, but ${esc(c.n||'they')} has not switched on anything to share. That is their call — they can change it under You → What friends can see.</div>`;
+  }
+  box.innerHTML=`<button class="uv-x" onclick="closeUser()">‹ Back</button>
+    <div class="uv-hero">
+      ${cardHTML(c,'av-84')}
+      <div class="pf-n" style="margin-top:12px">${esc(c.n||'Someone')}</div>
+      <div class="pf-u mono">@${esc(c.u||'')}</div>
+      ${c.b?`<div class="uv-bio">${esc(c.b)}</div>`:''}
+      <div class="uv-a">${act}</div>
+    </div>
+    ${body}`;
+}
+function routineHTML(r){
+  const sp=SPLITS.find(s=>s.v===r.split);
+  const days=(r.days||[]);
+  const ex=r.ex||{};
+  return `<div class="pf-sec">Routine</div>
+    <div class="card open"><div class="card-in" style="padding:15px">
+      <div class="hint" style="margin:0 0 12px">${days.length?days.map(d=>DFULL[d]).join(' · '):'No fixed days'}${sp?' — '+esc(sp.t):''}</div>
+      ${DAYS.filter(d=>ex[d]&&ex[d].length).map(d=>`
+        <div style="margin-bottom:13px">
+          <div class="eyebrow" style="margin-bottom:7px">${DFULL[d]}</div>
+          ${ex[d].map(e=>`<div class="meal-item"><div class="meal-tx">${esc(e.n)}</div>
+            <span class="tag">${e.s} sets${e.r?' × '+esc(e.r):''}</span></div>`).join('')}
+        </div>`).join('')||'<div class="hint">No exercises added yet.</div>'}
+    </div></div>`;
+}
+function fuelHTML(f){
+  const m=f.macros||{};
+  return `<div class="pf-sec">Nutrition</div>
+    <div class="macros" style="margin-bottom:11px">
+      ${[['cal','kcal'],['protein','protein'],['carbs','carbs'],['fat','fat']].map(([k,l])=>
+        `<div class="macro"><div class="macro-l">${l}</div>
+         <div class="mono" style="font-size:15px;font-weight:700;padding:6px 0">${esc(m[k]||'—')}</div></div>`).join('')}
+    </div>
+    <div class="card open"><div class="card-in" style="padding:15px">
+      ${(f.meals||[]).map(x=>`<div style="margin-bottom:12px">
+        <div class="eyebrow" style="margin-bottom:6px">${esc(x.l||'Meal')}${x.t?' · '+esc(x.t):''}${x.c?' · '+esc(x.c):''}</div>
+        ${(x.i||[]).map(it=>`<div class="meal-item"><div class="meal-tx">${esc(it)}</div></div>`).join('')||'<div class="hint">—</div>'}
+      </div>`).join('')||'<div class="hint">No meals added.</div>'}
+      ${(f.supps||[]).length?`<div class="eyebrow" style="margin:16px 0 7px">Supplements</div>
+        ${f.supps.map(s=>`<div class="meal-item"><div class="meal-tx">${esc(s)}</div></div>`).join('')}`:''}
+    </div></div>`;
+}
+function grocHTML(g){
+  return `<div class="pf-sec">Grocery list</div>
+    <div class="card open"><div class="card-in" style="padding:15px">
+      ${g.length?g.map(i=>`<div class="meal-item${i.d?' done':''}">
+        <div class="meal-tx">${esc(i.n)}${i.q?' <span class="tag">'+esc(i.q)+'</span>':''}</div>
+        <span class="tag">${esc(i.c||'Other')}</span></div>`).join('')
+      :'<div class="hint">The list is empty.</div>'}
+    </div></div>`;
+}
+function streakHTML(s){
+  return `<div class="pf-sec">Streak</div>
+    <div class="stats">
+      <div class="stat"><div class="stat-v mono">${s.cur||0}</div><div class="stat-l">Current</div></div>
+      <div class="stat"><div class="stat-v mono">${s.best||0}</div><div class="stat-l">Best run</div></div>
+      <div class="stat"><div class="stat-v mono">${s.total||0}</div><div class="stat-l">Total days</div></div>
+    </div>`;
+}
+
+/* ═══════════════════════════════════════════════════════════
    GLOBAL EXPORTS
 ═══════════════════════════════════════════════════════════ */
 Object.assign(window,{
@@ -3334,7 +4542,13 @@ Object.assign(window,{
   openPair,openLiveSheet,hideConn,hostSession,joinPrompt,doJoin,leaveSession,toggleEditAccess,
   switchAuth,doLogin,doSignup,doSignOut,
   obGo,obNext,obDay,obSplit,obCardio,obFinish,
-  save,render,toast
+  save,render,toast,
+  // hub
+  hubGo,hubType,clearHubSearch,openComposer,cancelPost,submitPost,countPost,countBio,
+  clearPostImg,delPost,toggleLike,toggleCmts,sendCmt,loadFeed,showWaiting,
+  openLb,closeLb,openUser,closeUser,addFriend,acceptFriend,declineFriend,unfriend,
+  openNotifs,tapNotif,clearNotifs,openShareSheet,toggleShare,openBioSheet,saveBio,
+  paintHubBadges,friendCount
 });
 
 /* ═══════════════════════════════════════════════════════════
@@ -3384,6 +4598,7 @@ if(auth){
       saveLocal();saveProfileLocal();
       watchConnection();
       watchOwnData(u.uid);        // stay in step with this account's other devices
+      startHub();                 // public card, friends, requests, notifications
       unbusy();applyTheme();hideAuth();
       if(!PREFS.onboarded){
         await runOnboarding();
