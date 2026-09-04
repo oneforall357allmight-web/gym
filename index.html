@@ -364,8 +364,15 @@ body::after{
 .chev{width:18px;height:18px;color:var(--txt4);transition:transform .3s var(--ez-spring);flex-shrink:0}
 .chev svg{width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .chev.open{transform:rotate(180deg);color:var(--gold)}
-.card-b{max-height:0;overflow:hidden;transition:max-height .42s var(--ez-out)}
-.card-b.open{max-height:5200px}
+/* An open card used to stop at a fixed 5200px ceiling with overflow hidden,
+   so a long day — and every day in a live session, where each exercise is
+   expanded for the follower — had its tail clipped off with nothing able to
+   scroll to it. The page is the scroller; a card must never cap what the page
+   can reach. Row sizing collapses to nothing when closed and to exactly the
+   content height when open, so there is no ceiling left to hit. */
+.card-b{display:grid;grid-template-rows:0fr;overflow:hidden;transition:grid-template-rows .42s var(--ez-out)}
+.card-b.open{grid-template-rows:1fr}
+.card-b>*{min-height:0}
 .card-in{padding:0 13px 13px}
 
 /* ═══ EXERCISE ═══ */
@@ -386,8 +393,9 @@ body::after{
 .tag.c{background:var(--cyan-d);color:var(--cyan)}
 .ex-p{font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:700;color:var(--txt3);flex-shrink:0}
 .ex-p.done{color:var(--green)}
-.ex-b{max-height:0;overflow:hidden;transition:max-height .38s var(--ez-out)}
-.ex-b.open{max-height:1600px}
+.ex-b{display:grid;grid-template-rows:0fr;overflow:hidden;transition:grid-template-rows .38s var(--ez-out)}
+.ex-b.open{grid-template-rows:1fr}
+.ex-b>*{min-height:0}
 .ex-in{padding:0 13px 13px}
 .ex-note{font-size:11.5px;color:var(--txt3);line-height:1.55;padding:9px 11px;background:var(--well2);
   border-radius:9px;border-left:2px solid var(--gold-d3);margin-bottom:11px}
@@ -761,9 +769,13 @@ body::after{
   padding:7px 10px;border-radius:10px;font-family:'JetBrains Mono',monospace;font-size:10.5px;
   font-weight:600;cursor:pointer;transition:.18s var(--ez)}
 .pa:active{transform:scale(.92)}
-.pa svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.pa svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 .pa.on{color:var(--red)}
 .pa.on svg{fill:var(--red);stroke:var(--red)}
+.pa-n{min-width:6px}
+/* the comment button borrows .pa, but it is not a like — keep it off the red */
+.pa.cm.on{color:var(--gold)}
+.pa.cm.on svg{fill:none;stroke:var(--gold)}
 .cmts{border-top:1px solid var(--line);padding:11px 14px;background:var(--well)}
 .cmt{display:flex;gap:9px;margin-bottom:11px}
 .cmt-b{flex:1;min-width:0;background:var(--surf2);border-radius:12px;padding:8px 11px}
@@ -824,13 +836,18 @@ body::after{
 .mn-none{padding:11px 12px;font-size:11.5px;color:var(--txt4);line-height:1.5}
 /* ── comment actions ── */
 .cmt-a{display:flex;align-items:center;gap:10px;margin-top:6px}
-.ca{border:0;background:transparent;padding:2px 0;cursor:pointer;
+.ca{border:0;background:transparent;cursor:pointer;
   font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:600;
-  letter-spacing:.06em;color:var(--txt4);transition:.16s}
+  letter-spacing:.06em;color:var(--txt4);transition:.16s;
+  /* vertical padding grows the thumb target; the matching negative margin
+     keeps the row exactly the height it was, so nothing shifts to pay for it,
+     and staying out of the horizontal keeps the 10px gaps intact */
+  display:inline-flex;align-items:center;gap:5px;padding:6px 0;margin:-6px 0}
 .ca:active{transform:scale(.9)}
 .ca.on{color:var(--red)}
 .ca.d{color:var(--txt4)}
 .ca.d:active{color:var(--red)}
+.ca-h{font-size:14px;line-height:1}
 .ca-t{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--txt4);flex:1}
 .cmt-n{cursor:pointer}
 /* ── viewing someone else ── */
@@ -848,6 +865,21 @@ body::after{
 .lock{text-align:center;padding:26px 20px;background:var(--surf);border:1px dashed var(--line2);
   border-radius:var(--r-l);color:var(--txt3);font-size:12.5px;line-height:1.6}
 .lock b{display:block;color:var(--txt2);font-size:13.5px;margin-bottom:6px}
+/* ── importing a friend's routine ── */
+.sheet-bd.over{z-index:8700}
+.imp-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:7px}
+.imp-b{border:1px solid var(--line2);background:var(--surf);color:var(--txt2);border-radius:9px;
+  padding:6px 11px;font-size:11px;font-weight:600;cursor:pointer;transition:.16s;flex-shrink:0}
+.imp-b:active{transform:scale(.96);border-color:var(--gold);color:var(--gold)}
+.brw{display:flex;align-items:center;gap:11px;padding:12px 13px;background:var(--gold-d1);
+  border:1px solid var(--gold-d3);border-radius:var(--r-m);margin-bottom:12px}
+.brw-i{font-size:19px;flex-shrink:0}
+.brw-t{flex:1;min-width:0}
+.brw-t b{display:block;font-size:12.5px;font-weight:700;line-height:1.35}
+.brw-t i{display:block;font-style:normal;font-size:11px;color:var(--txt3);margin-top:3px;line-height:1.45}
+.brw-x{border:0;background:var(--surf3);color:var(--txt2);border-radius:9px;padding:9px 13px;
+  font-size:11.5px;font-weight:600;cursor:pointer;flex-shrink:0}
+.brw-x:active{transform:scale(.96)}
 .sh-row{display:flex;align-items:center;gap:12px;padding:13px 14px;background:var(--surf);
   border:1px solid var(--line);border-radius:var(--r-m);margin-bottom:8px}
 .sh-t{flex:1;min-width:0}
@@ -1052,15 +1084,15 @@ body::after{
 <div class="main" id="main"></div>
 
 <nav class="nav" id="nav">
+  <button class="nav-i" id="nav-hub" onclick="setTab('hub')">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3.6 9h16.8M3.6 15h16.8M12 3a15 15 0 010 18M12 3a15 15 0 000 18"/></svg><span>Hub</span>
+    <span class="badge" id="nav-hub-badge">0</span></button>
   <button class="nav-i on" id="nav-train" onclick="setTab('train')">
     <svg viewBox="0 0 24 24"><path d="M6.5 6.5h11v11h-11z" opacity="0"/><path d="M4 9v6M20 9v6M7 6v12M17 6v12M7 12h10"/></svg><span>Train</span></button>
   <button class="nav-i" id="nav-food" onclick="setTab('food')">
     <svg viewBox="0 0 24 24"><path d="M3 2v7a3 3 0 003 3 3 3 0 003-3V2M6 2v6M18 2c-1.7 0-3 2.2-3 5s1.3 4 3 4"/><path d="M6 12v10M18 11v11"/></svg><span>Fuel</span></button>
   <button class="nav-i" id="nav-cal" onclick="setTab('cal')">
     <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><span>Streak</span></button>
-  <button class="nav-i" id="nav-hub" onclick="setTab('hub')">
-    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3.6 9h16.8M3.6 15h16.8M12 3a15 15 0 010 18M12 3a15 15 0 000 18"/></svg><span>Hub</span>
-    <span class="badge" id="nav-hub-badge">0</span></button>
   <button class="nav-i" id="nav-profile" onclick="setTab('profile')">
     <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>You</span></button>
 </nav>
@@ -1187,6 +1219,9 @@ let PREFS={trainDays:[],split:'',doesCardio:false,onboarded:false,theme:'system'
 let user=null,profile=null;
 let tab='train',day=todayKey(),openCards={},openEx={},calOffset=0;
 let sheetCtx={};
+/* A friend's routine borrowed for today only. It lives here and nowhere else:
+   never on disk, never in the account, gone the moment the day rolls over. */
+let borrow=null;
 
 // session / pairing
 let sessId=null,role=null,partner=null; // role: 'host'|'guest'
@@ -1341,6 +1376,7 @@ async function hydrateProfileMirror(){
    exactly what used to happen on sign-out: the state was wiped, a queued save
    fired a moment later, and the empty bundle hit disk with a fresh stamp. */
 function saveLocal(opts){
+  if(borrow)return;                     // a borrowed routine never touches disk
   if(tearing&&!(opts&&opts.force))return;
   let next=null;
   try{
@@ -1458,6 +1494,9 @@ function save(opts){
     if(editGranted&&sessId){clearTimeout(syncT);syncT=setTimeout(pushState,300);if(!(opts&&opts.quiet))flashSaved();}
     return;
   }
+  /* Running a friend's day for today only. Nothing about it is kept — not
+     locally, not in the account, not to a session. */
+  if(borrow)return;
   saveLocal();          // on disk and in the mirror before this returns
   dirty=true;
   paintSaveBtn();
@@ -1495,6 +1534,7 @@ function withTimeout(p,ms){
 let cloudBusy=false,cloudAgain=false,lastPushTs=0;
 async function cloudSave(){
   clearTimeout(cloudT);cloudT=null;
+  if(borrow)return false;               // never upload a borrowed routine
   saveLocal();
   if(!user||!db){setSync('local');return false;}
   /* Two overlapping writes can land out of order, and then the older one is
@@ -1610,6 +1650,9 @@ function watchOwnData(uidStr){
       if(!s||!s.exists())return;
       if(tearing||!user||user.uid!==uidStr)return;
       if(role==='guest')return;            // the guest is looking at someone else's program
+      // Hold anything arriving from another device until the borrowed day ends,
+      // so it lands on the real program rather than on top of a borrowed one.
+      if(borrow){borrow.pending=s.val()||null;return;}
       const remote=s.val()||{};
       const rt=remote.ts||0;
       if(rt&&rt===lastPushTs)return;       // our own write coming back to us
@@ -1646,7 +1689,7 @@ async function refreshIdToken(force){
 }
 function beaconSave(){
   try{
-    if(!user||!db||!dirty||tearing||role==='guest')return;
+    if(!user||!db||!dirty||tearing||role==='guest'||borrow)return;
     if(!idToken||!firebaseConfig.databaseURL)return;
     if(weigh(bundle())===0)return;
     const body=JSON.stringify(stamped());
@@ -1713,6 +1756,9 @@ function flashSaveDone(){
 let saving=false;
 async function forceSave(){
   if(saving)return;
+  // nothing to save while someone else's day is on screen — say so rather than
+  // reporting a write that was deliberately suppressed
+  if(borrow){toast('Nothing is saved while you run '+borrow.name+'’s day');buzz(8);return;}
   saving=true;
   saveLocal({force:true});saveProfileLocal();
   if(!user||!db){
@@ -1981,8 +2027,9 @@ function setDay(d){day=d;buzz(8);jumpTop=true;render();}
 ═══════════════════════════════════════════════════════════ */
 function viewTrain(){
   const d=day;
-  if(!isTrainingDay(d))return restScreen(d);
-  let h='';
+  const bw=borrowBanner(d);
+  if(!isTrainingDay(d))return bw+restScreen(d);
+  let h=bw;
   const c=CARDIO[d]||{};
   if(c.am&&c.am.n)h+=cardioCard(d,'am',c.am);
   h+=workoutCard(d);
@@ -1991,6 +2038,19 @@ function viewTrain(){
     h+=`<button class="add" onclick="openCardioSheet('${d}')">${icoPlus()} Add cardio for ${DFULL[d]}</button>`;
   h+=photoCard();
   return h;
+}
+/* The one piece of screen furniture a borrowed day gets: whose it is, that
+   nothing is being saved, and a way out. */
+function borrowBanner(d){
+  if(!borrow)return '';
+  return `<div class="brw">
+    <div class="brw-i">🤝</div>
+    <div class="brw-t"><b>${esc(borrow.name)}'s ${DFULL[borrow.src]}</b>
+      <i>${d===borrow.day
+        ? 'Today only · nothing here is being saved, and your own '+DFULL[borrow.day]+' is waiting underneath.'
+        : 'Borrowed onto '+DFULL[borrow.day]+' · nothing is being saved while it runs.'}</i></div>
+    <button class="brw-x" onclick="endBorrow()">Done</button>
+  </div>`;
 }
 function restScreen(d){
   const days=PREFS.trainDays||[];
@@ -2460,6 +2520,7 @@ function resetToday(){
   save();render();toast(DFULL[day]+' reset');
 }
 function exportData(){
+  if(borrow){toast('Finish the borrowed day first — this would export theirs, not yours');return;}
   try{
     const blob=new Blob([JSON.stringify({profile,...bundle()},null,2)],{type:'application/json'});
     const a=document.createElement('a');
@@ -2542,11 +2603,20 @@ function updateCart(){
 /* ═══════════════════════════════════════════════════════════
    SHEETS
 ═══════════════════════════════════════════════════════════ */
-function openSheet(html){
+function openSheet(html,over){
   document.getElementById('sheet-body').innerHTML=html;
-  document.getElementById('sheet-bd').classList.add('active');
+  const bd=document.getElementById('sheet-bd');
+  /* Someone else's profile sits above the normal sheet. A sheet opened from
+     there says so and is lifted over it, and only over it. */
+  bd.classList.toggle('over',!!over);
+  bd.classList.add('active');
 }
-function closeSheet(){document.getElementById('sheet-bd').classList.remove('active');}
+function closeSheet(){
+  const bd=document.getElementById('sheet-bd');
+  bd.classList.remove('active');
+  // drop the lift only once it has slid away, or it snaps behind the profile
+  setTimeout(()=>{if(!bd.classList.contains('active'))bd.classList.remove('over');},400);
+}
 
 function promptSheet(title,sub,ph,cb){
   sheetCtx.cb=cb;
@@ -3566,7 +3636,24 @@ function switchAuth(t){
   document.getElementById('err-in').textContent='';
   document.getElementById('err-up').textContent='';
 }
-function showAuth(){const a=document.getElementById('auth');a.style.display='flex';requestAnimationFrame(()=>a.classList.add('active'));}
+// the splash lives in its own classic script, so reach it through the window
+function bootReady(){if(typeof window.__bootReady==='function')window.__bootReady();}
+/* On the boot path sign-in is raised behind the splash, so it must be fully
+   opaque before the splash starts to fade — a 0.4s fade-in crossing a 0.55s
+   fade-out is a gap the app shows through, which is the very thing being
+   fixed. Everywhere else (signing out) the fade is right. */
+function showAuth(instant){
+  const a=document.getElementById('auth');
+  a.style.display='flex';
+  if(instant){
+    a.style.transition='none';
+    a.classList.add('active');
+    void a.offsetHeight;              // commit it before the transition comes back
+    a.style.transition='';
+    return;
+  }
+  requestAnimationFrame(()=>a.classList.add('active'));
+}
 function hideAuth(){const a=document.getElementById('auth');a.classList.remove('active');setTimeout(()=>a.style.display='none',380);}
 function busy(m){document.getElementById('auth-load-msg').textContent=m;document.getElementById('auth-load').classList.add('active');}
 function unbusy(){document.getElementById('auth-load').classList.remove('active');}
@@ -3664,6 +3751,7 @@ async function doSignup(){
 async function doSignOut(){
   if(!confirm('Sign out of UNIT?'))return;
   closeSheet();
+  if(borrow)endBorrow(true);          // put the real program back before it is saved
   /* save() queues the cloud write on a 900ms timer. Signing out inside that
      window used to drop it, and the stray timer then fired against a wiped
      state. Land it first, and tell the truth if it will not land. */
@@ -4020,6 +4108,14 @@ async function startHub(){
   setTimeout(()=>{trimStore('pub',HUB.PUB_KEEP);trimStore('img',HUB.THUMB_KEEP);},9000);
   hubListen('friends/'+user.uid,s=>{
     friends=(s&&s.val())||{};
+    /* A borrowed day rests on the friendship that made it visible. Lose the
+       friendship, lose the loan — from either side, and without warning.
+       Copies already imported are unaffected: they are plain exercises of
+       yours and have not been theirs since the moment they were made. */
+    if(borrow&&!friends[borrow.uid]){
+      const nm=borrow.name;endBorrow(true);
+      toast('No longer friends with '+nm+' — their day has been handed back');
+    }
     if(tab==='hub'&&hubTab==='friends')paintHubList();
     paintSearch();               // an Add button that just became Friends
     paintHubBadges();
@@ -4616,13 +4712,13 @@ function postHTML(p){
     ${p.txt?`<div class="post-tx">${renderText(p.txt,p.mn)}</div>`:''}
     ${p.img?`<div class="post-im load" data-pid="${p.id}" onclick="openLb('${p.id}')"><div class="sk"></div></div>`:''}
     <div class="post-a">
-      <button class="pa${liked?' on':''}" onclick="toggleLike('${p.id}')">
+      <button class="pa${liked?' on':''}" id="lk-${p.id}" onclick="toggleLike('${p.id}')" aria-label="Like">
         <svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 00-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 00-7.8 7.8l1.1 1L12 21.2l7.7-7.8 1.1-1a5.5 5.5 0 000-7.8z"/></svg>
-        ${likes||''}
+        <span class="pa-n">${likes||''}</span>
       </button>
-      <button class="pa${open?' on':''}" onclick="toggleCmts('${p.id}')" style="${open?'color:var(--gold)':''}">
+      <button class="pa cm${open?' on':''}" id="cb-${p.id}" onclick="toggleCmts('${p.id}')" aria-label="Comments">
         <svg viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.4 8.4 0 01-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.4 8.4 0 013.8-.9h.5a8.5 8.5 0 018 8v.5z"/></svg>
-        ${cn||''}
+        <span class="pa-n">${cn||''}</span>
       </button>
     </div>
     <div id="cmt-${p.id}">${open?cmtsHTML(p.id):''}</div>
@@ -4840,6 +4936,28 @@ async function delPost(pid){
 }
 
 /* ── likes: a set of uids, no counter to keep in step ────── */
+/* A like used to rebuild the whole post node. That threw away the loaded
+   photo with it: the fresh <img> has no height until the data URI decodes,
+   so for a frame the box fell back to its 120px placeholder and everything
+   below — the rest of the feed — jumped up to meet it. A like changes one
+   colour and one number, so now it writes one colour and one number. */
+function paintLike(pid){
+  const p=feed.find(x=>x.id===pid)||waiting.find(x=>x.id===pid);
+  const b=document.getElementById('lk-'+pid);
+  if(!p||!b)return;
+  const liked=!!(p.lk&&user&&p.lk[user.uid]);
+  const n=p.lk?Object.keys(p.lk).length:0;
+  b.classList.toggle('on',liked);
+  const c=b.querySelector('.pa-n');
+  if(c)c.textContent=n||'';
+}
+function paintCmtCount(pid){
+  const p=feed.find(x=>x.id===pid)||waiting.find(x=>x.id===pid);
+  const b=document.getElementById('cb-'+pid);
+  if(!p||!b)return;
+  const c=b.querySelector('.pa-n');
+  if(c)c.textContent=(p.cN||0)||'';
+}
 async function toggleLike(pid){
   if(!db||!user)return;
   const p=feed.find(x=>x.id===pid);
@@ -4848,19 +4966,7 @@ async function toggleLike(pid){
   const on=!p.lk[user.uid];
   if(on)p.lk[user.uid]=true; else delete p.lk[user.uid];
   buzz(on?12:6);
-  // repaint just this post so the whole feed does not flash
-  const el=document.getElementById('post-'+pid);
-  if(el){
-    const wrap=document.createElement('div');
-    wrap.innerHTML=postHTML(p);
-    el.replaceWith(wrap.firstElementChild);
-    if(p.img&&imgCache.has(pid)){
-      const box=document.querySelector('.post-im[data-pid="'+pid+'"]');
-      if(box){box.setAttribute('data-done','1');box.classList.remove('load');
-        const d=imgCache.get(pid);
-        if(d)box.innerHTML='<img src="'+d+'" alt="">';else{box.innerHTML='';box.style.minHeight='0';}}
-    }else observeImgs();
-  }
+  paintLike(pid);
   try{
     await set(hubRef('posts/'+pid+'/lk/'+user.uid),on?true:null);
     if(on&&p.uid!==user.uid){
@@ -4868,12 +4974,18 @@ async function toggleLike(pid){
       await set(hubRef('notif/'+p.uid+'/'+uid('n')),
         {t:'like',u:user.uid,n:me.n,pid,ts:serverNow(),r:false});
     }
-  }catch(e){}
+  }catch(e){
+    // a like the database refused should not keep glowing
+    if(on)delete p.lk[user.uid]; else p.lk[user.uid]=true;
+    paintLike(pid);
+  }
 }
 
 /* ── comments: loaded per post, never with the feed ──────── */
 async function toggleCmts(pid){
   openCmt[pid]=!openCmt[pid];
+  const btn=document.getElementById('cb-'+pid);
+  if(btn)btn.classList.toggle('on',!!openCmt[pid]);
   const box=document.getElementById('cmt-'+pid);
   if(!box)return;
   if(!openCmt[pid]){box.innerHTML='';return;}
@@ -4904,7 +5016,7 @@ function cmtsHTML(pid){
           <div class="cmt-n" onclick="openUser('${c.uid}')">${esc(c.n||'Someone')}</div>
           <div class="cmt-t">${renderText(c.t,c.mn)}</div>
           <div class="cmt-a">
-            <button class="ca${liked?' on':''}" onclick="likeCmt('${pid}','${c.id}')">${liked?'♥':'♡'} ${n||''}</button>
+            <button class="ca${liked?' on':''}" id="cl-${pid}-${c.id}" onclick="likeCmt('${pid}','${c.id}')" aria-label="Like comment"><span class="ca-h">${liked?'♥':'♡'}</span><span class="ca-n">${n||''}</span></button>
             <span class="ca-t">${ago(c.ts||0)}</span>
             ${canDel?`<button class="ca d" onclick="delCmt('${pid}','${c.id}')">Delete</button>`:''}
           </div>
@@ -4919,6 +5031,33 @@ function cmtsHTML(pid){
     </div>
   </div>`;
 }
+/* Rebuilding the thread is right when a comment is added or removed, and
+   wrong for anything smaller. Even here it carries across what the person
+   was in the middle of: the half-typed comment and the caret in it. */
+function repaintCmts(pid){
+  const box=document.getElementById('cmt-'+pid);
+  if(!box)return;
+  const inp=document.getElementById('ci-'+pid);
+  const val=inp?inp.value:'';
+  const had=!!inp&&document.activeElement===inp;
+  box.innerHTML=cmtsHTML(pid);
+  const ni=document.getElementById('ci-'+pid);
+  if(ni&&val)ni.value=val;
+  if(ni&&had)ni.focus({preventScroll:true});   // never let a refocus move the page
+  paintAvatars();
+}
+/* One heart, one number — the same reasoning as a post like. */
+function paintCmtLike(pid,cid){
+  const c=(cmtCache[pid]||[]).find(x=>x.id===cid);
+  const b=document.getElementById('cl-'+pid+'-'+cid);
+  if(!c||!b)return;
+  const liked=!!(c.lk&&user&&c.lk[user.uid]);
+  const n=c.lk?Object.keys(c.lk).length:0;
+  b.classList.toggle('on',liked);
+  const h=b.querySelector('.ca-h'),cn=b.querySelector('.ca-n');
+  if(h)h.textContent=liked?'♥':'♡';
+  if(cn)cn.textContent=n||'';
+}
 async function likeCmt(pid,cid){
   if(!db||!user)return;
   const list=cmtCache[pid]||[];
@@ -4928,14 +5067,12 @@ async function likeCmt(pid,cid){
   const on=!c.lk[user.uid];
   if(on)c.lk[user.uid]=true; else delete c.lk[user.uid];
   buzz(on?12:6);
-  const box=document.getElementById('cmt-'+pid);
-  if(box)box.innerHTML=cmtsHTML(pid);
+  paintCmtLike(pid,cid);
   try{
     await set(hubRef('postCmt/'+pid+'/'+cid+'/lk/'+user.uid),on?true:null);
   }catch(e){
     if(on)delete c.lk[user.uid]; else c.lk[user.uid]=true;
-    const b2=document.getElementById('cmt-'+pid);
-    if(b2)b2.innerHTML=cmtsHTML(pid);
+    paintCmtLike(pid,cid);
     toast('Could not do that');
   }
 }
@@ -4946,8 +5083,7 @@ async function delCmt(pid,cid){
   cmtCache[pid]=(cmtCache[pid]||[]).filter(x=>x.id!==cid);
   const p=feed.find(x=>x.id===pid);
   if(p)p.cN=Math.max(0,(p.cN||1)-1);
-  const box=document.getElementById('cmt-'+pid);
-  if(box)box.innerHTML=cmtsHTML(pid);
+  repaintCmts(pid);paintCmtCount(pid);
   try{
     await set(hubRef('postCmt/'+pid+'/'+cid),null);
     await set(hubRef('posts/'+pid+'/cN'),(p&&p.cN)||0);
@@ -4955,8 +5091,7 @@ async function delCmt(pid,cid){
   }catch(e){
     cmtCache[pid]=before;
     if(p)p.cN=(p.cN||0)+1;
-    const b2=document.getElementById('cmt-'+pid);
-    if(b2)b2.innerHTML=cmtsHTML(pid);
+    repaintCmts(pid);paintCmtCount(pid);
     toast('Could not delete that');
   }
 }
@@ -4974,8 +5109,7 @@ async function sendCmt(pid){
   const p=feed.find(x=>x.id===pid);
   if(p)p.cN=(p.cN||0)+1;
   if(i)i.value='';
-  const box=document.getElementById('cmt-'+pid);
-  if(box)box.innerHTML=cmtsHTML(pid);
+  repaintCmts(pid);paintCmtCount(pid);
   try{
     await set(hubRef('postCmt/'+pid+'/'+cid),c);
     await set(hubRef('posts/'+pid+'/cN'),(p&&p.cN)||1);
@@ -5044,6 +5178,7 @@ async function clearNotifs(){
    The public card is all anyone gets by default. Only once you are
    friends does their share/ snapshot come into play, and only the
    parts they switched on. */
+let viewRoutine=null;   // the friend's routine currently on screen, and whose it is
 async function openUser(uidStr){
   if(!uidStr)return;
   if(user&&uidStr===user.uid){closeUser();setTab('profile');return;}
@@ -5085,6 +5220,9 @@ function paintUser(u,c,snap,flags){
   const box=document.getElementById('uv-body');
   if(!box)return;
   const fr=!!friends[u];
+  /* Import reads from here and nowhere else, so it can never reach a routine
+     the screen was not already allowed to show. */
+  viewRoutine=(fr&&snap&&snap.routine)?{uid:u,name:(c.n||c.u||'They'),r:snap.routine}:null;
   const act=userActions(u,fr);
 
   let body='';
@@ -5093,7 +5231,7 @@ function paintUser(u,c,snap,flags){
       Send a friend request. If they accept, you will see whatever they choose to share — routine, nutrition, grocery list or streak.</div>`;
   }else{
     const parts=[];
-    if(snap&&snap.routine)parts.push(routineHTML(snap.routine));
+    if(snap&&snap.routine)parts.push(routineHTML(snap.routine,u,c));
     if(snap&&snap.fuel)parts.push(fuelHTML(snap.fuel));
     if(snap&&snap.groc)parts.push(grocHTML(snap.groc));
     if(snap&&snap.streak)parts.push(streakHTML(snap.streak));
@@ -5110,19 +5248,25 @@ function paintUser(u,c,snap,flags){
     </div>
     ${body}`;
 }
-function routineHTML(r){
+function routineHTML(r,u,c){
   const sp=SPLITS.find(s=>s.v===r.split);
   const days=(r.days||[]);
   const ex=r.ex||{};
+  const nm=(c&&(c.n||c.u))||'them';
+  const filled=DAYS.filter(d=>ex[d]&&ex[d].length);
   return `<div class="pf-sec">Routine</div>
     <div class="card open"><div class="card-in" style="padding:15px">
       <div class="hint" style="margin:0 0 12px">${days.length?days.map(d=>DFULL[d]).join(' · '):'No fixed days'}${sp?' — '+esc(sp.t):''}</div>
-      ${DAYS.filter(d=>ex[d]&&ex[d].length).map(d=>`
+      ${filled.map(d=>`
         <div style="margin-bottom:13px">
-          <div class="eyebrow" style="margin-bottom:7px">${DFULL[d]}</div>
+          <div class="imp-h">
+            <div class="eyebrow">${DFULL[d]}</div>
+            ${u?`<button class="imp-b" onclick="openImport('${u}','${d}')">Import</button>`:''}
+          </div>
           ${ex[d].map(e=>`<div class="meal-item"><div class="meal-tx">${esc(e.n)}</div>
             <span class="tag">${e.s} sets${e.r?' × '+esc(e.r):''}</span></div>`).join('')}
         </div>`).join('')||'<div class="hint">No exercises added yet.</div>'}
+      ${filled.length?`<div class="hint">Import copies the exercises, sets and target reps onto your own week. Weights, rest timers and notes are not shared, so those start blank and are yours to set.</div>`:''}
     </div></div>`;
 }
 function fuelHTML(f){
@@ -5160,6 +5304,246 @@ function streakHTML(s){
     </div>`;
 }
 
+/* ════════════ IMPORTING A FRIEND'S ROUTINE ════════════
+   Visibility already has a rule: a routine is readable only by a friend, and
+   only while that friend has Routine switched on under "What friends can see".
+   Import is gated on exactly that rule and adds no second one — it reads the
+   snapshot the profile screen was already allowed to paint, so a routine you
+   cannot see is a routine you cannot import.
+
+   Two ways in. Just today swaps the day in memory and writes nothing, then
+   hands the real program straight back. Full import writes a plain copy onto
+   a day of your choosing: no owner, no reference, no thread back. Editing it
+   afterwards is editing your own exercise, and nothing either of you does
+   reaches the other. */
+function canImport(u,srcDay){
+  if(!u||!friends[u])return null;                     // not a friend → not visible → not importable
+  if(!viewRoutine||viewRoutine.uid!==u)return null;    // no shared routine on screen for this person
+  const list=((viewRoutine.r||{}).ex||{})[srcDay];
+  return (list&&list.length)?list:null;
+}
+/* A shared routine carries names, set counts and target reps — nothing else.
+   The copy turns that into real, empty, tickable sets. */
+function importedEx(list){
+  return (list||[]).slice(0,30).map(e=>({
+    n:String(e.n||'Exercise').slice(0,60),
+    reps:String(e.r||'').slice(0,20),
+    rest:90,note:'',
+    sets:Array.from({length:Math.max(1,Math.min(20,parseInt(e.s,10)||3))},()=>({}))
+  }));
+}
+/* The snapshot on screen can be a few seconds old, and a routine can be
+   edited, emptied or switched off in that time. Every import re-reads the
+   share node first, so what lands is what they have right now — and if the
+   permission behind it is gone, nothing lands at all. With no connection to
+   check against, what you were shown is what you get. */
+async function freshRoutine(u,srcDay){
+  const cached=canImport(u,srcDay);
+  if(!cached)return{ok:false,why:'gone'};
+  if(!db||!user)return{ok:true,list:cached};
+  let v;
+  try{
+    const s=await withTimeout(get(hubRef('share/'+u)),10000);
+    v=(s&&s.exists())?(s.val()||{}):{};
+  }catch(e){return{ok:true,list:cached};}
+  if(!friends[u])return{ok:false,why:'unfriended'};
+  const snap=v.snap&&v.snap.routine;
+  if(!(v.set&&v.set.routine)||!snap)return{ok:false,why:'hidden'};
+  const list=(snap.ex||{})[srcDay];
+  if(!list||!list.length)return{ok:false,why:'day'};
+  if(viewRoutine&&viewRoutine.uid===u)viewRoutine.r=snap;   // keep the screen honest too
+  return{ok:true,list,changed:JSON.stringify(list)!==JSON.stringify(cached)};
+}
+function importGone(why,name){
+  if(why==='unfriended')return 'You are no longer friends with '+name;
+  if(why==='hidden')return name+' has stopped sharing their routine';
+  if(why==='day')return name+' no longer trains that day';
+  return 'That routine is not there any more';
+}
+function openImport(u,srcDay){
+  const list=canImport(u,srcDay);
+  if(!list){toast('You can only import a routine you can see');return;}
+  if(role==='guest'){toast('You are watching a session');return;}
+  const nm=viewRoutine.name||'They';
+  const sets=list.reduce((a,e)=>a+(parseInt(e.s,10)||0),0);
+  sheetCtx={imp:{uid:u,src:srcDay,name:nm}};
+  openSheet(`<div class="sheet-t">${esc(nm)}'s ${DFULL[srcDay]}</div>
+    <div class="sheet-s">${list.length} exercise${list.length===1?'':'s'} · ${sets} set${sets===1?'':'s'}. How do you want it?</div>
+    <div class="opt" onclick="importToday()">
+      <div class="opt-i">⚡</div><div class="opt-t"><b>Just today</b>
+        <i>Run it now in place of your own day. Nothing is saved — your program comes straight back when you are done.</i></div>
+      <div class="pf-row-v">›</div></div>
+    <div class="opt" onclick="importFull()">
+      <div class="opt-i">⬇️</div><div class="opt-t"><b>Full import</b>
+        <i>Keep your own copy on a day of your week. Edit it, train it, delete it — it is yours, and ${esc(nm)} never sees what you do with it.</i></div>
+      <div class="pf-row-v">›</div></div>
+    <div class="sheet-a"><button class="btn ghost btn-full" onclick="closeSheet()">Cancel</button></div>`,true);
+}
+
+/* ── just today ──
+   The live-session guest already proves the shape: work on someone else's
+   program with your own parked beside it, and put it back untouched. A day
+   that already holds work is never quietly stepped over — you are told what
+   is being set aside and what comes back before anything moves. */
+function importToday(){
+  const c=sheetCtx.imp||{};
+  if(!canImport(c.uid,c.src)){toast('You can only import a routine you can see');return;}
+  if(sessId){toast('Leave the live session first');return;}
+  if(borrow)endBorrow(true);            // count what is really yours, not what is on loan
+  const t=todayKey();
+  const mine=(EX[t]||[]).length;
+  const logged=Object.keys(ws).filter(k=>k.indexOf(t+'|')===0&&ws[k]&&ws[k].done).length;
+  const rest=!isTrainingDay(t);
+  if(!mine&&!logged&&!rest)return startBorrow();
+  const bits=[];
+  if(mine)bits.push(mine+' exercise'+(mine===1?'':'s'));
+  if(logged)bits.push(logged+' logged set'+(logged===1?'':'s'));
+  openSheet(`<div class="sheet-t">Your ${DFULL[t]} first</div>
+    <div class="sheet-s">${bits.length
+      ? 'You already have '+bits.join(' and ')+' on '+DFULL[t]+'.'
+      : DFULL[t]+' is a rest day for you.'}</div>
+    <div class="lock" style="text-align:left">
+      <b>Nothing of yours is lost</b>
+      ${bits.length
+        ? 'Your '+DFULL[t]+' is set aside exactly as it is — exercises, weights and every set you have ticked — and handed back the moment you tap Done on the borrowed day. It is never written over, because a borrowed day is never written at all.'
+        : DFULL[t]+' is unlocked for as long as you run their day, then goes back to being a rest day. Your week is not changed.'}
+    </div>
+    <div class="hint">Any cardio you have on ${DFULL[t]} stays where it is — that part of the day is still yours.</div>
+    <div class="sheet-a"><button class="btn ghost" onclick="openImport('${c.uid}','${c.src}')">Back</button>
+      <button class="btn pri" onclick="startBorrow()">Run ${esc((c.name||'their').split(' ')[0])}'s day</button></div>`,true);
+}
+async function startBorrow(){
+  const c=sheetCtx.imp||{};
+  if(sessId){toast('Leave the live session first');return;}
+  const fresh=await freshRoutine(c.uid,c.src);
+  if(!fresh.ok){closeSheet();toast(importGone(fresh.why,c.name||'They'));return;}
+  if(borrow)endBorrow(true);                 // one borrowed day at a time
+  const t=todayKey();
+  let parked=null;
+  try{parked=JSON.stringify(bundle());}catch(e){toast('Could not start that');return;}
+  borrow={uid:c.uid,name:c.name||'They',src:c.src,day:t,parked,pending:null,
+          keep:{openCards:{...openCards},openEx:{...openEx},day}};
+  EX[t]=importedEx(fresh.list);
+  // a borrowed day starts unticked; your own logging for today waits in the parked copy
+  Object.keys(ws).forEach(k=>{if(k.indexOf(t+'|')===0)delete ws[k];});
+  if(!(PREFS.trainDays||[]).includes(t))PREFS.trainDays=[...(PREFS.trainDays||[]),t];
+  openCards.w=true;openEx={};
+  day=t;tab='train';jumpTop=true;
+  closeSheet();closeUser();
+  render();buzz([14,40,14]);
+  toast(fresh.changed
+    ? (c.name||'They')+' has changed this day — running their current one'
+    : 'Running '+(c.name||'their')+'’s '+DFULL[c.src]+' — today only');
+}
+/* Handing it back. Whatever they do to their routine afterwards — edit it,
+   empty it, stop sharing, unfriend you — cannot reach what is parked here,
+   because the parked copy is yours and was never theirs. */
+function endBorrow(silent){
+  if(!borrow)return;
+  const b=borrow;borrow=null;                // cleared first, so saving is live again
+  try{if(b.parked)applyBundle(JSON.parse(b.parked));}catch(e){}
+  /* An update from another device was held back while this ran. Take it now
+     if it is fuller and newer than what we just put back. */
+  try{
+    if(b.pending&&weigh(b.pending)>=weigh(bundle())&&(b.pending.ts||0)>localTs()){
+      applyBundle(b.pending);saveLocal();
+    }
+  }catch(e){}
+  openCards={...((b.keep&&b.keep.openCards)||{})};
+  openEx={...((b.keep&&b.keep.openEx)||{})};
+  day=todayKey();tab='train';jumpTop=true;
+  render();
+  if(!silent){buzz(10);toast('Back on your own program');}
+}
+
+/* ── full import ──
+   A day you already train is the normal case, not an error, so it is a
+   choice rather than a block: add the copy after what is there, or replace
+   the day outright. Both say plainly what happens to the exercises already
+   on it before you commit. */
+function importFull(){
+  const c=sheetCtx.imp||{};
+  if(!canImport(c.uid,c.src)){toast('You can only import a routine you can see');return;}
+  if(borrow){endBorrow(true);toast('Your own week is back — pick a day for the copy');}
+  sheetCtx.imp={...c,day:todayKey(),mode:'add'};
+  openSheet(`<div class="sheet-t">Which day?</div>
+    <div class="sheet-s">Pick the day of your own week this lands on. From then on it is your routine — ${esc(c.name||'they')} never sees your edits, and theirs never touch yours.</div>
+    <div class="dpick" id="imp-days">${DAYS.map(d=>
+      `<button class="dp${d===todayKey()?' on':''}" data-d="${d}" onclick="pickImportDay(this)">${d}</button>`).join('')}</div>
+    <div id="imp-mode"></div>
+    <div class="hint" id="imp-n"></div>
+    <div class="sheet-a"><button class="btn ghost" onclick="openImport('${c.uid}','${c.src}')">Back</button>
+      <button class="btn pri" id="imp-go" onclick="doImport()">Import</button></div>`,true);
+  paintImportDay();
+}
+function pickImportDay(el){
+  document.querySelectorAll('#imp-days .dp').forEach(b=>b.classList.toggle('on',b===el));
+  sheetCtx.imp={...(sheetCtx.imp||{}),day:el.dataset.d};
+  buzz(8);paintImportDay();
+}
+function pickImportMode(el){
+  sheetCtx.imp={...(sheetCtx.imp||{}),mode:el.dataset.m};
+  buzz(8);paintImportDay();
+}
+function paintImportDay(){
+  const c=sheetCtx.imp||{},d=c.day||todayKey();
+  const have=(EX[d]||[]).length;
+  const mode=c.mode==='replace'?'replace':'add';
+  const box=document.getElementById('imp-mode');
+  if(box)box.innerHTML=have?`<div class="fld" style="margin-top:14px">
+    <label class="fld-lbl">${DFULL[d]} already has ${have} exercise${have===1?'':'s'}</label>
+    <div class="seg" id="imp-seg">
+      <button class="seg-i${mode==='add'?' on':''}" data-m="add" onclick="pickImportMode(this)">Add alongside</button>
+      <button class="seg-i${mode==='replace'?' on':''}" data-m="replace" onclick="pickImportMode(this)">Replace the day</button>
+    </div></div>`:'';
+  const n=document.getElementById('imp-n');
+  if(n)n.textContent=!have
+    ? DFULL[d]+' is empty, so this becomes the whole day.'
+    : mode==='replace'
+      ? 'Your '+have+' exercise'+(have===1?'':'s')+' on '+DFULL[d]+' are deleted, along with anything logged against them. This cannot be undone.'
+      : 'The copy is added after what is already there — nothing of yours is removed.';
+  const go=document.getElementById('imp-go');
+  if(go){
+    go.textContent=have?(mode==='replace'?'Replace '+DFULL[d]:'Add to '+DFULL[d]):'Import to '+DFULL[d];
+    go.classList.toggle('danger',have&&mode==='replace');
+    go.classList.toggle('pri',!(have&&mode==='replace'));
+  }
+}
+async function doImport(){
+  const c=sheetCtx.imp||{};
+  const d=c.day||todayKey(),mode=c.mode==='replace'?'replace':'add';
+  const go=document.getElementById('imp-go');
+  if(go){if(go.disabled)return;go.disabled=true;go.textContent='Checking…';}
+  const fresh=await freshRoutine(c.uid,c.src);
+  if(!fresh.ok){closeSheet();toast(importGone(fresh.why,c.name||'They'));return;}
+  const copy=importedEx(fresh.list);
+  if(!copy.length){closeSheet();toast('Nothing to import');return;}
+  if(borrow)endBorrow(true);       // a real copy has to be able to save itself
+  const had=(EX[d]||[]).length;
+  if(mode==='replace'){
+    EX[d]=copy;
+    // the old exercises are gone, so their logging goes with them
+    Object.keys(ws).forEach(k=>{if(k.indexOf(d+'|')===0)delete ws[k];});
+    Object.keys(openEx).forEach(k=>{if(k.indexOf(d+'|')===0)delete openEx[k];});
+  }else{
+    /* Slots the copy is about to occupy may still hold logging from an
+       exercise that used to sit there. Imported sets start empty. */
+    for(let i=had;i<had+copy.length;i++)
+      Object.keys(ws).forEach(k=>{if(k.indexOf(d+'|'+i+'|')===0)delete ws[k];});
+    EX[d]=[...(EX[d]||[]),...copy];
+  }
+  if(!(PREFS.trainDays||[]).includes(d))
+    PREFS.trainDays=[...(PREFS.trainDays||[]),d].sort((a,b)=>DAYS.indexOf(a)-DAYS.indexOf(b));
+  sheetCtx={};
+  closeSheet();closeUser();
+  day=d;tab='train';openCards.w=true;jumpTop=true;
+  save();render();buzz([16,40,16]);
+  toast(mode==='replace'&&had
+    ? DFULL[d]+' replaced with '+copy.length+' exercise'+(copy.length===1?'':'s')
+    : copy.length+' exercise'+(copy.length===1?'':'s')+' copied to '+DFULL[d]);
+}
+
+
 /* ═══════════════════════════════════════════════════════════
    GLOBAL EXPORTS
 ═══════════════════════════════════════════════════════════ */
@@ -5186,6 +5570,7 @@ Object.assign(window,{
   openNotifs,tapNotif,clearNotifs,openShareSheet,toggleShare,openBioSheet,saveBio,
   paintHubBadges,friendCount,
   cancelReq,mnScan,mnPick,mnClose,likeCmt,delCmt,refreshUserActions,
+  openImport,importToday,startBorrow,importFull,pickImportDay,pickImportMode,doImport,endBorrow,
   liveType,liveMacro
 });
 
@@ -5207,6 +5592,7 @@ function rollover(){
   const t=todayStr();
   if(t!==lastDay){
     lastDay=t;
+    if(borrow)endBorrow(true);          // "today only" ends when today does
     if(role!=='guest')day=todayKey();
     render();
   }
@@ -5230,7 +5616,8 @@ if(auth){
     if(signingUp)return;
     if(u){
       user=u;
-      busy('Loading your program');
+      busy('Loading your program');   // this covers the app before the splash lifts
+      bootReady();
       useAccountKeys(u.uid);      // this account's own slot
       loadLocal();loadProfileLocal();
       await hydrateMirror();      // localStorage may have been evicted since last time
@@ -5258,20 +5645,40 @@ if(auth){
       }
     }else{
       user=null;
-      setTimeout(showAuth,2300);
+      /* Paint sign-in underneath the splash and only then let the splash go,
+         so the first thing to appear is the screen this person belongs on. */
+      showAuth(true);
+      bootReady();
     }
   });
 }else{
+  // no auth at all — nothing to wait for
+  bootReady();
   setTimeout(()=>{if(!PREFS.onboarded)runOnboarding().then(()=>{PREFS.onboarded=true;saveLocal();render();});},2400);
 }
 </script>
 <script>
+/* The splash used to leave on a stopwatch: 2.2s, whatever else was happening.
+   Firebase restores a session asynchronously, so on a cold start the timer
+   regularly won the race and the app underneath — already painted by the
+   first render() — was on screen for a moment before sign-in arrived. The
+   splash now leaves on a cue rather than a clock: whoever knows what the
+   next screen is calls bootReady(), and the splash holds until then, never
+   cutting the intro short and never outstaying a slow answer by more than
+   the safety net below. */
 (function(){
+  var MIN=2200, NET=7000, t0=Date.now(), gone=false, armed=false;
   function drop(){
+    if(gone)return;gone=true;
     var l=document.getElementById('loader');if(!l)return;
     l.classList.add('hidden');setTimeout(function(){l.style.display='none';},650);
   }
-  setTimeout(drop,2200);setTimeout(drop,4200);
+  window.__bootReady=function(){
+    if(armed||gone)return;armed=true;
+    setTimeout(drop,Math.max(0,MIN-(Date.now()-t0)));   // let the intro finish
+  };
+  // if the answer never comes — blocked SDK, dead network — do not trap anyone
+  setTimeout(function(){window.__bootReady();},NET);
 })();
 </script>
 </body>
