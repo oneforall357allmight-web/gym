@@ -368,11 +368,12 @@ body::after{
    so a long day — and every day in a live session, where each exercise is
    expanded for the follower — had its tail clipped off with nothing able to
    scroll to it. The page is the scroller; a card must never cap what the page
-   can reach. Row sizing collapses to nothing when closed and to exactly the
-   content height when open, so there is no ceiling left to hit. */
-.card-b{display:grid;grid-template-rows:0fr;overflow:hidden;transition:grid-template-rows .42s var(--ez-out)}
-.card-b.open{grid-template-rows:1fr}
-.card-b>*{min-height:0}
+   can reach, so the open state carries no ceiling at all.
+   Closed is left exactly as it always was: a zero-height box that clips. The
+   grid-row version of this collapsed to a sliver instead of to nothing on
+   iOS, which is why closed cards were leaking their contents. */
+.card-b{max-height:0;overflow:hidden;transition:max-height .42s var(--ez-out)}
+.card-b.open{max-height:none}
 .card-in{padding:0 13px 13px}
 
 /* ═══ EXERCISE ═══ */
@@ -393,9 +394,8 @@ body::after{
 .tag.c{background:var(--cyan-d);color:var(--cyan)}
 .ex-p{font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:700;color:var(--txt3);flex-shrink:0}
 .ex-p.done{color:var(--green)}
-.ex-b{display:grid;grid-template-rows:0fr;overflow:hidden;transition:grid-template-rows .38s var(--ez-out)}
-.ex-b.open{grid-template-rows:1fr}
-.ex-b>*{min-height:0}
+.ex-b{max-height:0;overflow:hidden;transition:max-height .38s var(--ez-out)}
+.ex-b.open{max-height:none}
 .ex-in{padding:0 13px 13px}
 .ex-note{font-size:11.5px;color:var(--txt3);line-height:1.55;padding:9px 11px;background:var(--well2);
   border-radius:9px;border-left:2px solid var(--gold-d3);margin-bottom:11px}
