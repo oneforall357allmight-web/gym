@@ -291,6 +291,11 @@ body::after{
 .day.rest{background:transparent;border-style:dashed}
 .day.rest .day-n{color:var(--txt4)}
 .day.rest .day-bar{background:var(--line)}
+/* the pill shares its class name with the rest-day screen below, and was
+   picking up that screen's 34px padding and glow — which is what made rest
+   days sit taller and lower than training days */
+.day.rest{padding:0;margin:0;border-radius:13px;text-align:initial}
+.day.rest::before{content:none}
 /* today: gold outline. selected: filled. both can be true at once. */
 .day.today{border-color:var(--gold-d3);border-style:solid}
 .day.today .day-n{color:var(--gold)}
@@ -299,7 +304,7 @@ body::after{
 /* very narrow phones */
 @media (max-width:359px){
   .days{gap:4px}
-  .day{height:48px;border-radius:11px;gap:6px}
+  .day,.day.rest{height:48px;border-radius:11px;gap:6px}
   .day-n{font-size:9px}
   .day-bar{width:18px}
 }
@@ -943,6 +948,123 @@ body::after{
 .saved.bad{background:rgba(214,64,64,.16);border-color:rgba(214,64,64,.45);color:#ff7a7a;
   cursor:pointer;opacity:1}
 .saved.bad,.saved.warn{pointer-events:auto}
+
+/* ═══════════════════════════════════════════════════════════
+   ADDED — reset, finishing a day, progress charts, safety
+═══════════════════════════════════════════════════════════ */
+:root{--c-lift:var(--gold);--c-fuel:var(--cyan)}
+/* the light-theme cyan is 2.9:1 on paper; charts need 3:1, so their bars go one step deeper */
+[data-theme="light"]{--c-fuel:#0B8886}
+.link-btn{border:0;background:none;color:var(--gold);font:inherit;font-weight:600;cursor:pointer;padding:0;text-decoration:none}
+.link-btn:active{opacity:.6}
+.auth-err.ok{color:var(--green)}
+.agree{display:flex;gap:10px;align-items:flex-start;margin:4px 0 14px;font-size:12px;line-height:1.5;color:var(--txt3);cursor:pointer}
+.agree input{width:18px;height:18px;margin-top:1px;accent-color:var(--gold);flex-shrink:0}
+.row3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:6px}
+.row3 .inp{padding:12px 8px;text-align:center;font-size:15px}
+
+/* finish */
+.fin-btn{margin:4px 0 14px;gap:9px}
+.fin-btn svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.fin-n{font-size:11px;font-weight:700;opacity:.75;padding:3px 7px;border-radius:7px;background:rgba(0,0,0,.12)}
+.btn:not(.pri) .fin-n{background:var(--surf2)}
+.fin-stats{margin:4px 0 12px}
+.fin-stats .stat-v{font-size:21px}
+.fin-list{border:1px solid var(--line);border-radius:var(--r-m);padding:4px 12px;background:var(--well);margin-bottom:10px;max-height:34vh;overflow-y:auto}
+.fin-ex{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:9px 0;border-bottom:1px solid var(--line)}
+.fin-ex:last-child{border-bottom:0}
+.fin-ex b{font-size:13px;font-weight:600;min-width:0}
+.fin-ex i{font-style:normal;font-size:11px;color:var(--txt3);text-align:right;flex-shrink:0;max-width:60%}
+.fin-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 10px}
+.fin-tgt{display:block;font-style:normal;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--txt4);margin-top:5px}
+.brw.stale{background:var(--surf);border-color:var(--line2)}
+.stale-a{display:flex;flex-direction:column;gap:6px;flex-shrink:0}
+.brw-x.ghost{background:transparent;border:1px solid var(--line2);color:var(--txt3)}
+
+/* progress */
+.prog-rng{margin:6px 0 12px}
+.ch-card .card-in{padding:14px 13px 13px}
+.ch-h{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px}
+.ch-t{flex:1;min-width:0}
+.ch-t b{display:block;font-size:14.5px;font-weight:600;letter-spacing:-.01em}
+.ch-t i{display:block;font-style:normal;font-size:11px;color:var(--txt3);margin-top:3px;line-height:1.45}
+.ch-tog{border:1px solid var(--line);background:transparent;color:var(--txt3);border-radius:8px;padding:5px 10px;
+  font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;cursor:pointer;flex-shrink:0}
+.ch-tog:active{transform:scale(.94)}
+.ch{position:relative}
+.ch svg{display:block;width:100%;height:auto;overflow:visible;touch-action:pan-y;outline:none}
+.ch svg:focus-visible{outline:2px solid var(--gold);outline-offset:4px;border-radius:6px}
+.ch-grid,.ch-base{stroke:var(--line);stroke-width:1;shape-rendering:crispEdges}
+.ch-base{stroke:var(--line2)}
+.ch-yl,.ch-xl,.ch-tl{font-family:'JetBrains Mono',monospace;font-size:9.5px;fill:var(--txt4)}
+.ch-tl{fill:var(--txt3)}
+.ch-bar{transition:opacity .15s}
+.ch.picking .ch-bar:not(.on){opacity:.4}
+.ch-tgt{stroke:var(--txt3);stroke-width:1.2;stroke-dasharray:4 4}
+.ch-line{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.ch-area{opacity:.1;stroke:none}
+.ch-dot{stroke:var(--ink2);stroke-width:2;transition:r .15s}
+.ch-dot.on{r:6}
+.ch-cross{stroke:var(--line3);stroke-width:1}
+.ch-tip{min-height:40px;margin:2px 0 6px;display:flex;flex-direction:column;justify-content:center}
+.ch-tip b{font-size:19px;font-weight:700;color:var(--txt);letter-spacing:-.01em;line-height:1.15}
+.ch-tip span{font-size:11px;color:var(--txt3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.ch-ctl{display:flex;flex-direction:column;gap:8px;margin-bottom:6px}
+.ch-sel{padding:11px 36px 11px 13px;font-size:14px;appearance:none;-webkit-appearance:none;cursor:pointer;
+  background-image:linear-gradient(45deg,transparent 50%,var(--txt3) 50%),linear-gradient(135deg,var(--txt3) 50%,transparent 50%);
+  background-position:calc(100% - 18px) 50%,calc(100% - 13px) 50%;background-size:5px 5px;background-repeat:no-repeat}
+.ch-sel option{background:var(--ink3);color:var(--txt)}
+.ch-seg{margin-bottom:0}
+.ch-seg .seg-i{padding:8px 10px;font-size:11.5px}
+.ch-pr{margin-top:12px;font-size:12px;color:var(--txt3)}
+.ch-pr b{color:var(--txt);font-weight:700}
+.ch-tbl{max-height:260px;overflow-y:auto;border:1px solid var(--line);border-radius:var(--r-m)}
+.ch-tbl table{width:100%;border-collapse:collapse;font-size:12.5px}
+.ch-tbl th{position:sticky;top:0;background:var(--ink3);text-align:left;font-family:'JetBrains Mono',monospace;font-size:9.5px;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--txt3);font-weight:600;padding:9px 12px}
+.ch-tbl td{padding:9px 12px;border-top:1px solid var(--line)}
+.ch-tbl td.mono{text-align:right;white-space:nowrap}
+.ch-tbl th:last-child{text-align:right}
+
+/* hub photos: the box takes the photo's own shape; nothing is cropped */
+.post-im.ar{min-height:0}
+.post-im.ar img{width:100%;height:100%;object-fit:contain}
+.post-im:not(.ar) img{height:auto;max-height:80vh;object-fit:contain}
+.pv-res{position:absolute;left:8px;bottom:8px;background:rgba(0,0,0,.6);color:#fff;font-size:9.5px;padding:3px 7px;border-radius:6px}
+.plb{touch-action:none;overflow:hidden}
+.plb img{touch-action:none;user-select:none;-webkit-user-select:none;-webkit-user-drag:none;will-change:transform;cursor:zoom-in}
+.plb.zoomed img{cursor:grab}
+.plb-st{position:absolute;left:50%;bottom:calc(var(--sab) + 22px);transform:translateX(-50%);background:rgba(0,0,0,.62);
+  color:#fff;font-size:10.5px;padding:7px 13px;border-radius:20px;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap}
+.plb-st.show{opacity:1}
+.plb-x{z-index:2}
+
+/* terms / privacy */
+.doc{position:fixed;inset:0;z-index:9700;background:var(--ink);overflow-y:auto;display:none;
+  padding:calc(var(--sat) + 14px) 18px calc(var(--sab) + 40px)}
+.doc.active{display:block;animation:uvIn .3s var(--ez-out)}
+.doc-w{max-width:620px;margin:0 auto}
+.doc-w .sheet-t{margin:6px 0 14px}
+.doc-in{font-size:13.5px;line-height:1.65;color:var(--txt2)}
+.doc-in p{margin-bottom:12px}
+.doc-in b{color:var(--txt)}
+.doc-in ul{margin:0 0 12px 18px}
+.doc-in li{margin-bottom:6px}
+.doc-in a{color:var(--gold)}
+.sheet .doc-in{max-height:46vh;overflow-y:auto;border:1px solid var(--line);border-radius:var(--r-m);padding:12px 14px;background:var(--well)}
+
+/* safety */
+.uv-safe{display:flex;justify-content:center;gap:22px;margin:18px 0 6px}
+.mod-i{border:1px solid var(--line);border-radius:var(--r-m);padding:11px 12px;margin-bottom:9px;background:var(--surf)}
+.mod-h{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.mod-h .ca-t{margin-left:auto;flex:0}
+.mod-p{font-size:13px;line-height:1.5;margin-top:8px;word-break:break-word;white-space:pre-wrap}
+.del-list{margin:0 0 14px 18px;font-size:13px;line-height:1.6;color:var(--txt2)}
+.del-list li{margin-bottom:4px}
+
+/* a first visit with no signal */
+.ld-help{position:relative;font-size:12.5px;color:var(--txt3);text-align:center;max-width:280px;line-height:1.55;margin-top:18px}
+.ld-retry{position:relative;margin-top:18px;min-width:160px}
 </style>
 </head>
 <body>
@@ -968,15 +1090,24 @@ body::after{
       <button class="auth-tab" id="tab-up" onclick="switchAuth('up')">Create account</button>
     </div>
     <div id="pane-in">
-      <div class="fld"><label class="fld-lbl">Username or email</label>
-        <input class="inp" id="li-user" type="text" placeholder="you@example.com" autocomplete="username" autocapitalize="none"
+      <div class="fld"><label class="fld-lbl">Email</label>
+        <input class="inp" id="li-user" type="email" placeholder="you@example.com" autocomplete="email" autocapitalize="none"
           onkeydown="if(event.key==='Enter')document.getElementById('li-pass').focus()"></div>
       <div class="fld"><label class="fld-lbl">Password</label>
         <input class="inp" id="li-pass" type="password" placeholder="••••••••" autocomplete="current-password"
           onkeydown="if(event.key==='Enter')doLogin()"></div>
       <button class="btn pri btn-full" onclick="doLogin()">Sign in</button>
       <div class="auth-err" id="err-in"></div>
-      <div class="auth-note">Forgot your password? Email <a href="mailto:haitamahir@gmail.com">haitamahir@gmail.com</a> for a reset.</div>
+      <div class="auth-note"><button class="link-btn" onclick="switchAuth('reset')">Forgot your password?</button></div>
+    </div>
+    <div id="pane-reset" style="display:none">
+      <div class="sheet-s" style="margin-bottom:14px">Enter the email you signed up with. We'll send a link to choose a new password.</div>
+      <div class="fld"><label class="fld-lbl">Email</label>
+        <input class="inp" id="rs-email" type="email" placeholder="you@example.com" autocomplete="email" autocapitalize="none"
+          onkeydown="if(event.key==='Enter')doReset()"></div>
+      <button class="btn pri btn-full" id="rs-go" onclick="doReset()">Send reset link</button>
+      <div class="auth-err" id="err-rs"></div>
+      <div class="auth-note"><button class="link-btn" onclick="switchAuth('in')">‹ Back to sign in</button></div>
     </div>
     <div id="pane-up" style="display:none">
       <div class="row2">
@@ -996,6 +1127,9 @@ body::after{
       <div class="fld"><label class="fld-lbl">Password</label>
         <input class="inp" id="su-pass" type="password" placeholder="6+ characters" autocomplete="new-password"
           onkeydown="if(event.key==='Enter')doSignup()"></div>
+      <label class="agree"><input type="checkbox" id="su-agree">
+        <span>I agree to the <button type="button" class="link-btn" onclick="event.preventDefault();openTermsDoc()">Terms &amp; Community Guidelines</button>
+        and the <button type="button" class="link-btn" onclick="event.preventDefault();openPrivacyDoc()">Privacy Policy</button>. No harassment, hate or explicit content — zero tolerance.</span></label>
       <button class="btn pri btn-full" onclick="doSignup()">Create account</button>
       <div class="auth-err" id="err-up"></div>
     </div>
@@ -1092,7 +1226,7 @@ body::after{
   <button class="nav-i" id="nav-food" onclick="setTab('food')">
     <svg viewBox="0 0 24 24"><path d="M3 2v7a3 3 0 003 3 3 3 0 003-3V2M6 2v6M18 2c-1.7 0-3 2.2-3 5s1.3 4 3 4"/><path d="M6 12v10M18 11v11"/></svg><span>Fuel</span></button>
   <button class="nav-i" id="nav-cal" onclick="setTab('cal')">
-    <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><span>Streak</span></button>
+    <svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 6-7"/></svg><span>Progress</span></button>
   <button class="nav-i" id="nav-profile" onclick="setTab('profile')">
     <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>You</span></button>
 </nav>
@@ -1147,21 +1281,34 @@ body::after{
 <div class="uv" id="uv"><div id="uv-body"></div></div>
 
 <!-- ═══════════ POST IMAGE LIGHTBOX ═══════════ -->
-<div class="plb" id="plb" onclick="closeLb()">
-  <button class="plb-x" onclick="closeLb()">×</button>
-  <img id="plb-img" src="" alt="">
+<div class="plb" id="plb" onclick="lbBackdrop(event)">
+  <button class="plb-x" onclick="closeLb()" aria-label="Close">×</button>
+  <img id="plb-img" src="" alt="Photo" draggable="false">
+  <div class="plb-st mono" id="plb-st"></div>
+</div>
+
+<!-- ═══════════ TERMS / PRIVACY / GUIDELINES ═══════════ -->
+<div class="doc" id="doc" role="dialog" aria-modal="true" aria-labelledby="doc-t">
+  <div class="doc-w">
+    <button class="uv-x" onclick="closeDoc()">‹ Back</button>
+    <div class="sheet-t" id="doc-t"></div>
+    <div class="doc-in" id="doc-b"></div>
+  </div>
 </div>
 
 <input type="file" id="file-in" accept="image/*">
 <div class="toast" id="toast"></div>
 
-<script type="module" onerror="document.getElementById('loader').style.display='none'">
+<script type="module" onerror="window.__bootFail&&window.__bootFail()">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import { getDatabase, ref, set, onValue, off, get, onDisconnect, remove,
          update, push, child, query, orderByChild, orderByKey, limitToLast, limitToFirst,
-         startAt, endAt, endBefore, onChildAdded, serverTimestamp }
+         startAt, endAt, endBefore, equalTo, onChildAdded, serverTimestamp, runTransaction }
   from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile,
+         sendPasswordResetEmail, deleteUser, reauthenticateWithCredential, EmailAuthProvider }
+  from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+window.__unitBooted=true;   // the splash's safety net checks this — see the classic script at the end
 
 const firebaseConfig={
   apiKey:"AIzaSyCf2A5-Nw3QKXi4GLJm42rGRruggOjqsNQ",
@@ -1175,6 +1322,13 @@ const firebaseConfig={
 let db=null,auth=null;
 try{const app=initializeApp(firebaseConfig);db=getDatabase(app);auth=getAuth(app);}
 catch(e){console.warn('Firebase unavailable',e);}
+
+/* ── Things to fill in before launch ─────────────────────────
+   The app stores need a way to reach you and a privacy policy at a real URL.
+   Leave a URL blank and the app shows its own built-in summary instead. */
+const SUPPORT_EMAIL='haitamahir@gmail.com';   // shown in the app as the contact address — swap for a support inbox
+const PRIVACY_URL='';                          // e.g. 'https://yoursite.com/privacy'
+const TERMS_URL='';                            // e.g. 'https://yoursite.com/terms'
 
 /* ═══════════════════════════════════════════════════════════
    CONSTANTS
@@ -1215,6 +1369,12 @@ let ws={};                 // set state {done,w,r}
 let wtr={};                // water per day
 let calDone={};            // {YYYY-MM-DD:true}
 let PREFS={trainDays:[],split:'',doesCardio:false,onboarded:false,theme:'system'};
+/* History — what actually happened, by date. Kept out of the program bundle
+   on purpose: the bundle is rewritten on every save, and a year of workouts
+   riding along with each keystroke would be a slow, expensive save.
+   It lives in users/{uid}/hist and is written one day at a time. */
+let HIST={w:{},f:{}};      // w: {date:[session…]}  f: {date:{kcal,p,c,fat,water,…}}
+let histQ={};              // 'w/2026-09-23' → true while that day still has to reach the cloud
 
 let user=null,profile=null;
 let tab='train',day=todayKey(),openCards={},openEx={},calOffset=0;
@@ -1242,6 +1402,27 @@ function todayStr(){const n=new Date();return n.getFullYear()+'-'+String(n.getMo
 function dstr(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function todayKey(){return DAYS[(new Date().getDay()+6)%7];}
 function uid(p){return p+Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+/* The most recent date (today or earlier) that falls on weekday d. Finishing
+   Monday on a Wednesday logs it for the Monday just gone, not for today. */
+function lastDateFor(d){
+  const n=new Date(),back=((new Date().getDay()+6)%7-DAYS.indexOf(d)+7)%7;
+  n.setDate(n.getDate()-back);return dstr(n);
+}
+function weekStart(){const n=new Date();n.setDate(n.getDate()-(n.getDay()+6)%7);return dstr(n);}   // this week's Monday
+function parseDate(s){const [y,m,d]=String(s).split('-').map(Number);return new Date(y,(m||1)-1,d||1);}
+function fmtDate(s,opt){try{return parseDate(s).toLocaleDateString(undefined,opt||{weekday:'short',month:'short',day:'numeric'});}catch(e){return s;}}
+function num(v){const n=parseFloat(String(v??'').replace(',','.'));return isFinite(n)?n:0;}
+function firstNum(v){const m=String(v??'').replace(/,/g,'').match(/\d+(\.\d+)?/);return m?parseFloat(m[0]):0;}
+function unit(){return PREFS.unit==='kg'?'kg':'lb';}
+function conv(v,from){const to=unit();from=from==='kg'?'kg':'lb';if(from===to)return v;return from==='kg'?v*2.20462:v/2.20462;}
+function compact(n){
+  n=Math.round(n||0);const a=Math.abs(n);
+  if(a>=1e6)return (n/1e6).toFixed(a>=1e7?0:1).replace(/\.0$/,'')+'M';
+  if(a>=1e4)return (n/1e3).toFixed(0)+'k';
+  if(a>=1e3)return (n/1e3).toFixed(1).replace(/\.0$/,'')+'k';
+  return String(n);
+}
+function commas(n){return Math.round(n||0).toLocaleString('en-US');}
 function buzz(p){if(navigator.vibrate)try{navigator.vibrate(p);}catch(e){}}
 function toast(m){const el=document.getElementById('toast');if(!el)return;el.textContent=m;el.classList.add('show');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),2400);}
 function icoCheck(){return '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>';}
@@ -1532,11 +1713,16 @@ function withTimeout(p,ms){
   });
 }
 let cloudBusy=false,cloudAgain=false,lastPushTs=0;
+/* While the first download after sign-in is still on its way, nothing goes up:
+   pushing this phone's copy before seeing the cloud's could bury changes
+   made on another device. Work is kept locally and sent the moment it lands. */
+let cloudReady=true;
 async function cloudSave(){
   clearTimeout(cloudT);cloudT=null;
   if(borrow)return false;               // never upload a borrowed routine
   saveLocal();
   if(!user||!db){setSync('local');return false;}
+  if(!cloudReady){dirty=true;paintSaveBtn();return false;}
   /* Two overlapping writes can land out of order, and then the older one is
      what the account keeps. Run them one at a time, and remember that another
      is owed so nothing entered during a slow write is dropped. */
@@ -1631,8 +1817,9 @@ async function cloudLoad(uidStr){
 }
 // Anything that failed gets another go — on a timer, on refocus, on reconnect.
 async function flushPending(){
-  if(!dirty||!user||!db)return;
-  if(tearing)return;
+  if(!user||!db||tearing)return;
+  if(histOwed())histFlush();
+  if(!dirty)return;
   await cloudSave();
 }
 /* ── Live account watch ──────────────────────────────────────
@@ -1640,13 +1827,13 @@ async function flushPending(){
    reload. The sign-in rule applies here too: fuller and newer wins, so an
    update arriving from elsewhere can never wipe something typed here a
    second ago, and an empty remote can never wipe a real program. */
-let ownRef=null;
+let ownRef=null,ownOff=null;
 function watchOwnData(uidStr){
   if(!db)return;
   stopWatchOwnData();
   try{
     ownRef=ref(db,'users/'+uidStr+'/data');
-    onValue(ownRef,s=>{
+    ownOff=onValue(ownRef,s=>{
       if(!s||!s.exists())return;
       if(tearing||!user||user.uid!==uidStr)return;
       if(role==='guest')return;            // the guest is looking at someone else's program
@@ -1670,8 +1857,12 @@ function watchOwnData(uidStr){
     },err=>{setSync(classifyErr(err),(err&&err.message)||'');});
   }catch(e){}
 }
+/* onValue() hands back the function that detaches it. Passing that function
+   to off() — which is what every listener in this file used to do — detaches
+   nothing, because off() looks for the original callback. Call it instead. */
+function detach(fn){try{if(typeof fn==='function')fn();}catch(e){}}
 function stopWatchOwnData(){
-  try{if(ownRef)off(ownRef);}catch(e){}
+  detach(ownOff);ownOff=null;
   ownRef=null;
 }
 
@@ -1701,11 +1892,11 @@ function beaconSave(){
   }catch(e){}
 }
 function parkNow(){
-  try{saveLocal();saveProfileLocal();beaconSave();}catch(e){}
+  try{saveLocal();saveProfileLocal();histSaveLocal();beaconSave();}catch(e){}
 }
 function startRetryLoop(){
   watchClock();
-  setInterval(()=>{if(dirty)flushPending();},8000);
+  setInterval(()=>{if(dirty||histOwed())flushPending();},8000);
   setInterval(()=>refreshIdToken(),15*60*1000);
   window.addEventListener('online',()=>{setSync('saving');flushPending();});
   window.addEventListener('offline',()=>setSync('offline'));
@@ -1848,6 +2039,334 @@ function applyBundle(d){
   if(d.calDone)calDone=d.calDone;
   if(d.PREFS)PREFS={...PREFS,...d.PREFS};
 }
+
+/* ═══════════════════════════════════════════════════════════
+   HISTORY — finished days, stored by date
+
+   Same promise as the program: on this device first (localStorage and the
+   IndexedDB mirror), then the cloud. Each finished day is its own small
+   write to users/{uid}/hist/w|f/{date}; a day that could not be sent stays
+   in histQ and goes up on the next retry, reconnect or launch.
+═══════════════════════════════════════════════════════════ */
+let histKey='unit-hist:local',histBusy=false,histLoadedAt=0;
+const kept=x=>x!==null&&x!==undefined;   // not filter(Boolean): a 0 is a real number here
+function toArr(v){if(Array.isArray(v))return v.filter(kept);if(v&&typeof v==='object')return Object.keys(v).sort((a,b)=>a-b).map(k=>v[k]).filter(kept);return [];}
+// Firebase hands arrays back as objects when it feels like it — flatten on the way in
+function histNormalize(){
+  const w={};
+  Object.keys(HIST.w||{}).forEach(dt=>{
+    const list=toArr(HIST.w[dt]).map(s=>({...s,ex:toArr(s.ex).map(e=>({...e,s:toArr(e.s).map(p=>toArr(p).length?toArr(p):[num(p&&p.w),num(p&&p.r)])})),cardio:toArr(s.cardio)}));
+    if(list.length)w[dt]=list;
+  });
+  HIST.w=w;HIST.f=HIST.f||{};
+}
+function histSaveLocal(){
+  const v={w:HIST.w,f:HIST.f,q:histQ,ts:Date.now()};
+  try{localStorage.setItem(histKey,JSON.stringify(v));}catch(e){}
+  mirrorPut(histKey,v);
+}
+function histDays(v){return v?Object.keys(v.w||{}).length+Object.keys(v.f||{}).length:-1;}
+function histLoadLocal(){
+  let v=null;try{const r=localStorage.getItem(histKey);v=r?JSON.parse(r):null;}catch(e){}
+  HIST={w:(v&&v.w)||{},f:(v&&v.f)||{}};histQ=(v&&v.q)||{};
+  histNormalize();
+}
+// localStorage can be evicted while IndexedDB survives — take the fuller copy
+async function hydrateHistMirror(){
+  const k=histKey;
+  try{
+    const m=await mirrorGet(k);
+    if(!m||k!==histKey)return false;
+    if(histDays(m)<=histDays({w:HIST.w,f:HIST.f})&&!Object.keys(m.q||{}).length)return false;
+    HIST={w:{...(m.w||{}),...HIST.w},f:{...(m.f||{}),...HIST.f}};
+    histQ={...(m.q||{}),...histQ};
+    histNormalize();histSaveLocal();
+    return true;
+  }catch(e){return false;}
+}
+function histUseAccount(uidStr){histKey='unit-hist:'+(uidStr||'local');histLoadLocal();}
+/* The cloud is the truth, except for days this device still owes it. */
+async function histLoadCloud(uidStr){
+  if(!db||!uidStr)return false;
+  try{
+    const s=await withTimeout(get(ref(db,'users/'+uidStr+'/hist')),20000);
+    if(!user||user.uid!==uidStr)return false;
+    const v=(s&&s.exists()&&s.val())||{};
+    ['w','f'].forEach(k=>{
+      const remote=v[k]||{},local=HIST[k]||{},out={...remote};
+      Object.keys(histQ).forEach(p=>{
+        const [kk,dt]=p.split('/');if(kk!==k)return;
+        if(local[dt]!==undefined)out[dt]=local[dt];else delete out[dt];
+      });
+      HIST[k]=out;
+    });
+    histNormalize();histSaveLocal();histLoadedAt=Date.now();
+    histFlush();
+    return true;
+  }catch(e){return false;}
+}
+function histPut(path){histQ[path]=true;histSaveLocal();histFlush();}
+async function histFlush(){
+  if(histBusy||!user||!db||tearing)return;
+  const paths=Object.keys(histQ);if(!paths.length)return;
+  histBusy=true;
+  const me=user.uid;
+  try{
+    for(const p of paths){
+      const [k,dt]=p.split('/');
+      const val=(HIST[k]||{})[dt];
+      try{
+        await withTimeout(set(ref(db,'users/'+me+'/hist/'+k+'/'+dt),val===undefined?null:val),15000);
+        if(user&&user.uid===me){delete histQ[p];}
+      }catch(e){
+        if(classifyErr(e)==='blocked')setSync('blocked',(e&&e.message)||'');
+        break;                                  // try again on the next retry tick
+      }
+    }
+    histSaveLocal();
+  }finally{histBusy=false;}
+}
+function histOwed(){return Object.keys(histQ).length>0;}
+
+/* ═══════════════════════════════════════════════════════════
+   FINISHING A DAY
+   Finish logs what you did to history, clears the ticks, and leaves the
+   plan ready for next time — with this time's numbers as the starting
+   point. Nothing is lost: the ticks become a dated record.
+═══════════════════════════════════════════════════════════ */
+function hasVal(x){return x!==undefined&&x!==null&&String(x).trim()!=='';}
+// the numbers a set counts with: what was typed, else what was pre-filled from last time
+function setVals(d,ei,si){
+  const e=(EX[d]||[])[ei]||{},s=(e.sets||[])[si]||{},v=ws[setKey(d,ei,si)]||{};
+  const w=hasVal(v.w)?v.w:(hasVal(s.w)?s.w:''),r=hasVal(v.r)?v.r:(hasVal(s.r)?s.r:'');
+  return{w:Math.max(0,num(w)),r:Math.max(0,Math.round(num(r))),hasW:num(w)>0,hasR:num(r)>0};
+}
+function typedNotTicked(d){
+  let n=0;
+  (EX[d]||[]).forEach((e,ei)=>(e.sets||[]).forEach((s,si)=>{
+    const v=ws[setKey(d,ei,si)]||{};
+    if(!v.done&&(hasVal(v.w)||hasVal(v.r)))n++;
+  }));
+  return n;
+}
+function buildSession(d,withTyped){
+  const b=borrow&&borrow.day===d;
+  const out={id:uid('w'),day:d,name:b?(borrow.name+'’s '+DFULL[borrow.src]):DFULL[d],
+    unit:unit(),ex:[],vol:0,sets:0,reps:0,cardio:[]};
+  (EX[d]||[]).forEach((e,ei)=>{
+    const sets=[];
+    (e.sets||[]).forEach((s,si)=>{
+      const v=ws[setKey(d,ei,si)]||{};
+      if(!(v.done||(withTyped&&(hasVal(v.w)||hasVal(v.r)))))return;
+      const x=setVals(d,ei,si);sets.push([x.w,x.r]);
+    });
+    if(!sets.length)return;
+    let vol=0,top=0,e1=0,reps=0;
+    sets.forEach(([w,r])=>{
+      vol+=w*r;reps+=r;if(w>top)top=w;
+      // Epley estimate; past 12 reps it stops meaning much
+      if(w>0&&r>0&&r<=12){const est=r===1?w:w*(1+r/30);if(est>e1)e1=est;}
+    });
+    out.ex.push({n:String(e.n||'Exercise').slice(0,60),s:sets,vol:Math.round(vol),top,e1:Math.round(e1*10)/10});
+    out.vol+=vol;out.sets+=sets.length;out.reps+=reps;
+  });
+  const c=CARDIO[d]||{};
+  ['am','pc'].forEach(k=>{if(c[k]&&c[k].n&&st[d+'|'+k])out.cardio.push(String(c[k].n).slice(0,80));});
+  out.vol=Math.round(out.vol);
+  return out;
+}
+// when the ticks on a day were made — the newest one wins
+function tickDate(d){
+  let best='';
+  Object.keys(ws).forEach(k=>{if(k.indexOf(d+'|')===0&&ws[k]&&ws[k].done&&ws[k].d&&ws[k].d>best)best=ws[k].d;});
+  return best;
+}
+function tickedCount(d){return Object.keys(ws).filter(k=>k.indexOf(d+'|')===0&&ws[k]&&ws[k].done).length;}
+/* Ticks left over from an earlier week. They used to sit there silently and
+   greet you next Monday as if you had already trained. */
+function staleTicks(d){
+  const t=tickDate(d);
+  return (t&&t<lastDateFor(d))?t:'';
+}
+function fmtW(w){return (Math.round(w*10)/10).toLocaleString('en-US');}
+function finishBar(d){
+  if(role==='guest')return `<div class="hint" style="text-align:center;margin:4px 0 12px">The host logs this session when you finish.</div>`;
+  const list=EX[d]||[];if(!list.length)return '';
+  const done=tickedCount(d),p=dayProgress(d);
+  const cardio=['am','pc'].some(k=>st[d+'|'+k]);
+  const ready=done>0||cardio;
+  return `<button class="btn ${ready?'pri':''} btn-full fin-btn" onclick="openFinishWorkout('${d}')">
+    ${icoCheck()} Finish workout <span class="fin-n mono">${p.done}/${p.total}</span></button>`;
+}
+function staleBanner(d){
+  const t=staleTicks(d);if(!t||role==='guest')return '';
+  return `<div class="brw stale">
+    <div class="brw-i">🕘</div>
+    <div class="brw-t"><b>These ticks are from ${esc(fmtDate(t))}</b>
+      <i>Log them for that day, or clear them and start fresh.</i></div>
+    <div class="stale-a"><button class="brw-x" onclick="openFinishWorkout('${d}','${t}')">Log</button>
+      <button class="brw-x ghost" onclick="clearDayTicks('${d}')">Clear</button></div>
+  </div>`;
+}
+function clearDayTicks(d){
+  if(!confirm('Clear every tick and number typed on '+DFULL[d]+'? Your exercises stay.'))return;
+  Object.keys(ws).forEach(k=>{if(k.indexOf(d+'|')===0)delete ws[k];});
+  delete st[d+'|am'];delete st[d+'|pc'];
+  save();render();toast(DFULL[d]+' cleared');
+}
+function openFinishWorkout(d,date){
+  if(role==='guest'){toast('The host logs this session');return;}
+  if(!canWrite()){toast('Only the person in control can finish');return;}
+  const prev=(sheetCtx&&sheetCtx.fin&&sheetCtx.fin.d===d)?sheetCtx.fin:null;
+  const f=prev||{d,withTyped:false,keep:true,date:date||tickDate(d)||lastDateFor(d)};
+  if(date)f.date=date;
+  if(f.date>todayStr())f.date=todayStr();
+  sheetCtx={fin:f};
+  const s=buildSession(d,f.withTyped);
+  const loose=typedNotTicked(d);
+  if(!s.sets&&!s.cardio.length&&!loose){toast('Tick the sets you did, then finish');return;}
+  const u=unit(),blank=s.ex.reduce((a,e)=>a+e.s.filter(([w,r])=>!(r>0)).length,0);
+  const already=toArr(HIST.w[f.date]).length;
+  openSheet(`<div class="sheet-t">Finish ${esc(s.name)}</div>
+    <div class="sheet-s">Saves this workout to your history, then clears the ticks so ${DFULL[d]} is ready for next time.</div>
+    <div class="stats fin-stats">
+      <div class="stat"><div class="stat-v mono">${s.sets}</div><div class="stat-l">Sets</div></div>
+      <div class="stat"><div class="stat-v mono">${s.vol<1e5?commas(s.vol):compact(s.vol)}</div><div class="stat-l">${u} moved</div></div>
+      <div class="stat"><div class="stat-v mono">${s.reps}</div><div class="stat-l">Reps</div></div>
+    </div>
+    <div class="fin-list">${s.ex.map(e=>`<div class="fin-ex"><b>${esc(e.n)}</b>
+        <i class="mono">${e.s.map(([w,r])=>(w?fmtW(w):'bw')+'×'+(r||'?')).join(' · ')}</i></div>`).join('')}
+      ${s.cardio.map(c=>`<div class="fin-ex"><b>${esc(c)}</b><i class="mono">cardio ✓</i></div>`).join('')}
+      ${!s.ex.length&&!s.cardio.length?'<div class="hint">Nothing ticked yet.</div>':''}</div>
+    ${blank?`<div class="hint">${blank} set${blank===1?' has':'s have'} no reps entered, so ${blank===1?'it counts':'they count'} as a set but not toward volume.</div>`:''}
+    ${loose?`<div class="sh-row" style="margin-top:12px">
+      <div class="sh-t"><b>Count sets you typed but didn't tick</b><i>${loose} set${loose===1?' has':'s have'} numbers but no tick</i></div>
+      <div class="sw${f.withTyped?' on':''}" onclick="finToggle('withTyped')"></div></div>`:''}
+    <div class="sh-row">
+      <div class="sh-t"><b>Start next time from these numbers</b><i>Today's weights and reps become next ${DFULL[d]}'s placeholders</i></div>
+      <div class="sw${f.keep?' on':''}" onclick="finToggle('keep')"></div></div>
+    <div class="fld" style="margin-top:12px"><label class="fld-lbl">Date</label>
+      <input class="inp mono" type="date" id="fin-date" max="${todayStr()}" value="${esc(f.date)}" onchange="finDate(this.value)"></div>
+    ${already?`<div class="hint">You already logged ${already===1?'a workout':already+' workouts'} on this date — this one is added alongside.</div>`:''}
+    <div class="sheet-a"><button class="btn ghost" onclick="closeSheet()">Not yet</button>
+      <button class="btn pri" onclick="commitWorkout()">Log workout</button></div>`);
+}
+function finDate(v){if(sheetCtx.fin)sheetCtx.fin.date=v;}
+function finToggle(k){
+  const f=sheetCtx.fin;if(!f)return;
+  const di=document.getElementById('fin-date');if(di&&di.value)f.date=di.value;
+  f[k]=!f[k];buzz(8);openFinishWorkout(f.d);
+}
+function commitWorkout(){
+  const f=(sheetCtx||{}).fin;if(!f)return;
+  const di=document.getElementById('fin-date');
+  let date=(di&&di.value)||f.date||todayStr();
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(date))date=todayStr();
+  if(date>todayStr())date=todayStr();
+  const d=f.d;
+  const s=buildSession(d,f.withTyped);
+  if(!s.sets&&!s.cardio.length){toast('Nothing to log yet');return;}
+  s.ts=serverNow();
+  const wasBorrow=!!(borrow&&borrow.day===d);
+  if(!wasBorrow&&f.keep){
+    (EX[d]||[]).forEach((e,ei)=>(e.sets||[]).forEach((set,si)=>{
+      const v=ws[setKey(d,ei,si)]||{};
+      if(!(v.done||(f.withTyped&&(hasVal(v.w)||hasVal(v.r)))))return;
+      const x=setVals(d,ei,si);
+      if(x.hasW)set.w=String(Math.round(x.w*100)/100);
+      if(x.hasR)set.r=String(x.r);
+    }));
+  }
+  Object.keys(ws).forEach(k=>{if(k.indexOf(d+'|')===0)delete ws[k];});
+  delete st[d+'|am'];delete st[d+'|pc'];
+  if(wasBorrow)endBorrow(true);            // their day goes back; the record of it stays with you
+  calDone[date]=true;
+  const list=toArr(HIST.w[date]);list.push(s);HIST.w[date]=list;
+  sheetCtx={};closeSheet();
+  save();histPut('w/'+date);
+  render();
+  buzz([20,60,20,60,40]);
+  toast(s.vol?('Logged · '+commas(s.vol)+' '+s.unit+' moved'):('Logged · '+s.sets+' sets'));
+}
+
+/* ── fuel ── */
+function fuelTotals(){
+  let kcal=0,p=0,c=0,fat=0,mealsDone=0;
+  MEALS.forEach(m=>{
+    const items=m.items||[],n=items.length;if(!n)return;
+    const done=items.filter((_,ii)=>st[m.id+'|'+ii]).length;if(!done)return;
+    // part of a meal counts for part of its numbers
+    const k=done/n;if(done===n)mealsDone++;
+    kcal+=firstNum(m.cal)*k;p+=num(m.p)*k;c+=num(m.c)*k;fat+=num(m.f)*k;
+  });
+  return{kcal:Math.round(kcal),p:Math.round(p),c:Math.round(c),fat:Math.round(fat),
+    water:wtr[day]||0,meals:[mealsDone,MEALS.length],
+    supps:[SUPPS.filter((_,i)=>st['sp|'+i]).length,SUPPS.length]};
+}
+function fuelTicked(){
+  return MEALS.some(m=>(m.items||[]).some((_,ii)=>st[m.id+'|'+ii]))||SUPPS.some((_,i)=>st['sp|'+i])||(wtr[day]||0)>0;
+}
+// the first tick of a fresh day stamps the date the ticks belong to
+function toggleFuel(k){const fresh=!fuelTicked();st[k]=!st[k];if(fresh&&st[k])PREFS.fuelDate=todayStr();buzz(12);save();render();}
+function fuelStaleBanner(){
+  const t=PREFS.fuelDate;
+  if(!t||t>=todayStr()||!fuelTicked()||role==='guest')return '';
+  return `<div class="brw stale">
+    <div class="brw-i">🕘</div>
+    <div class="brw-t"><b>Ticks from ${esc(fmtDate(t))} are still here</b>
+      <i>Log that day, or clear the ticks and start today fresh.</i></div>
+    <div class="stale-a"><button class="brw-x" onclick="openFinishFuel('${t}')">Log</button>
+      <button class="brw-x ghost" onclick="clearFuelTicks()">Clear</button></div>
+  </div>`;
+}
+function resetFuelTicks(){
+  MEALS.forEach(m=>(m.items||[]).forEach((_,ii)=>{delete st[m.id+'|'+ii];}));
+  SUPPS.forEach((_,i)=>{delete st['sp|'+i];});
+  delete wtr[day];PREFS.fuelDate='';
+}
+function clearFuelTicks(){
+  if(!confirm('Clear every meal, supplement and water tick?'))return;
+  resetFuelTicks();save();render();toast('Ticks cleared');
+}
+function openFinishFuel(date){
+  if(role==='guest'){toast('The host logs this session');return;}
+  const t=fuelTotals();
+  const dt=date||((PREFS.fuelDate&&PREFS.fuelDate<=todayStr())?PREFS.fuelDate:todayStr());
+  const has=!!HIST.f[dt];
+  const tgt=k=>num(MACROS[k])?`<i class="fin-tgt">target ${commas(num(MACROS[k]))}</i>`:'';
+  const noCal=MEALS.some(m=>(m.items||[]).some((_,ii)=>st[m.id+'|'+ii])&&!firstNum(m.cal));
+  openSheet(`<div class="sheet-t">Finish the day</div>
+    <div class="sheet-s">Adds what you ate to your history and clears today's ticks. The numbers come from your meals — change anything that was different.</div>
+    <div class="fin-grid">
+      <div class="fld"><label class="fld-lbl">Calories</label><input class="inp mono" id="ff-kcal" type="number" inputmode="numeric" value="${t.kcal||''}" placeholder="0">${tgt('cal')}</div>
+      <div class="fld"><label class="fld-lbl">Protein g</label><input class="inp mono" id="ff-p" type="number" inputmode="numeric" value="${t.p||''}" placeholder="0">${tgt('protein')}</div>
+      <div class="fld"><label class="fld-lbl">Carbs g</label><input class="inp mono" id="ff-c" type="number" inputmode="numeric" value="${t.c||''}" placeholder="0">${tgt('carbs')}</div>
+      <div class="fld"><label class="fld-lbl">Fat g</label><input class="inp mono" id="ff-f" type="number" inputmode="numeric" value="${t.fat||''}" placeholder="0">${tgt('fat')}</div>
+    </div>
+    <div class="hint" style="margin-top:0">${t.meals[0]} of ${t.meals[1]} meals fully eaten · ${t.supps[0]} of ${t.supps[1]} supplements · ${t.water} glasses of water</div>
+    ${noCal?'<div class="hint">Some ticked meals have no calories set — add them under Edit meal so next time this fills itself in.</div>':''}
+    <div class="fld" style="margin-top:12px"><label class="fld-lbl">Date</label>
+      <input class="inp mono" type="date" id="ff-date" max="${todayStr()}" value="${esc(dt)}"></div>
+    ${has?'<div class="hint">You already logged this date — this replaces it.</div>':''}
+    <div class="sheet-a"><button class="btn ghost" onclick="closeSheet()">Not yet</button>
+      <button class="btn pri" onclick="commitFuel()">Log day</button></div>`);
+  sheetCtx={fuel:{water:t.water,meals:t.meals,supps:t.supps}};
+}
+function commitFuel(){
+  const c=(sheetCtx||{}).fuel||{};
+  const v=id=>Math.max(0,Math.round(num((document.getElementById(id)||{}).value)));
+  let date=((document.getElementById('ff-date')||{}).value)||todayStr();
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||date>todayStr())date=todayStr();
+  const e={kcal:v('ff-kcal'),p:v('ff-p'),c:v('ff-c'),fat:v('ff-f'),water:c.water||0,
+    meals:c.meals||[0,0],supps:c.supps||[0,0],ts:serverNow()};
+  if(!e.kcal&&!e.p&&!e.c&&!e.fat&&!e.water){toast('Enter what you ate first');return;}
+  HIST.f[date]=e;
+  resetFuelTicks();
+  sheetCtx={};closeSheet();
+  save();histPut('f/'+date);render();
+  buzz([20,60,20]);
+  toast('Logged · '+commas(e.kcal)+' kcal');
+}
 /* ═══════════════════════════════════════════════════════════
    THEME
 ═══════════════════════════════════════════════════════════ */
@@ -1887,7 +2406,10 @@ try{
 ═══════════════════════════════════════════════════════════ */
 function isTrainingDay(d){
   if(!PREFS.trainDays||!PREFS.trainDays.length)return true; // nothing set yet → everything open
-  return PREFS.trainDays.includes(d);
+  if(PREFS.trainDays.includes(d))return true;
+  // "just train today" opens one rest day for this week only
+  const o=PREFS.oneOff;
+  return !!(o&&o.d===d&&o.wk===weekStart());
 }
 function setKey(d,ei,si){return d+'|'+ei+'|'+si;}
 function setCount(d){return (EX[d]||[]).reduce((a,e)=>a+(e.sets||[]).length,0);}
@@ -1934,7 +2456,7 @@ function render(){
   const m=document.getElementById('main');
   if(tab==='train')m.innerHTML=viewTrain();
   else if(tab==='food')m.innerHTML=viewFood();
-  else if(tab==='cal')m.innerHTML=viewCal();
+  else if(tab==='cal')m.innerHTML=viewProgress();
   else if(tab==='hub'){
     /* The hub owns its own DOM. A save landing mid-sentence must not wipe
        a half-typed comment, so it is only rebuilt when it is not there. */
@@ -2029,13 +2551,14 @@ function viewTrain(){
   const d=day;
   const bw=borrowBanner(d);
   if(!isTrainingDay(d))return bw+restScreen(d);
-  let h=bw;
+  let h=bw+staleBanner(d);
   const c=CARDIO[d]||{};
   if(c.am&&c.am.n)h+=cardioCard(d,'am',c.am);
   h+=workoutCard(d);
   if(c.pc&&c.pc.n)h+=cardioCard(d,'pc',c.pc);
   if(PREFS.doesCardio&&!(c.am&&c.am.n)&&!(c.pc&&c.pc.n))
     h+=`<button class="add" onclick="openCardioSheet('${d}')">${icoPlus()} Add cardio for ${DFULL[d]}</button>`;
+  h+=finishBar(d);
   h+=photoCard();
   return h;
 }
@@ -2070,11 +2593,13 @@ function addTrainingDay(d){
   if(!PREFS.trainDays.includes(d))PREFS.trainDays=[...PREFS.trainDays,d].sort((a,b)=>DAYS.indexOf(a)-DAYS.indexOf(b));
   save();render();buzz([16,40,16]);toast(DFULL[d]+' added to your week');
 }
+/* This used to add the day to your week for good — the opposite of what the
+   button says. Now it opens the day until the week rolls over, and your
+   training days are left exactly as they were. */
 function trainAnyway(d){
   if(!EX[d])EX[d]=[];
-  CARDIO[d]=CARDIO[d]||{};CARDIO[d].oneOff=true;
-  if(!PREFS.trainDays.includes(d))PREFS.trainDays=[...PREFS.trainDays,d];
-  save();render();toast('Training unlocked for today');
+  PREFS.oneOff={d,wk:weekStart()};
+  save();render();toast(DFULL[d]+' unlocked for this week only');
 }
 
 function workoutCard(d){
@@ -2183,8 +2708,19 @@ function setField(k,f,v){ws[k]=ws[k]||{};ws[k][f]=v;save({quiet:true});}
 function toggleSet(d,ei,si,el){
   const k=setKey(d,ei,si);ws[k]=ws[k]||{};
   const on=!ws[k].done;ws[k].done=on;
+  const row=el.closest('.set');
+  if(on){
+    ws[k].d=todayStr();                         // which day this tick belongs to
+    /* Ticking a set with empty boxes means "did it as shown" — the greyed
+       numbers are last time's. Write them in, so what is logged is what
+       you can see. */
+    const s=((EX[d]||[])[ei]||{}).sets?.[si]||{};
+    const ins=row?row.querySelectorAll('.si'):[];
+    if(!hasVal(ws[k].w)&&hasVal(s.w)){ws[k].w=s.w;if(ins[0])ins[0].value=s.w;}
+    if(!hasVal(ws[k].r)&&hasVal(s.r)){ws[k].r=s.r;if(ins[1])ins[1].value=s.r;}
+  }
   el.classList.toggle('done',on);
-  const row=el.closest('.set');if(row)row.classList.toggle('done',on);
+  if(row)row.classList.toggle('done',on);
   if(on){el.classList.add('pop');setTimeout(()=>el.classList.remove('pop'),460);buzz([14,26,14]);}
   else buzz(8);
   save();
@@ -2207,6 +2743,8 @@ function refreshCounters(d,ei){
   if(strip[idx]){const bar=strip[idx].querySelector('.day-bar i');if(bar)bar.style.width=dp.pct+'%';}
   const cn=document.getElementById('wk-count');
   if(cn){cn.textContent=dp.done+'/'+dp.total;cn.classList.toggle('full',!!(dp.total&&dp.done===dp.total));}
+  const fb=document.querySelector('.fin-btn');
+  if(fb){const n=fb.querySelector('.fin-n');if(n)n.textContent=dp.done+'/'+dp.total;fb.classList.toggle('pri',dp.done>0);}
 }
 function toggleCheck(k){st[k]=!st[k];buzz(12);save();render();}
 function addSet(d,ei){
@@ -2234,13 +2772,13 @@ function delCardio(d,slot){
    FUEL TAB
 ═══════════════════════════════════════════════════════════ */
 function viewFood(){
-  let h=`<div class="eyebrow" style="margin:6px 0 10px">Daily targets</div>
+  let h=fuelStaleBanner()+`<div class="eyebrow" style="margin:6px 0 10px">Daily targets</div>
   <div class="macros">
     ${[['cal','kcal'],['protein','protein'],['carbs','carbs'],['fat','fat']].map(([k,l])=>
       `<div class="macro"><div class="macro-l">${l}</div>
        <input class="macro-i mono" type="number" inputmode="numeric" placeholder="—" value="${esc(MACROS[k]||'')}"
         data-live="macro|${k}" oninput="liveMacro('${k}',this.value)"
-        onchange="MACROS['${k}']=this.value;save()"></div>`).join('')}
+        onchange="setMacro('${k}',this.value)"></div>`).join('')}
   </div>`;
 
   // water
@@ -2273,14 +2811,15 @@ function viewFood(){
       h+=`<div class="card${o?' open':''}">
         <div class="card-h" onclick="toggleCard('m${m.id}')">
           <div class="card-ico ic-gold">🍽️</div>
-          <div class="card-t"><b>${esc(m.label||'Meal')}</b><i>${[m.time,m.cal].filter(Boolean).map(esc).join(' · ')||'Tap to fill in'}</i></div>
+          <div class="card-t"><b>${esc(m.label||'Meal')}</b><i>${[m.time,m.cal?(firstNum(m.cal)?commas(firstNum(m.cal))+' kcal':m.cal):'',
+            num(m.p)?num(m.p)+'p':'',num(m.c)?num(m.c)+'c':'',num(m.f)?num(m.f)+'f':''].filter(Boolean).map(esc).join(' · ')||'Tap to fill in'}</i></div>
           <div class="card-n${items.length&&done===items.length?' full':''} mono">${done}/${items.length}</div>
           <div class="chev${o?' open':''}">${icoChev()}</div>
         </div>
         <div class="card-b${o?' open':''}"><div class="card-in">
           ${items.map((it,ii)=>{const dn=!!st[m.id+'|'+ii];
             return `<div class="meal-item${dn?' done':''}">
-              <div class="cb${dn?' on':''}" onclick="toggleCheck('${m.id}|${ii}')">${icoCheck()}</div>
+              <div class="cb${dn?' on':''}" onclick="toggleFuel('${m.id}|${ii}')">${icoCheck()}</div>
               <div class="meal-tx">${esc(it)}</div>
               <button class="x" onclick="delMealItem(${mi},${ii})">×</button></div>`;}).join('')
             ||'<div class="hint">Nothing in this meal yet.</div>'}
@@ -2307,16 +2846,23 @@ function viewFood(){
     <div class="card-b${so?' open':''}"><div class="card-in">
       ${SUPPS.map((s,i)=>{const dn=!!st['sp|'+i];
         return `<div class="meal-item${dn?' done':''}">
-          <div class="cb${dn?' on':''}" onclick="toggleCheck('sp|${i}')">${icoCheck()}</div>
+          <div class="cb${dn?' on':''}" onclick="toggleFuel('sp|${i}')">${icoCheck()}</div>
           <div class="meal-tx">${esc(s)}</div>
           <button class="x" onclick="delSupp(${i})">×</button></div>`;}).join('')
         ||'<div class="hint">Add anything you take daily — creatine, vitamin D, fish oil.</div>'}
       <button class="add" onclick="addSupp()">${icoPlus()} Add supplement</button>
     </div></div>
   </div>`;
+  if(role!=='guest'){
+    const t=fuelTotals(),any=fuelTicked();
+    h+=`<button class="btn ${any?'pri':''} btn-full fin-btn" onclick="openFinishFuel()">${icoCheck()} Finish the day
+      <span class="fin-n mono">${t.kcal?commas(t.kcal)+' kcal':'log it'}</span></button>`;
+  }
   return h;
 }
-function setWater(n){wtr[day]=(wtr[day]===n)?n-1:n;buzz(10);save();render();}
+// the inline handler used to assign MACROS directly — a module variable the page can't see, so it threw and the target never saved
+function setMacro(k,v){MACROS[k]=v;save();}
+function setWater(n){const fresh=!fuelTicked();wtr[day]=(wtr[day]===n)?n-1:n;if(fresh&&wtr[day]>0)PREFS.fuelDate=todayStr();buzz(10);save();render();}
 function addMealItem(mi){
   promptSheet('Add food','What are you eating in this meal?','e.g. 200g chicken breast',v=>{
     MEALS[mi].items=[...(MEALS[mi].items||[]),v];openCards['m'+MEALS[mi].id]=true;save();render();
@@ -2355,16 +2901,421 @@ function delSupp(i){
 /* ═══════════════════════════════════════════════════════════
    STREAK TAB
 ═══════════════════════════════════════════════════════════ */
+// a day counts if you ticked it on the calendar or logged a workout on it
+function dayDone(ds){return !!calDone[ds]||toArr(HIST.w[ds]).length>0;}
+/* A streak is training days in a row without missing one. Rest days neither
+   add to it nor break it — counting calendar days meant a Mon/Wed/Fri
+   lifter could never get past 1. */
 function streaks(){
-  const keys=Object.keys(calDone).filter(k=>calDone[k]).sort();
+  const keys=[...new Set([...Object.keys(calDone).filter(k=>calDone[k]),...Object.keys(HIST.w).filter(k=>toArr(HIST.w[k]).length)])].sort();
   if(!keys.length)return{cur:0,best:0,total:0};
-  const set=new Set(keys);let best=0,run=0;
-  let d=new Date(keys[0]);const end=new Date();
-  while(d<=end){const s=dstr(d);if(set.has(s)){run++;best=Math.max(best,run);}else run=0;d.setDate(d.getDate()+1);}
-  let cur=0,c=new Date();
-  if(!set.has(dstr(c)))c.setDate(c.getDate()-1);
-  while(set.has(dstr(c))){cur++;c.setDate(c.getDate()-1);}
+  const sched=PREFS.trainDays||[];
+  const counts=d=>!sched.length||sched.includes(DAYS[(d.getDay()+6)%7]);   // a day you were meant to train
+  const set=new Set(keys),today=todayStr();
+  let best=0,run=0;
+  const d=parseDate(keys[0]),end=parseDate(today);
+  while(d<=end){
+    const s=dstr(d);
+    if(set.has(s)){run++;if(run>best)best=run;}
+    else if(counts(d)&&s<today)run=0;              // a missed training day ends it; today isn't missed yet
+    d.setDate(d.getDate()+1);
+  }
+  let cur=0;const c=parseDate(today);
+  for(let guard=0;guard<4000;guard++){
+    const s=dstr(c);
+    if(set.has(s))cur++;
+    else if(counts(c)&&s<today)break;
+    if(s<=keys[0])break;
+    c.setDate(c.getDate()-1);
+  }
   return{cur,best,total:keys.length};
+}
+/* ═══════════════════════════════════════════════════════════
+   PROGRESS TAB — charts over weeks and months
+═══════════════════════════════════════════════════════════ */
+let PROG={range:'4w',ex:'',exM:'top',fuelM:'kcal',table:{},histN:8};
+const RANGES=[['4w','4 weeks',28],['3m','3 months',91],['6m','6 months',182],['1y','1 year',364]];
+const CH={};                           // chart id → what the pointer needs to find a mark
+function rangeDays(){return (RANGES.find(r=>r[0]===PROG.range)||RANGES[0])[2];}
+function rangeStart(){const n=new Date();n.setDate(n.getDate()-rangeDays()+1);return dstr(n);}
+function daily(){return rangeDays()<=28;}
+/* 4 weeks is read day by day; anything longer is read week by week. */
+function buckets(){
+  const out=[];
+  if(daily()){
+    for(let i=rangeDays()-1;i>=0;i--){const n=new Date();n.setDate(n.getDate()-i);const k=dstr(n);out.push({from:k,to:k});}
+  }else{
+    const mon=parseDate(weekStart()),count=Math.ceil(rangeDays()/7);
+    for(let i=count-1;i>=0;i--){
+      const a=new Date(mon);a.setDate(a.getDate()-i*7);
+      const b=new Date(a);b.setDate(b.getDate()+6);
+      out.push({from:dstr(a),to:dstr(b)});
+    }
+  }
+  return out;
+}
+function bucketOf(bs,dt){
+  for(let i=0;i<bs.length;i++)if(dt>=bs[i].from&&dt<=bs[i].to)return i;
+  return -1;
+}
+function bucketLabel(b,long){
+  if(daily())return fmtDate(b.from,long?{weekday:'short',month:'short',day:'numeric'}:{month:'short',day:'numeric'});
+  return (long?'Week of ':'')+fmtDate(b.from,{month:'short',day:'numeric'});
+}
+function sessionsIn(from,to){
+  const out=[];
+  Object.keys(HIST.w).forEach(dt=>{if(dt>=from&&dt<=to)toArr(HIST.w[dt]).forEach(s=>out.push({dt,s}));});
+  return out.sort((a,b)=>a.dt<b.dt?-1:a.dt>b.dt?1:(a.s.ts||0)-(b.s.ts||0));
+}
+function volOf(s){return conv(num(s.vol),s.unit);}
+function exKey(n){return String(n||'').trim().toLowerCase();}
+function exerciseList(){
+  const m={};
+  Object.keys(HIST.w).forEach(dt=>toArr(HIST.w[dt]).forEach(s=>toArr(s.ex).forEach(e=>{
+    const k=exKey(e.n);if(!k)return;
+    m[k]=m[k]||{n:e.n,c:0,last:''};m[k].c++;if(dt>=m[k].last){m[k].last=dt;m[k].n=e.n;}
+  })));
+  return Object.keys(m).map(k=>({k,...m[k]})).sort((a,b)=>b.c-a.c||(a.last<b.last?1:-1));
+}
+function chartW(){
+  const m=document.getElementById('main');
+  return Math.max(250,Math.min(640,((m&&m.clientWidth)||375)-60));
+}
+/* Clean tick values: 0 / 2,500 / 5,000 — never 0 / 2,317 / 4,634. */
+function niceStep(raw){
+  const mag=Math.pow(10,Math.floor(Math.log10(Math.max(raw,1e-9))));
+  return [1,2,2.5,5,10].map(x=>x*mag).find(x=>x>=raw)||10*mag;
+}
+function niceTicks(max){
+  if(!(max>0))return{top:1,ticks:[0,1]};
+  const step=niceStep(max/3);
+  const top=Math.ceil(max/step)*step,ticks=[];
+  for(let v=0;v<=top+step/2;v+=step)ticks.push(Math.round(v*1000)/1000);
+  return{top,ticks};
+}
+function roundTop(x,y,w,h,r){
+  r=Math.max(0,Math.min(r,w/2,h));
+  return `M${x},${y+h}V${y+r}Q${x},${y} ${x+r},${y}H${x+w-r}Q${x+w},${y} ${x+w},${y+r}V${y+h}Z`;
+}
+function xLabelStep(n){return Math.max(1,Math.ceil(n/5));}
+function edgeAnchor(x,left,right){return x>right-22?'end':x<left+22?'start':'middle';}
+function lastWith(pts){for(let i=pts.length-1;i>=0;i--)if(pts[i].v>0)return i;return -1;}
+/* One series per chart, so no legend: the card title names it. The readout
+   above each plot carries the value, and every chart has a table view. */
+function barChart(id,pts,o){
+  const W=chartW(),H=172,pl=40,pr=8,pt=12,pb=24,iw=W-pl-pr,ih=H-pt-pb;
+  const max=Math.max(o.target||0,...pts.map(p=>p.v||0));
+  const {top,ticks}=niceTicks(max);
+  const n=pts.length,slot=iw/n;
+  // thin marks: a 2px gap when bars are packed, a third of the slot as air when there is room
+  const bw=slot>14?Math.min(24,slot*.64):Math.max(2,slot-2);
+  const y=v=>pt+ih-(v/top)*ih;
+  let g='';
+  ticks.forEach(t=>{g+=`<line class="ch-grid" x1="${pl}" x2="${W-pr}" y1="${y(t).toFixed(1)}" y2="${y(t).toFixed(1)}"/>
+    <text class="ch-yl" x="${pl-7}" y="${(y(t)+3.5).toFixed(1)}" text-anchor="end">${esc(o.fmt(t))}</text>`;});
+  pts.forEach((p,i)=>{
+    if(!(p.v>0))return;
+    const h=Math.max(2,(p.v/top)*ih),x=pl+i*slot+(slot-bw)/2;
+    g+=`<path class="ch-bar" data-i="${i}" d="${roundTop(x,pt+ih-h,bw,h,4)}" style="fill:${o.color}"/>`;
+  });
+  if(o.target>0){
+    const ty=y(o.target).toFixed(1);
+    g+=`<line class="ch-tgt" x1="${pl}" x2="${W-pr}" y1="${ty}" y2="${ty}"/>
+      <text class="ch-tl" x="${W-pr}" y="${(y(o.target)-5).toFixed(1)}" text-anchor="end">target ${esc(o.fmt(o.target))}</text>`;
+  }
+  const step=xLabelStep(n);
+  pts.forEach((p,i)=>{
+    if((n-1-i)%step)return;              // anchor labels on the newest bar
+    const lx=pl+i*slot+slot/2;
+    g+=`<text class="ch-xl" x="${lx.toFixed(1)}" y="${H-7}" text-anchor="${edgeAnchor(lx,pl,W-pr)}">${esc(p.lab)}</text>`;
+  });
+  g+=`<line class="ch-base" x1="${pl}" x2="${W-pr}" y1="${pt+ih}" y2="${pt+ih}"/>`;
+  CH[id]={kind:'bar',pts,pl,slot,W,H,n,pt,ih,def:lastWith(pts)};
+  return chartShell(id,W,H,g,o.label);
+}
+function lineChart(id,pts,o){
+  // pts: [{t:ms, v, …}] placed on a real time axis across the range
+  const W=chartW(),H=172,pl=40,pr=12,pt=14,pb=24,iw=W-pl-pr,ih=H-pt-pb;
+  const t0=parseDate(rangeStart()).getTime(),t1=parseDate(todayStr()).getTime()||t0+1;
+  const vs=pts.map(p=>p.v),lo=Math.min(...vs),hi=Math.max(...vs);
+  // start the axis near the data, not at zero — a 5 lb gain on a 300 lb lift has to be visible
+  const span=Math.max(hi-lo,hi*.1,1);
+  let step=niceStep(span/3);
+  let lo2=Math.max(0,Math.floor((lo-span*.15)/step)*step),hi2=Math.ceil((hi+span*.15)/step)*step;
+  if(hi2<=lo2)hi2=lo2+step;
+  while((hi2-lo2)/step>5){step*=2;lo2=Math.max(0,Math.floor(lo2/step)*step);hi2=Math.ceil(hi2/step)*step;}
+  const ticks=[];for(let v=lo2;v<=hi2+1e-9;v+=step)ticks.push(Math.round(v*1000)/1000);
+  const x=t=>pl+((t-t0)/Math.max(1,t1-t0))*iw;
+  const y=v=>pt+ih-((v-lo2)/Math.max(1e-9,hi2-lo2))*ih;
+  let g='';
+  ticks.forEach(t=>{g+=`<line class="ch-grid" x1="${pl}" x2="${W-pr}" y1="${y(t).toFixed(1)}" y2="${y(t).toFixed(1)}"/>
+    <text class="ch-yl" x="${pl-7}" y="${(y(t)+3.5).toFixed(1)}" text-anchor="end">${esc(o.fmt(t))}</text>`;});
+  const xy=pts.map(p=>[x(p.t),y(p.v)]);
+  if(xy.length>1){
+    const line=xy.map((q,i)=>(i?'L':'M')+q[0].toFixed(1)+','+q[1].toFixed(1)).join('');
+    g+=`<path class="ch-area" d="${line}L${xy[xy.length-1][0].toFixed(1)},${pt+ih}L${xy[0][0].toFixed(1)},${pt+ih}Z" style="fill:${o.color}"/>`;
+    g+=`<path class="ch-line" d="${line}" style="stroke:${o.color}"/>`;
+  }
+  g+=`<line class="ch-cross" id="cx-${id}" x1="0" x2="0" y1="${pt}" y2="${pt+ih}" style="display:none"/>`;
+  xy.forEach((q,i)=>{g+=`<circle class="ch-dot" data-i="${i}" cx="${q[0].toFixed(1)}" cy="${q[1].toFixed(1)}" r="4" style="fill:${o.color}"/>`;});
+  // date labels along the bottom, counted back from today
+  const labs=[],stepDays=daily()?7:(rangeDays()<=91?21:rangeDays()<=182?42:84);
+  for(let t=t1;t>=t0;t-=stepDays*864e5)labs.push(t);
+  labs.forEach(t=>{g+=`<text class="ch-xl" x="${x(t).toFixed(1)}" y="${H-7}" text-anchor="${edgeAnchor(x(t),pl,W-pr)}">${esc(new Date(t).toLocaleDateString(undefined,{month:'short',day:'numeric'}))}</text>`;});
+  g+=`<line class="ch-base" x1="${pl}" x2="${W-pr}" y1="${pt+ih}" y2="${pt+ih}"/>`;
+  CH[id]={kind:'line',pts,xs:xy.map(q=>q[0]),ys:xy.map(q=>q[1]),W,H,pt,ih,def:pts.length-1};
+  return chartShell(id,W,H,g,o.label);
+}
+/* The readout sits in its own line above the plot: the newest value until you
+   touch or arrow to another one. Nothing floats over the controls, and the
+   number is there without having to find it. */
+function chartShell(id,W,H,g,label){
+  const c=CH[id],p=c&&c.def>=0?c.pts[c.def]:null;
+  return `<div class="ch" id="ch-${id}">
+    <div class="ch-tip" id="tip-${id}" role="status" aria-live="polite">${p?`<b>${esc(p.tipV)}</b><span>${esc(p.tipL)}</span>`:''}</div>
+    <svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${esc(label||'')}" tabindex="0"
+      onpointermove="chPoint('${id}',event)" onpointerdown="chPoint('${id}',event)" onpointerleave="chLeave('${id}')"
+      onkeydown="chKey('${id}',event)" onblur="chLeave('${id}')">${g}</svg>
+  </div>`;
+}
+function tipFill(id,p,picked){
+  const tip=document.getElementById('tip-'+id);if(!tip)return;
+  tip.textContent='';tip.classList.toggle('picked',!!picked);
+  if(!p)return;
+  // text goes in with textContent — exercise names are typed by people
+  const v=document.createElement('b');v.textContent=p.tipV;tip.appendChild(v);
+  const l=document.createElement('span');l.textContent=p.tipL;tip.appendChild(l);
+}
+function chIndex(id,clientX){
+  const c=CH[id],svg=document.querySelector('#ch-'+id+' svg');if(!c||!svg)return -1;
+  const r=svg.getBoundingClientRect(),x=(clientX-r.left)*(c.W/r.width);
+  if(c.kind==='bar'){
+    const i=Math.floor((x-c.pl)/c.slot);
+    return (i>=0&&i<c.n)?i:-1;
+  }
+  let best=-1,bd=1e9;
+  c.xs.forEach((px,i)=>{const d=Math.abs(px-x);if(d<bd){bd=d;best=i;}});
+  return best;
+}
+function chShow(id,i){
+  const c=CH[id],box=document.getElementById('ch-'+id);
+  if(!c||!box)return;
+  const p=c.pts[i];
+  if(i<0||!p||(c.kind==='bar'&&!(p.v>0))){
+    // an empty day: say so, rather than leaving the last value up as if it were this one
+    if(p&&c.kind==='bar'){chClear(id);tipFill(id,{tipV:'—',tipL:p.tipL},true);box.classList.add('picking');c.sel=i;}
+    return;
+  }
+  c.sel=i;
+  box.querySelectorAll('.ch-bar,.ch-dot').forEach(el=>el.classList.toggle('on',+el.dataset.i===i));
+  box.classList.add('picking');
+  tipFill(id,p,true);
+  if(c.kind==='line'){
+    const cx=document.getElementById('cx-'+id);
+    if(cx){cx.setAttribute('x1',c.xs[i]);cx.setAttribute('x2',c.xs[i]);cx.style.display='';}
+  }
+}
+function chClear(id){
+  const box=document.getElementById('ch-'+id);
+  if(box){box.classList.remove('picking');box.querySelectorAll('.on').forEach(el=>el.classList.remove('on'));}
+  const cx=document.getElementById('cx-'+id);if(cx)cx.style.display='none';
+}
+function chPoint(id,e){const i=chIndex(id,e.clientX);if(i>=0)chShow(id,i);}
+function chLeave(id){
+  const c=CH[id];if(!c)return;
+  c.sel=-1;chClear(id);
+  tipFill(id,c.def>=0?c.pts[c.def]:null,false);
+}
+function chKey(id,e){
+  const c=CH[id];if(!c)return;
+  if(e.key!=='ArrowLeft'&&e.key!=='ArrowRight')return;
+  e.preventDefault();
+  const n=c.pts.length,dir=e.key==='ArrowLeft'?-1:1;
+  let i=(c.sel>=0?c.sel:(dir<0?n:-1))+dir;
+  while(i>=0&&i<n&&c.kind==='bar'&&!(c.pts[i].v>0))i+=dir;   // skip empty bars
+  if(i>=0&&i<n)chShow(id,i);
+}
+function tableView(rows,h1,h2){
+  const shown=rows.filter(r=>r.v>0);
+  if(!shown.length)return '<div class="hint" style="padding:12px 0">Nothing logged in this range.</div>';
+  return `<div class="ch-tbl"><table><thead><tr><th>${esc(h1)}</th><th>${esc(h2)}</th></tr></thead><tbody>
+    ${shown.slice().reverse().map(r=>`<tr><td>${esc(r.tipL)}</td><td class="mono">${esc(r.tipV)}</td></tr>`).join('')}</tbody></table></div>`;
+}
+function chCard(id,title,sub,body,extra){
+  const tbl=!!PROG.table[id];
+  return `<div class="card open ch-card"><div class="card-in">
+    <div class="ch-h"><div class="ch-t"><b>${title}</b><i>${sub}</i></div>
+      <button class="ch-tog" onclick="progTable('${id}')" aria-pressed="${tbl}">${tbl?'Chart':'Table'}</button></div>
+    ${extra||''}${body}
+  </div></div>`;
+}
+function progSet(k,v){PROG[k]=v;buzz(6);render();}
+function progTable(id){PROG.table[id]=!PROG.table[id];buzz(6);render();}
+function progMore(){PROG.histN+=12;render();}
+
+function viewProgress(){
+  // a follower is looking at the host's screen: the charts would be their own private history
+  if(isFollower())return `<div class="lock" style="margin-bottom:12px"><b>Charts are private</b>Each person's progress stays on their own account. Here's the shared streak.</div>`+viewCal();
+  if(Date.now()-histLoadedAt>5*60*1000&&user){histLoadedAt=Date.now();histLoadCloud(user.uid).then(ok=>{if(ok&&tab==='cal')render();});}
+  const u=unit(),from=rangeStart(),to=todayStr();
+  const bs=buckets(),ses=sessionsIn(from,to);
+  const anyHist=Object.keys(HIST.w).length||Object.keys(HIST.f).length;
+  let h=`<div class="seg prog-rng" role="tablist" aria-label="Date range">${RANGES.map(([k,l])=>
+    `<button class="seg-i${PROG.range===k?' on':''}" role="tab" aria-selected="${PROG.range===k}" onclick="progSet('range','${k}')">${l}</button>`).join('')}</div>`;
+
+  // headline numbers
+  const vol=ses.reduce((a,x)=>a+volOf(x.s),0);
+  const fdays=Object.keys(HIST.f).filter(dt=>dt>=from&&dt<=to&&num(HIST.f[dt].kcal)>0);
+  const avgK=fdays.length?fdays.reduce((a,dt)=>a+num(HIST.f[dt].kcal),0)/fdays.length:0;
+  h+=`<div class="stats">
+    <div class="stat"><div class="stat-v mono">${ses.length}</div><div class="stat-l">Workouts</div></div>
+    <div class="stat"><div class="stat-v mono">${compact(vol)}</div><div class="stat-l">${u} lifted</div></div>
+    <div class="stat"><div class="stat-v mono">${avgK?compact(avgK):'—'}</div><div class="stat-l">Avg kcal</div></div>
+  </div>`;
+
+  if(!anyHist){
+    h+=`<div class="card open"><div class="card-in" style="padding:0 13px 13px"><div class="empty">
+      <div class="empty-i">📈</div>
+      <div class="empty-t">Your progress lives here</div>
+      <div class="empty-s">Tap <b>Finish workout</b> at the end of a session, and <b>Finish the day</b> on Fuel. Every finished day becomes a point on these charts — weight lifted, your best sets, calories and macros.</div>
+      <div class="empty-a"><button class="btn pri" onclick="setTab('train')">Go to today's workout</button></div>
+    </div></div></div>`;
+    return h+`<div class="eyebrow" style="margin:22px 0 10px">Consistency</div>`+viewCal();
+  }
+
+  // ── weight lifted ──
+  const vpts=bs.map(b=>({v:0,n:0,b}));
+  ses.forEach(x=>{const i=bucketOf(bs,x.dt);if(i>=0){vpts[i].v+=volOf(x.s);vpts[i].n++;}});
+  vpts.forEach(p=>{
+    p.lab=bucketLabel(p.b,false);
+    p.tipV=commas(p.v)+' '+u;
+    p.tipL=bucketLabel(p.b,true)+(p.n?' · '+p.n+' workout'+(p.n===1?'':'s'):' · rest');
+  });
+  const vId='vol';
+  h+=chCard(vId,'Weight lifted',(daily()?'Per day':'Per week')+' · weight × reps, in '+u,
+    PROG.table[vId]?tableView(vpts,daily()?'Day':'Week','Lifted'):
+      (vol>0?barChart(vId,vpts,{color:'var(--c-lift)',fmt:compact,label:'Weight lifted per '+(daily()?'day':'week')})
+            :'<div class="hint" style="padding:18px 0;text-align:center">No workouts logged in this range.</div>'));
+
+  // ── one exercise over time ──
+  const exs=exerciseList();
+  if(exs.length){
+    if(!PROG.ex||!exs.some(e=>e.k===PROG.ex))PROG.ex=exs[0].k;
+    const cur=exs.find(e=>e.k===PROG.ex);
+    const M={top:['Heaviest set',u],e1:['Est. 1-rep max',u],vol:['Volume',u]};
+    const epts=[];let best=null;
+    Object.keys(HIST.w).sort().forEach(dt=>toArr(HIST.w[dt]).forEach(s=>toArr(s.ex).forEach(e=>{
+      if(exKey(e.n)!==PROG.ex)return;
+      const top=conv(num(e.top),s.unit),e1=conv(num(e.e1),s.unit),v=conv(num(e.vol),s.unit);
+      const bestSet=toArr(e.s).reduce((a,p)=>(num(p[0])>num(a[0])?p:a),[0,0]);
+      if(!best||top>best.top)best={top,dt,r:num(bestSet[1])};
+      if(dt<from||dt>to)return;
+      const val=PROG.exM==='e1'?e1:PROG.exM==='vol'?v:top;
+      if(!(val>0))return;
+      epts.push({t:parseDate(dt).getTime(),v:val,dt,
+        tipV:fmtW(Math.round(val*10)/10)+' '+u,
+        tipL:fmtDate(dt)+' · '+toArr(e.s).map(p=>(num(p[0])?fmtW(conv(num(p[0]),s.unit)):'bw')+'×'+(num(p[1])||'?')).join(', ')});
+    })));
+    const sel=`<div class="ch-ctl">
+      <select class="inp ch-sel" aria-label="Exercise" onchange="progSet('ex',this.value)">${exs.map(e=>
+        `<option value="${esc(e.k)}"${e.k===PROG.ex?' selected':''}>${esc(e.n)} (${e.c})</option>`).join('')}</select>
+      <div class="seg ch-seg">${Object.keys(M).map(k=>`<button class="seg-i${PROG.exM===k?' on':''}" onclick="progSet('exM','${k}')">${k==='top'?'Top set':k==='e1'?'1RM':'Volume'}</button>`).join('')}</div>
+    </div>`;
+    const pr=best&&best.top>0?`<div class="ch-pr">🏆 Best: <b class="mono">${fmtW(Math.round(best.top*10)/10)} ${u}${best.r?' × '+best.r:''}</b> · ${esc(fmtDate(best.dt,{month:'short',day:'numeric',year:'numeric'}))}</div>`:'';
+    const eId='ex';
+    const body=PROG.table[eId]?tableView(epts,'Session',M[PROG.exM][0]):
+      (epts.length?lineChart(eId,epts,{color:'var(--c-lift)',fmt:v=>compact(v),label:M[PROG.exM][0]+' for '+cur.n})
+        :'<div class="hint" style="padding:18px 0;text-align:center">Not logged in this range — try a longer one.</div>');
+    h+=chCard(eId,'Exercise progress',M[PROG.exM][0]+' per session, in '+u+(PROG.exM==='e1'?' · Epley estimate':''),body+pr,sel);
+  }
+
+  // ── nutrition ──
+  const FM={kcal:['Calories','kcal','cal'],p:['Protein','g','protein'],c:['Carbs','g','carbs'],fat:['Fat','g','fat'],water:['Water','glasses','']};
+  const fm=FM[PROG.fuelM]||FM.kcal;
+  const fpts=bs.map(b=>({v:0,n:0,sum:0,b}));
+  Object.keys(HIST.f).forEach(dt=>{
+    if(dt<from||dt>to)return;const i=bucketOf(bs,dt);if(i<0)return;
+    const val=num(HIST.f[dt][PROG.fuelM]);if(!(val>0))return;
+    fpts[i].sum+=val;fpts[i].n++;
+  });
+  fpts.forEach(p=>{
+    p.v=p.n?p.sum/p.n:0;              // a week is its daily average, so weeks compare fairly
+    p.lab=bucketLabel(p.b,false);
+    p.tipV=p.n?commas(p.v)+' '+fm[1]+(daily()?'':' / day'):'not logged';
+    p.tipL=bucketLabel(p.b,true)+(daily()?'':' · '+p.n+' day'+(p.n===1?'':'s')+' logged');
+  });
+  const target=PROG.fuelM==='water'?8:num(MACROS[fm[2]]);
+  const fId='fuel',anyF=fpts.some(p=>p.v>0);
+  const fsel=`<div class="seg ch-seg" style="margin-bottom:10px">${Object.keys(FM).map(k=>
+    `<button class="seg-i${PROG.fuelM===k?' on':''}" onclick="progSet('fuelM','${k}')">${FM[k][0]}</button>`).join('')}</div>`;
+  h+=chCard(fId,'Nutrition',(daily()?'Per day':'Daily average per week')+' · '+fm[1]+(target?' · dashed line is your target':''),
+    PROG.table[fId]?tableView(fpts,daily()?'Day':'Week',fm[0]):
+      (anyF?barChart(fId,fpts,{color:'var(--c-fuel)',target,fmt:compact,label:fm[0]+' per '+(daily()?'day':'week')})
+           :'<div class="hint" style="padding:18px 0;text-align:center">No days logged in this range. Finish the day on Fuel to start this chart.</div>'),fsel);
+
+  h+=historyList();
+  h+=`<div class="eyebrow" style="margin:22px 0 10px">Consistency</div>`;
+  return h+viewCal();
+}
+function historyList(){
+  const rows=[];
+  Object.keys(HIST.w).forEach(dt=>toArr(HIST.w[dt]).forEach((s,i)=>rows.push({k:'w',dt,i,s,ts:s.ts||0})));
+  Object.keys(HIST.f).forEach(dt=>rows.push({k:'f',dt,s:HIST.f[dt],ts:HIST.f[dt].ts||0}));
+  if(!rows.length)return '';
+  rows.sort((a,b)=>a.dt<b.dt?1:a.dt>b.dt?-1:b.ts-a.ts);
+  const u=unit();
+  return `<div class="eyebrow" style="margin:22px 0 10px">History</div>`+rows.slice(0,PROG.histN).map(r=>{
+    const s=r.s;
+    const sub=r.k==='w'
+      ? [s.sets+' sets',num(s.vol)?commas(volOf(s))+' '+u:'',toArr(s.ex).length?toArr(s.ex).length+' exercises':'',toArr(s.cardio).length?'cardio':''].filter(Boolean).join(' · ')
+      : [commas(num(s.kcal))+' kcal',num(s.p)?num(s.p)+'g protein':'',num(s.water)?num(s.water)+' 💧':''].filter(Boolean).join(' · ');
+    return `<div class="pf-row" onclick="openHist('${r.k}','${r.dt}',${r.i||0})">
+      <div class="pf-row-i">${r.k==='w'?'🏋️':'🍽️'}</div>
+      <div class="pf-row-t"><b>${esc(fmtDate(r.dt))} · ${esc(r.k==='w'?(s.name||DFULL[s.day]||'Workout'):'Nutrition')}</b><i>${esc(sub)}</i></div>
+      <div class="pf-row-v">›</div></div>`;
+  }).join('')+(rows.length>PROG.histN?`<button class="add" onclick="progMore()">Show older</button>`:'');
+}
+function openHist(k,dt,i){
+  const u=unit();
+  if(k==='w'){
+    const s=toArr(HIST.w[dt])[i];if(!s)return;
+    openSheet(`<div class="sheet-t">${esc(s.name||'Workout')}</div>
+      <div class="sheet-s">${esc(fmtDate(dt,{weekday:'long',month:'long',day:'numeric',year:'numeric'}))}</div>
+      <div class="stats fin-stats">
+        <div class="stat"><div class="stat-v mono">${s.sets||0}</div><div class="stat-l">Sets</div></div>
+        <div class="stat"><div class="stat-v mono">${volOf(s)<1e5?commas(volOf(s)):compact(volOf(s))}</div><div class="stat-l">${u} moved</div></div>
+        <div class="stat"><div class="stat-v mono">${s.reps||0}</div><div class="stat-l">Reps</div></div>
+      </div>
+      <div class="fin-list">${toArr(s.ex).map(e=>`<div class="fin-ex"><b>${esc(e.n)}</b>
+        <i class="mono">${toArr(e.s).map(p=>(num(p[0])?fmtW(conv(num(p[0]),s.unit)):'bw')+'×'+(num(p[1])||'?')).join(' · ')}</i></div>`).join('')}
+        ${toArr(s.cardio).map(c=>`<div class="fin-ex"><b>${esc(c)}</b><i class="mono">cardio ✓</i></div>`).join('')}</div>
+      <div class="sheet-a"><button class="btn danger" onclick="delHist('w','${dt}',${i})">Delete</button>
+        <button class="btn" onclick="closeSheet()">Done</button></div>`);
+  }else{
+    const f=HIST.f[dt];if(!f)return;
+    const row=(l,v,t)=>`<div class="fin-ex"><b>${l}</b><i class="mono">${v}${t?' · target '+t:''}</i></div>`;
+    openSheet(`<div class="sheet-t">Nutrition</div>
+      <div class="sheet-s">${esc(fmtDate(dt,{weekday:'long',month:'long',day:'numeric',year:'numeric'}))}</div>
+      <div class="fin-list">
+        ${row('Calories',commas(num(f.kcal))+' kcal',num(MACROS.cal)?commas(num(MACROS.cal)):'')}
+        ${row('Protein',num(f.p)+' g',num(MACROS.protein)?num(MACROS.protein):'')}
+        ${row('Carbs',num(f.c)+' g',num(MACROS.carbs)?num(MACROS.carbs):'')}
+        ${row('Fat',num(f.fat)+' g',num(MACROS.fat)?num(MACROS.fat):'')}
+        ${row('Water',num(f.water)+' glasses','8')}
+        ${f.meals?row('Meals eaten',toArr(f.meals).join(' of ')):''}
+        ${f.supps?row('Supplements',toArr(f.supps).join(' of ')):''}
+      </div>
+      <div class="sheet-a"><button class="btn danger" onclick="delHist('f','${dt}',0)">Delete</button>
+        <button class="btn" onclick="closeSheet()">Done</button></div>`);
+  }
+}
+function delHist(k,dt,i){
+  if(!confirm('Delete this entry from your history? This cannot be undone.'))return;
+  if(k==='w'){
+    const list=toArr(HIST.w[dt]);list.splice(i,1);
+    if(list.length)HIST.w[dt]=list;else delete HIST.w[dt];
+  }else delete HIST.f[dt];
+  histPut(k+'/'+dt);closeSheet();render();toast('Deleted from history');
 }
 function viewCal(){
   const s=streaks();
@@ -2376,11 +3327,11 @@ function viewCal(){
   let cells='';
   for(let i=0;i<lead;i++)cells+='<div class="cal-d empty"></div>';
   for(let i=1;i<=len;i++){
-    const ds=dstr(new Date(y,mo,i)),done=!!calDone[ds];
+    const ds=dstr(new Date(y,mo,i)),done=dayDone(ds);
     const isToday=ds===todayStr(),future=ds>todayStr();
     cells+=`<div class="cal-d${done?' on':''}${isToday?' today':''}${future?' future':''}" onclick="toggleDay('${ds}')">${i}</div>`;
   }
-  const mDone=Array.from({length:len},(_,i)=>calDone[dstr(new Date(y,mo,i+1))]).filter(Boolean).length;
+  const mDone=Array.from({length:len},(_,i)=>dayDone(dstr(new Date(y,mo,i+1)))).filter(Boolean).length;
   return `<div class="stats">
       <div class="stat"><div class="stat-v mono">${s.cur}</div><div class="stat-l">Current</div></div>
       <div class="stat"><div class="stat-v mono">${s.best}</div><div class="stat-l">Best run</div></div>
@@ -2398,6 +3349,7 @@ function viewCal(){
 }
 function calMove(n){if(calOffset+n>0)return;calOffset+=n;render();}
 function toggleDay(ds){
+  if(toArr(HIST.w[ds]).length){toast('A workout is logged on this day — delete it from History to clear it');return;}
   calDone[ds]=!calDone[ds];
   if(!calDone[ds])delete calDone[ds];
   buzz(12);save();render();
@@ -2437,6 +3389,11 @@ function viewProfile(){
       <div class="pf-row-t"><b>Cardio slots</b><i>${PREFS.doesCardio?'Shown on training days':'Hidden'}</i></div>
       <div class="pf-row-v">${PREFS.doesCardio?'On':'Off'}</div>
     </div>
+    <div class="pf-row" onclick="toggleUnit()">
+      <div class="pf-row-i">⚖️</div>
+      <div class="pf-row-t"><b>Weight unit</b><i>Charts and history show ${unit()==='kg'?'kilograms':'pounds'}</i></div>
+      <div class="pf-row-v mono">${unit()}</div>
+    </div>
 
     <div class="pf-sec">Appearance</div>
     <div class="pf-row" onclick="openThemeSheet()">
@@ -2465,6 +3422,21 @@ function viewProfile(){
       <div class="pf-row-t"><b>Friends</b><i>${friendCount()?friendCount()+(friendCount()===1?' friend':' friends'):'Search a username in the Hub to add someone'}</i></div>
       <div class="pf-row-v mono">${friendCount()||'›'}</div>
     </div>
+    <div class="pf-row" onclick="openBlockedSheet()">
+      <div class="pf-row-i">⛔</div>
+      <div class="pf-row-t"><b>Blocked accounts</b><i>${Object.keys(BLOCKED).length?Object.keys(BLOCKED).length+' blocked':'No one blocked'}</i></div>
+      <div class="pf-row-v">›</div>
+    </div>
+    <div class="pf-row" onclick="openGuidelines()">
+      <div class="pf-row-i">📜</div>
+      <div class="pf-row-t"><b>Community guidelines</b><i>What's allowed in the Hub</i></div>
+      <div class="pf-row-v">›</div>
+    </div>
+    ${isAdmin?`<div class="pf-row" onclick="openModeration()" style="border-color:var(--gold-d3)">
+      <div class="pf-row-i">🛡️</div>
+      <div class="pf-row-t"><b>Moderation queue</b><i>Review reports — the stores expect action within 24 hours</i></div>
+      <div class="pf-row-v">›</div>
+    </div>`:''}
 
     <div class="pf-sec">Account</div>
     <div class="pf-row" onclick="openDetailsSheet()">
@@ -2503,11 +3475,38 @@ function viewProfile(){
       <div class="pf-row-t"><b>Reset ${DFULL[day]}</b><i>Clear today's ticks, keep the plan</i></div>
       <div class="pf-row-v">›</div>
     </div>
+
+    <div class="pf-sec">Help &amp; legal</div>
+    <div class="pf-row" onclick="location.href='mailto:${SUPPORT_EMAIL}?subject=UNIT%20support'">
+      <div class="pf-row-i">✉️</div>
+      <div class="pf-row-t"><b>Contact support</b><i>${esc(SUPPORT_EMAIL)}</i></div>
+      <div class="pf-row-v">›</div>
+    </div>
+    <div class="pf-row" onclick="openPrivacyDoc()">
+      <div class="pf-row-i">🔏</div>
+      <div class="pf-row-t"><b>Privacy</b><i>What is stored and who can see it</i></div>
+      <div class="pf-row-v">›</div>
+    </div>
+    <div class="pf-row" onclick="openTermsDoc()">
+      <div class="pf-row-i">📄</div>
+      <div class="pf-row-t"><b>Terms of use</b><i>Including the community guidelines</i></div>
+      <div class="pf-row-v">›</div>
+    </div>
+
+    <div class="pf-sec">Sign out</div>
     <div class="pf-row" style="border-color:rgba(255,77,94,.22)" onclick="doSignOut()">
       <div class="pf-row-i" style="background:var(--red-d);border-color:rgba(255,77,94,.24)">⏻</div>
       <div class="pf-row-t"><b style="color:var(--red)">Sign out</b><i>Your data stays saved</i></div>
     </div>
+    <div class="pf-row" style="border-color:rgba(255,77,94,.22)" onclick="openDeleteAccount()">
+      <div class="pf-row-i" style="background:var(--red-d);border-color:rgba(255,77,94,.24)">🗑️</div>
+      <div class="pf-row-t"><b style="color:var(--red)">Delete account</b><i>Permanently erase your account and everything in it</i></div>
+    </div>
     <div class="hint" style="text-align:center;margin-top:22px">UNIT · everything saves as you go</div>`;
+}
+function toggleUnit(){
+  PREFS.unit=unit()==='kg'?'lb':'kg';save();render();buzz(8);
+  toast('Showing '+(PREFS.unit==='kg'?'kilograms':'pounds')+' — logged workouts are converted');
 }
 function toggleCardioPref(){
   PREFS.doesCardio=!PREFS.doesCardio;save();render();
@@ -2522,7 +3521,7 @@ function resetToday(){
 function exportData(){
   if(borrow){toast('Finish the borrowed day first — this would export theirs, not yours');return;}
   try{
-    const blob=new Blob([JSON.stringify({profile,...bundle()},null,2)],{type:'application/json'});
+    const blob=new Blob([JSON.stringify({profile,...bundle(),history:HIST},null,2)],{type:'application/json'});
     const a=document.createElement('a');
     a.href=URL.createObjectURL(blob);a.download='unit-backup-'+todayStr()+'.json';a.click();
     setTimeout(()=>URL.revokeObjectURL(a.href),1500);
@@ -2746,7 +3745,7 @@ function saveCardio(){
 /* ── meals ── */
 function openMealSheet(mi){
   const editing=mi!==undefined;
-  const m=editing?MEALS[mi]:{label:'',time:'',cal:''};
+  const m=editing?MEALS[mi]:{label:'',time:'',cal:'',p:'',c:'',f:''};
   sheetCtx={mi,editing};
   openSheet(`<div class="sheet-t">${editing?'Edit meal':'Add meal'}</div>
     <div class="sheet-s">Name it however you think of it — "Breakfast", "Post-workout", "Meal 3".</div>
@@ -2756,7 +3755,13 @@ function openMealSheet(mi){
       <div class="fld"><label class="fld-lbl">Time <span style="color:var(--txt4)">(optional)</span></label>
         <input class="inp" id="m-t" placeholder="8:00am" value="${esc(m.time||'')}"></div>
       <div class="fld"><label class="fld-lbl">Calories <span style="color:var(--txt4)">(optional)</span></label>
-        <input class="inp" id="m-c" placeholder="~600" value="${esc(m.cal||'')}"></div>
+        <input class="inp" id="m-c" inputmode="numeric" placeholder="~600" value="${esc(m.cal||'')}"></div>
+    </div>
+    <div class="fld-lbl" style="margin-top:2px">Macros in grams <span style="color:var(--txt4)">(optional — they feed your charts)</span></div>
+    <div class="row3">
+      <input class="inp mono" id="m-p" type="number" inputmode="numeric" placeholder="Protein" value="${esc(m.p||'')}">
+      <input class="inp mono" id="m-cb" type="number" inputmode="numeric" placeholder="Carbs" value="${esc(m.c||'')}">
+      <input class="inp mono" id="m-f" type="number" inputmode="numeric" placeholder="Fat" value="${esc(m.f||'')}">
     </div>
     <div class="sheet-a"><button class="btn ghost" onclick="closeSheet()">Cancel</button>
       <button class="btn pri" onclick="saveMeal()">Save meal</button></div>`);
@@ -2767,8 +3772,10 @@ function saveMeal(){
   if(!label){toast('Give the meal a name');return;}
   const time=(document.getElementById('m-t').value||'').trim();
   const cal=(document.getElementById('m-c').value||'').trim();
-  if(sheetCtx.editing){Object.assign(MEALS[sheetCtx.mi],{label,time,cal});}
-  else{const id=uid('m');MEALS=[...MEALS,{id,label,time,cal,items:[]}];openCards['m'+id]=true;}
+  const g=id=>{const v=(document.getElementById(id).value||'').trim();return v?String(Math.max(0,Math.round(num(v)))):'';};
+  const mac={p:g('m-p'),c:g('m-cb'),f:g('m-f')};
+  if(sheetCtx.editing){Object.assign(MEALS[sheetCtx.mi],{label,time,cal},mac);}
+  else{const id=uid('m');MEALS=[...MEALS,{id,label,time,cal,...mac,items:[]}];openCards['m'+id]=true;}
   closeSheet();save();render();toast('Meal saved');
 }
 
@@ -2842,8 +3849,10 @@ function openDetailsSheet(){
 }
 async function saveDetails(){
   profile=profile||{};
-  profile.firstName=(document.getElementById('d-f').value||'').trim();
-  profile.lastName=(document.getElementById('d-l').value||'').trim();
+  const fn=(document.getElementById('d-f').value||'').trim().slice(0,40),ln=(document.getElementById('d-l').value||'').trim().slice(0,40);
+  if(!modCheck(fn+' '+ln).ok){toast('That name isn’t allowed');return;}
+  profile.firstName=fn;
+  profile.lastName=ln;
   profile.email=(document.getElementById('d-e').value||'').trim();
   await saveProfileCloud();
   await pushPub();                     // the name on your posts changes too
@@ -2879,7 +3888,7 @@ document.getElementById('file-in').addEventListener('change',async e=>{
       render();toast('Photo updated');buzz([12,30,12]);
     }else if(photoMode==='post'){
       toast('Preparing photo…');
-      pendingPost=await fitImage(f);
+      pendingPost=await makePostImage(f);
       const box=document.getElementById('po-prev');
       if(box)box.innerHTML=postPrevHTML();
       else openComposer();
@@ -3069,17 +4078,24 @@ function restoreTimer(){
 }
 async function lockScreen(){try{if('wakeLock'in navigator)wakeLock=await navigator.wakeLock.request('screen');}catch(e){}}
 async function releaseScreen(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
+/* The worker used to be built from a blob: URL, which browsers refuse to
+   register — so the rest-timer notification never once fired. It is a real
+   file now, sw.js, sitting next to this page. It also keeps a copy of the
+   app so it opens with no signal, which a gym basement will test. */
 async function setupSW(){
   if(!('serviceWorker'in navigator))return;
-  const code=`let t;self.addEventListener('message',e=>{if(!e||!e.data)return;
-    if(e.data.type==='S'){clearTimeout(t);t=setTimeout(()=>{try{self.registration.showNotification('Rest complete',{body:e.data.n,vibrate:[200,100,200],tag:'rest'})}catch(x){}},e.data.ms)}
-    if(e.data.type==='C')clearTimeout(t)});`;
+  const local=/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+  if(location.protocol!=='https:'&&!local)return;
   try{
-    const u=URL.createObjectURL(new Blob([code],{type:'text/javascript'}));
-    swReg=await navigator.serviceWorker.register(u);await navigator.serviceWorker.ready;
+    swReg=await navigator.serviceWorker.register('sw.js');
+    await navigator.serviceWorker.ready;
+    swReg=(await navigator.serviceWorker.getRegistration())||swReg;
   }catch(e){swReg=null;}
 }
-function postSW(d){if(!swReg)return;const s=swReg.active||swReg.waiting||swReg.installing;if(s)try{s.postMessage(d);}catch(e){}}
+function postSW(d){
+  const s=(navigator.serviceWorker&&navigator.serviceWorker.controller)||(swReg&&(swReg.active||swReg.waiting||swReg.installing));
+  if(s)try{s.postMessage(d);}catch(e){}
+}
 async function notify(secs,name){
   if(!('Notification'in window))return;
   if(Notification.permission==='default'){try{await Notification.requestPermission();}catch(e){}}
@@ -3134,13 +4150,19 @@ function partnerName(){
 }
 function genCode(){return Array.from({length:6},()=>'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*32)]).join('');}
 function sref(path){return ref(db,'sessions/'+sessId+'/'+path);}
+/* Every session listener is tied to the session it was opened for. Leaving
+   used to leave them all running: the host kept ticking sets, and each tick
+   landed on the ex-guest's own program, which their next save then wrote to
+   their account. Now they are really detached, and as a second lock each
+   callback checks it still belongs to the session on screen. */
 function watch(path,cb){
   const r=sref(path);
-  const l=onValue(r,cb);
+  const sid=sessId;
+  const l=onValue(r,snap=>{if(sessId&&sessId===sid)cb(snap);});
   watchers.push({r,l});
 }
 function unwatchAll(){
-  watchers.forEach(({r,l})=>{try{off(r,'value',l);}catch(e){}});
+  watchers.forEach(({l})=>detach(l));
   watchers=[];
 }
 
@@ -3276,9 +4298,10 @@ function armDisconnect(){
    can leave a stale session. We watch the socket, beat every 15s, and put
    everything back the moment we are online again. */
 let online=true,beatT=null,staleT=null,peerSeen=0,peerStale=false;
-let everOnline=false,dropT=null;
+let everOnline=false,dropT=null,connWatched=false;
 function watchConnection(){
-  if(!db)return;
+  if(!db||connWatched)return;      // once per page — every sign-in used to add another
+  connWatched=true;
   try{
     const r=ref(db,'.info/connected');
     onValue(r,snap=>{
@@ -3543,7 +4566,7 @@ function watchSession(){
   watchTimer();
 }
 function applyRemoteState(s){
-  if(!s)return;
+  if(!s||!sessId)return;         // no session, no one else's program — ever
   // copy out of the snapshot — never keep a live reference to it
   const clone=v=>{try{return JSON.parse(JSON.stringify(v));}catch(e){return v;}};
   if(s.EX)EX={...emptyEX(),...clone(s.EX)};
@@ -3600,7 +4623,11 @@ async function leaveSession(){
   unwatchAll();
   if(db&&id&&myRole){
     try{await set(ref(db,'sessions/'+id+'/'+myRole+'/profile'),null);}catch(e){}
-    if(wasHost){try{await set(ref(db,'sessions/'+id+'/ended'),true);}catch(e){}}
+    if(wasHost){
+      try{await set(ref(db,'sessions/'+id+'/ended'),true);}catch(e){}
+      // give the guest a moment to see "ended", then clear the whole session away
+      setTimeout(()=>{try{remove(ref(db,'sessions/'+id)).catch(()=>{});}catch(e){}},8000);
+    }
   }
   stopBeat();
   sessId=null;role=null;partner=null;editGranted=false;
@@ -3631,10 +4658,37 @@ function loadSess(){try{const r=localStorage.getItem('unit-sess');if(r){const d=
 function switchAuth(t){
   document.getElementById('pane-in').style.display=t==='in'?'':'none';
   document.getElementById('pane-up').style.display=t==='up'?'':'none';
-  document.getElementById('tab-in').classList.toggle('active',t==='in');
+  document.getElementById('pane-reset').style.display=t==='reset'?'':'none';
+  document.getElementById('tab-in').classList.toggle('active',t==='in'||t==='reset');
   document.getElementById('tab-up').classList.toggle('active',t==='up');
-  document.getElementById('err-in').textContent='';
-  document.getElementById('err-up').textContent='';
+  ['err-in','err-up','err-rs'].forEach(id=>{const e=document.getElementById(id);if(e){e.textContent='';e.classList.remove('ok');}});
+  if(t==='reset'){
+    const li=document.getElementById('li-user'),rs=document.getElementById('rs-email');
+    if(li&&rs&&li.value.includes('@'))rs.value=li.value.trim();
+    setTimeout(()=>{if(rs)rs.focus();},60);
+  }
+}
+/* Firebase sends the reset email itself, so nobody has to email a person
+   and wait. The answer is the same whether or not the address has an
+   account, so this can't be used to find out who is signed up. */
+async function doReset(){
+  const e=(document.getElementById('rs-email').value||'').trim().toLowerCase();
+  const err=document.getElementById('err-rs');err.textContent='';err.classList.remove('ok');
+  if(!/^\S+@\S+\.\S+$/.test(e)){err.textContent='Enter the email address you signed up with.';return;}
+  if(!auth){err.textContent='Cannot reach the server right now.';return;}
+  const b=document.getElementById('rs-go');if(b){b.disabled=true;b.textContent='Sending…';}
+  try{await sendPasswordResetEmail(auth,e);}
+  catch(x){
+    const c=(x&&x.code)||'';
+    if(c.includes('network')||c.includes('too-many')||c.includes('invalid-email')){
+      if(b){b.disabled=false;b.textContent='Send reset link';}
+      err.textContent=authErr(x);return;
+    }
+    // user-not-found and friends fall through to the same message on purpose
+  }
+  if(b){b.disabled=false;b.textContent='Send again';}
+  err.classList.add('ok');
+  err.textContent='If an account uses '+e+', a reset link is on its way. Check your inbox and spam folder.';
 }
 // the splash lives in its own classic script, so reach it through the window
 function bootReady(){if(typeof window.__bootReady==='function')window.__bootReady();}
@@ -3659,7 +4713,7 @@ function busy(m){document.getElementById('auth-load-msg').textContent=m;document
 function unbusy(){document.getElementById('auth-load').classList.remove('active');}
 function authErr(e){
   const c=(e&&e.code)||'';
-  if(c.includes('invalid-credential')||c.includes('user-not-found')||c.includes('wrong-password'))return 'That username or password is not right.';
+  if(c.includes('invalid-credential')||c.includes('user-not-found')||c.includes('wrong-password'))return 'That email or password is not right.';
   if(c.includes('email-already'))return 'An account already uses that email. Try signing in.';
   if(c.includes('weak-password'))return 'Use at least 6 characters for your password.';
   if(c.includes('invalid-email'))return 'That email address is not valid.';
@@ -3668,26 +4722,33 @@ function authErr(e){
   return (e&&e.message||'Something went wrong. Try again.').slice(0,120);
 }
 let nameIndexBlocked=false;
-async function resolveEmail(v){
-  if(v.includes('@'))return v.trim().toLowerCase();
-  if(!db)throw new Error('Enter your email address instead.');
-  let s;
-  try{s=await get(ref(db,'usernames/'+v.trim().toLowerCase()));}
-  catch(e){throw new Error('Sign in with your email address instead of your username.');}
-  if(s&&s.exists())return s.val().email;
-  throw{code:'auth/user-not-found'};
-}
+/* Signing in with a username meant anyone could read usernames/{name} while
+   signed out — and each of those records held the account's email. Every
+   handle on the Hub was one lookup away from an inbox. Sign-in is by email
+   now, and the username record keeps only the uid. */
 async function doLogin(){
-  const u=(document.getElementById('li-user').value||'').trim();
+  const u=(document.getElementById('li-user').value||'').trim().toLowerCase();
   const p=document.getElementById('li-pass').value||'';
   const err=document.getElementById('err-in');err.textContent='';
   if(!u||!p){err.textContent='Fill in both fields.';return;}
+  if(!u.includes('@')){err.textContent='Sign in with the email you signed up with — usernames can no longer be used here.';return;}
   if(!auth){err.textContent='Cannot reach the server right now.';return;}
   busy('Signing in');
   try{
-    const email=await resolveEmail(u);
-    await signInWithEmailAndPassword(auth,email,p);
+    await signInWithEmailAndPassword(auth,u,p);
   }catch(e){unbusy();err.textContent=authErr(e);}
+}
+// strip the email out of our own old username record, once per device
+async function tidyUsernameRecord(){
+  try{
+    if(!db||!user||!profile||!profile.username)return;
+    const k='unit-uname-tidy:'+user.uid;
+    if(localStorage.getItem(k))return;
+    const r=ref(db,'usernames/'+String(profile.username).toLowerCase());
+    const s=await withTimeout(get(child(r,'uid')),10000);
+    if(s&&s.exists()&&s.val()===user.uid)await set(r,{uid:user.uid});
+    localStorage.setItem(k,'1');
+  }catch(e){}
 }
 let signingUp=false;
 async function doSignup(){
@@ -3699,7 +4760,9 @@ async function doSignup(){
   const err=document.getElementById('err-up');err.textContent='';
   if(!first||!email||!uname||!pass){err.textContent='Fill in your name, email, username and password.';return;}
   if(!/^[a-z0-9_.]{3,20}$/.test(uname)){err.textContent='Usernames use 3-20 letters, numbers, dots or underscores.';return;}
+  if(!modCheck(first+' '+last+' '+uname.replace(/[_.]/g,' ')).ok){err.textContent='That name or username isn\'t allowed. Pick another.';return;}
   if(pass.length<6){err.textContent='Use at least 6 characters for your password.';return;}
+  if(!document.getElementById('su-agree').checked){err.textContent='Tick the box to agree to the Terms and Community Guidelines.';return;}
   if(!auth){err.textContent='Cannot reach the server right now.';return;}
   busy('Creating your account');
   signingUp=true;
@@ -3708,7 +4771,7 @@ async function doSignup(){
   // is the real gatekeeper for duplicate accounts.
   if(db){
     try{
-      const taken=await get(ref(db,'usernames/'+uname));
+      const taken=await get(ref(db,'usernames/'+uname+'/uid'));
       if(taken&&taken.exists()){signingUp=false;unbusy();err.textContent='That username is taken. Pick another.';return;}
     }catch(e){/* rules blocked the lookup — carry on and create the account */}
   }
@@ -3723,14 +4786,17 @@ async function doSignup(){
   // surface as a signup failure.
   user=cred.user;
   try{await updateProfile(user,{displayName:first+(last?' '+last:'')});}catch(e){}
-  profile={firstName:first,lastName:last,email,username:uname,avatar:''};
+  profile={firstName:first,lastName:last,email,username:uname,avatar:'',terms:Date.now()};
   useAccountKeys(user.uid);
+  histUseAccount(user.uid);
   saveProfileLocal();
   EX=emptyEX();CARDIO={};MEALS=[];SUPPS=[];GROCERY=[];grChecked={};
   st={};ws={};wtr={};calDone={};MACROS={cal:'',protein:'',carbs:'',fat:''};
   PREFS={trainDays:[],split:'',doesCardio:false,onboarded:false};
+  HIST={w:{},f:{}};histQ={};histSaveLocal();
   if(db){
-    try{await set(ref(db,'usernames/'+uname),{email,uid:user.uid});}
+    // uid only — an email in here was readable by anyone who knew the handle
+    try{await set(ref(db,'usernames/'+uname),{uid:user.uid});}
     catch(e){nameIndexBlocked=true;}
     try{await saveProfileCloud();}catch(e){}
   }
@@ -3745,7 +4811,7 @@ async function doSignup(){
   render();
   toast('Welcome to UNIT, '+first);
   // Say this after the welcome, or it gets overwritten and never read.
-  if(nameIndexBlocked||cloudWarned)
+  if(nameIndexBlocked)
     setTimeout(()=>toast('Saved on this device — sign in with your email next time'),2800);
 }
 async function doSignOut(){
@@ -3768,8 +4834,9 @@ async function doSignOut(){
         'will not appear when you sign in elsewhere.\n\nSign out anyway?'))return;
     }
   }
+  if(histOwed()&&user&&db){busy('Saving your history');await histFlush();}
   busy('Signing out');
-  saveLocal({force:true});saveProfileLocal();
+  saveLocal({force:true});saveProfileLocal();histSaveLocal();
   tearing=true;                       // block writes while the state is torn down
   stopWatchOwnData();
   stopHub();
@@ -3782,6 +4849,7 @@ async function doSignOut(){
   EX=emptyEX();CARDIO={};MEALS=[];SUPPS=[];GROCERY=[];grChecked={};
   st={};ws={};wtr={};calDone={};
   PREFS={trainDays:[],split:'',doesCardio:false,onboarded:false};
+  HIST={w:{},f:{}};histQ={};histKey='unit-hist:local';HIDDEN=null;
   dataKey=LS;profKey=PS;   // back to the shared slot; each account keeps its own
   memBundle=null;memProfile=null;   // drop the outgoing account's cache
   tearing=false;
@@ -3868,11 +4936,17 @@ function obFinish(){
 ═══════════════════════════════════════════════════════════ */
 const HUB={
   POST_MAX:600, BIO_MAX:200, CMT_MAX:280,
-  PAGE:15, IMG_PX:1080, IMG_BYTES:120000, THUMB_PX:96,
-  FANOUT:150, COOLDOWN:15000, IMG_CACHE:45, NOTIF_KEEP:40,
-  // the feed shows a 420px copy; the full picture is fetched only on tap
-  FEED_PX:420, FEED_Q:.62, FEED_BYTES:30000,
-  PUB_KEEP:400, THUMB_KEEP:150, WAIT_MAX:50
+  PAGE:15, THUMB_PX:128,
+  FANOUT:150, COOLDOWN:15000, IMG_CACHE:30, NOTIF_KEEP:40,
+  /* Photos are stored twice. The feed copy is 1440px on its long edge —
+     sharper than a 3x phone screen needs at full card width — and the
+     original goes up at 2560px, downloaded only when someone opens it.
+     Sizes are base64 characters (~1.33× the file size).
+     Every photo post costs roughly 1.5–2.5MB of database space; see the
+     notes on moving photos to Cloud Storage once the Hub grows. */
+  FEED_PX:1440, FEED_Q:.86, FEED_BYTES:480000,
+  FULL_PX:2560, FULL_Q:.9,  FULL_BYTES:2200000,
+  PUB_KEEP:400, THUMB_KEEP:60, WAIT_MAX:50
 };
 
 let hubTab='feed';                 // feed | friends | reqs
@@ -3885,6 +4959,8 @@ let openCmt={}, hubQ='', hubHits=null, hubSearching=false;
 let SHARE={routine:false,fuel:false,groc:false,streak:false};
 let sharePushed=0, lastPostAt=0, pendingPost=null, viewUid=null;
 let hubOn=[], imgObs=null, searchT=null, newPostRef=null, newPostCb=null, pruneT=null;
+let BLOCKED={};                    // uid → {n,ts}: people you blocked. Private to you.
+let isAdmin=false, isBanned=false; // set from admins/{uid} and banned/{uid}
 
 /* ── a cache that survives the tab ────────────────────────────
    Public cards and feed thumbnails are the same bytes for everybody and
@@ -4029,18 +5105,60 @@ function shrink(dataUrl,max,q){
     img.src=dataUrl;
   });
 }
-/* Squeeze until it fits. A 4MB phone photo would otherwise cost every
-   reader of the feed 4MB of download. */
-async function fitImage(file){
-  let q=.72,d=await resizeImg(file,HUB.IMG_PX,q);
-  let guard=0;
-  while(d.length>HUB.IMG_BYTES&&guard++<5){
-    q-=.12;
-    if(q<.3){d=await resizeImg(file,720,.5);break;}
-    d=await resizeImg(file,HUB.IMG_PX,q);
+/* ── Hub photos at full quality ──────────────────────────────
+   The old path squeezed every photo to 1080px under 120KB, and the feed
+   showed a 420px copy at 62% quality — on a phone that is a visibly soft
+   picture. Now: shrink in halving steps (one big jump from 4000px throws
+   detail away), use WebP where the browser can write it (same look, about
+   a third smaller), and only then lower quality if a size cap is hit. */
+function loadImgEl(file){
+  return new Promise((res,rej)=>{
+    const u=URL.createObjectURL(file),img=new Image();
+    img.onload=()=>res({img,done:()=>URL.revokeObjectURL(u)});
+    img.onerror=()=>{URL.revokeObjectURL(u);rej(new Error('decode'));};
+    img.src=u;
+  });
+}
+function scaleTo(src,max){
+  let w=src.naturalWidth||src.width,h=src.naturalHeight||src.height;
+  const k=Math.min(1,max/Math.max(w,h));
+  const tw=Math.max(1,Math.round(w*k)),th=Math.max(1,Math.round(h*k));
+  while(w/2>=tw&&h/2>=th){
+    const c=document.createElement('canvas');c.width=Math.round(w/2);c.height=Math.round(h/2);
+    const x=c.getContext('2d');x.imageSmoothingEnabled=true;x.imageSmoothingQuality='high';
+    x.drawImage(src,0,0,c.width,c.height);
+    src=c;w=c.width;h=c.height;
   }
-  if(d.length>HUB.IMG_BYTES*1.9)d=await resizeImg(file,640,.45);
+  const c=document.createElement('canvas');c.width=tw;c.height=th;
+  const x=c.getContext('2d');x.imageSmoothingEnabled=true;x.imageSmoothingQuality='high';
+  x.fillStyle='#fff';x.fillRect(0,0,tw,th);          // transparent PNGs would otherwise turn black
+  x.drawImage(src,0,0,tw,th);
+  return c;
+}
+let webpOK=null;
+function encodeImg(c,q){
+  if(webpOK!==false){
+    try{const d=c.toDataURL('image/webp',q);if(d.startsWith('data:image/webp')){webpOK=true;return d;}}catch(e){}
+    webpOK=false;                                    // Safari writes PNG when asked for WebP
+  }
+  return c.toDataURL('image/jpeg',q);
+}
+function encodeUnder(c,q,maxLen){
+  let d=encodeImg(c,q),guard=0;
+  while(d.length>maxLen&&guard++<5&&q>.62){q-=.06;d=encodeImg(c,q);}
   return d;
+}
+async function makePostImage(file){
+  const {img,done}=await loadImgEl(file);
+  try{
+    let fullC=scaleTo(img,HUB.FULL_PX);
+    let full=encodeUnder(fullC,HUB.FULL_Q,HUB.FULL_BYTES);
+    if(full.length>HUB.FULL_BYTES){fullC=scaleTo(img,2048);full=encodeUnder(fullC,.86,HUB.FULL_BYTES);}
+    const feedC=Math.max(fullC.width,fullC.height)>HUB.FEED_PX?scaleTo(fullC,HUB.FEED_PX):fullC;
+    let feed=feedC===fullC&&full.length<=HUB.FEED_BYTES?full:encodeUnder(feedC,HUB.FEED_Q,HUB.FEED_BYTES);
+    if(feed.length>HUB.FEED_BYTES)feed=encodeUnder(scaleTo(fullC,1200),.8,HUB.FEED_BYTES);
+    return{full,feed,w:fullC.width,h:fullC.height};
+  }finally{done();}
 }
 /* No avatar in here on purpose — see avatarOf(). Anything written to a
    shared node carries the uid and the reader looks the picture up. */
@@ -4122,16 +5240,22 @@ async function startHub(){
   });
   hubListen('freq/'+user.uid,s=>{
     freqs=(s&&s.val())||{};
+    Object.keys(freqs).forEach(u=>{if(BLOCKED[u]){delete freqs[u];set(hubRef('freq/'+user.uid+'/'+u),null).catch(()=>{});}});
     if(tab==='hub'&&hubTab==='reqs')paintHubList();
     paintSearch();
     paintHubBadges();
   });
   hubListen('fsent/'+user.uid,s=>{fsent=(s&&s.val())||{};paintSearch();});
+  hubListen('users/'+user.uid+'/blocked',s=>{
+    BLOCKED=(s&&s.val())||{};
+    if(tab==='hub'){paintHubList();paintSearch();}
+  });
+  checkRoles();
   try{
     const q=query(hubRef('notif/'+user.uid),orderByChild('ts'),limitToLast(HUB.NOTIF_KEEP));
     const l=onValue(q,s=>{
       const v=(s&&s.val())||{};
-      notifs=Object.keys(v).map(k=>({id:k,...v[k]})).sort((a,b)=>(b.ts||0)-(a.ts||0));
+      notifs=Object.keys(v).map(k=>({id:k,...v[k]})).filter(n=>!BLOCKED[n.u]).sort((a,b)=>(b.ts||0)-(a.ts||0));
       unread=notifs.filter(n=>!n.r).length;
       paintHubBadges();
       if(document.getElementById('nt-list'))paintNotifs();
@@ -4160,17 +5284,20 @@ async function pruneNotifs(){
 function hubListen(path,cb){
   try{
     const r=hubRef(path);
-    const l=onValue(r,cb,()=>{});
+    const who=user&&user.uid;
+    // a listener from the last account must never paint into the next one
+    const l=onValue(r,s=>{if(user&&user.uid===who)cb(s);},()=>{});
     hubOn.push({r,l});
   }catch(e){}
 }
 function stopHub(){
-  hubOn.forEach(({r,l})=>{try{off(r,'value',l);}catch(e){}});
+  hubOn.forEach(({l})=>detach(l));
   hubOn=[];
   stopNewPosts();
-  friends={};freqs={};fsent={};notifs=[];unread=0;
+  friends={};freqs={};fsent={};notifs=[];unread=0;BLOCKED={};
+  isAdmin=false;isBanned=false;
   feed=[];feedLoaded=false;feedDone=false;feedOldest=0;waiting=[];
-  pubCache.clear();imgCache.clear();cmtCache={};openCmt={};
+  pubCache.clear();imgCache.clear();fullCache.clear();cmtCache={};openCmt={};
   avMiss.clear();avBusy.clear();clearTimeout(avT);
   hubQ='';hubHits=null;pendingPost=null;
   paintHubBadges();
@@ -4289,7 +5416,9 @@ function countBio(){
 }
 async function saveBio(){
   profile=profile||{};
-  profile.bio=(document.getElementById('bio-in').value||'').trim().slice(0,HUB.BIO_MAX);
+  const b=(document.getElementById('bio-in').value||'').trim().slice(0,HUB.BIO_MAX);
+  if(!modCheck(b).ok){toast(MOD_MSG);return;}
+  profile.bio=modClean(b);
   await saveProfileCloud();
   await pushPub();
   closeSheet();render();toast('Profile updated');
@@ -4396,7 +5525,7 @@ async function runSearch(s){
     const q=query(hubRef('pub'),orderByChild('u'),startAt(s),endAt(s+'\uf8ff'),limitToFirst(15));
     const snap=await withTimeout(get(q),12000);
     const v=(snap&&snap.val())||{};
-    hubHits=Object.keys(v).filter(u=>u!==user.uid).map(u=>({uid:u,...v[u]}));
+    hubHits=Object.keys(v).filter(u=>u!==user.uid&&!BLOCKED[u]).map(u=>({uid:u,...v[u]}));
     hubHits.forEach(h=>pubCache.set(h.uid,h));
   }catch(e){
     hubHits=[];
@@ -4674,6 +5803,7 @@ function paintFeed(){
   if(!feedLoaded){box.innerHTML='<div class="hub-load"><div class="sk"></div></div>';return;}
   const me=myCard();
   let h='';
+  waiting=waiting.filter(visiblePost);
   if(waiting.length)h+=`<div class="newp"><button onclick="showWaiting()">${waiting.length} new ${waiting.length===1?'post':'posts'}</button></div>`;
   h+=`<div class="comp" onclick="openComposer()">
     ${avHTMLFor(user&&user.uid,me.n,'av-40')}
@@ -4685,7 +5815,7 @@ function paintFeed(){
       <div class="empty-t">Nothing here yet</div>
       <div class="empty-s">Be the first to post. Anything you share here is visible to everyone on UNIT.</div></div>`;
   }else{
-    h+=feed.map(postHTML).join('');
+    h+=feed.filter(visiblePost).map(postHTML).join('');
     h+=feedDone
       ? '<div class="hint" style="text-align:center;padding:16px">You have reached the beginning.</div>'
       : '<button class="add" id="more-btn" onclick="loadFeed(false)">Load older posts</button>';
@@ -4707,10 +5837,10 @@ function postHTML(p){
         <div class="post-n">${esc(p.n||'Someone')}</div>
         <div class="post-m">@${esc(p.u||'')} · ${ago(p.ts||0)}</div>
       </div>
-      ${mine?`<button class="post-x" onclick="delPost('${p.id}')" aria-label="Delete post">×</button>`:''}
+      <button class="post-x" onclick="openPostMenu('${p.id}')" aria-label="Post options">⋯</button>
     </div>
     ${p.txt?`<div class="post-tx">${renderText(p.txt,p.mn)}</div>`:''}
-    ${p.img?`<div class="post-im load" data-pid="${p.id}" onclick="openLb('${p.id}')"><div class="sk"></div></div>`:''}
+    ${p.img?`<div class="post-im load${p.iw&&p.ih?' ar':''}" data-pid="${p.id}" ${imgBoxStyle(p)} onclick="openLb('${p.id}')"><div class="sk"></div></div>`:''}
     <div class="post-a">
       <button class="pa${liked?' on':''}" id="lk-${p.id}" onclick="toggleLike('${p.id}')" aria-label="Like">
         <svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 00-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 00-7.8 7.8l1.1 1L12 21.2l7.7-7.8 1.1-1a5.5 5.5 0 000-7.8z"/></svg>
@@ -4725,6 +5855,14 @@ function postHTML(p){
   </div>`;
 }
 
+/* The box takes the photo's own shape, so nothing is cropped: a portrait
+   shot stays portrait. Only very tall images (past 4:5) are letterboxed,
+   so one screenshot can't fill three screens of feed. */
+function imgBoxStyle(p){
+  if(!(p.iw>0&&p.ih>0))return '';
+  const r=Math.max(p.iw/p.ih,.8);
+  return `style="aspect-ratio:${r.toFixed(4)}"`;
+}
 /* ── images: fetched only as they come into view ─────────── */
 function observeImgs(){
   if(!('IntersectionObserver'in window)){
@@ -4766,32 +5904,121 @@ async function loadPostImg(pid){
   const cur=document.querySelector('.post-im[data-pid="'+pid+'"]');
   if(!cur)return;
   cur.classList.remove('load');
-  if(d)cur.innerHTML='<img src="'+d+'" alt="">';
+  if(d)cur.innerHTML='<img src="'+d+'" alt="" decoding="async">';
   else{cur.innerHTML='';cur.style.minHeight='0';}
 }
-let fullCache=new Map();
-/* Open on the thumbnail so it is instant, then quietly upgrade to full size. */
+let fullCache=new Map(),lbPid=null;
+/* Open on the feed copy so it is instant, then swap in the original. */
 async function openLb(pid){
   const thumb=imgCache.get(pid);
   const el=document.getElementById('plb-img');
   const full=fullCache.get(pid);
   if(!thumb&&!full)return;
+  lbPid=pid;lbReset();
   el.src=full||thumb;
+  const stEl=document.getElementById('plb-st');
   document.getElementById('plb').classList.add('active');
-  if(full)return;
+  document.body.style.overflow='hidden';
+  if(full){stEl.classList.remove('show');return;}
+  stEl.textContent='Loading full resolution…';stEl.classList.add('show');
   try{
-    const s=await withTimeout(get(hubRef('postImg/'+pid+'/d')),25000);
+    const s=await withTimeout(get(hubRef('postImg/'+pid+'/d')),60000);
     const d=(s&&s.exists()&&s.val())||'';
-    if(!d)return;
+    if(lbPid!==pid)return;
+    if(!d){stEl.classList.remove('show');return;}      // the feed copy already is the original
     fullCache.set(pid,d);
-    if(fullCache.size>8){const k=fullCache.keys().next().value;fullCache.delete(k);}
-    const cur=document.getElementById('plb');
-    if(cur&&cur.classList.contains('active'))el.src=d;
-  }catch(e){}
+    if(fullCache.size>6){const k=fullCache.keys().next().value;fullCache.delete(k);}
+    const pre=new Image();
+    pre.onload=()=>{if(lbPid===pid){el.src=d;stEl.classList.remove('show');}};
+    pre.onerror=()=>stEl.classList.remove('show');
+    pre.src=d;
+  }catch(e){if(lbPid===pid){stEl.textContent='Showing the feed copy — no connection';setTimeout(()=>stEl.classList.remove('show'),2200);}}
 }
 function closeLb(){
+  lbPid=null;
   document.getElementById('plb').classList.remove('active');
   document.getElementById('plb-img').src='';
+  document.getElementById('plb-st').classList.remove('show');
+  if(!document.getElementById('uv').classList.contains('active'))document.body.style.overflow='';
+  lbReset();
+}
+function lbBackdrop(e){if(e.target&&(e.target.id==='plb'))closeLb();}
+/* Pinch, drag and double-tap to zoom — the reason to have the original at all.
+   The page itself is not zoomable (it is an app), so the viewer does it. */
+const LB={s:1,x:0,y:0,ax:0,ay:0,pts:new Map(),g:null,tapT:0,tapX:0,tapY:0,moved:false};
+function lbApply(anim){
+  const el=document.getElementById('plb-img');if(!el)return;
+  LB.ax=LB.x;LB.ay=LB.y;                      // what the screen is showing right now
+  el.style.transition=anim?'transform .24s cubic-bezier(.16,1,.3,1)':'none';
+  el.style.transform=`translate3d(${LB.x}px,${LB.y}px,0) scale(${LB.s})`;
+  document.getElementById('plb').classList.toggle('zoomed',LB.s>1.01);
+}
+function lbReset(){LB.s=1;LB.x=0;LB.y=0;LB.pts.clear();LB.g=null;lbApply(false);}
+function lbClamp(){
+  const el=document.getElementById('plb-img');
+  if(LB.s<=1.01){LB.s=1;LB.x=0;LB.y=0;return;}
+  const mx=(el.offsetWidth*LB.s-el.offsetWidth)/2,my=(el.offsetHeight*LB.s-el.offsetHeight)/2;
+  LB.x=Math.max(-mx,Math.min(mx,LB.x));LB.y=Math.max(-my,Math.min(my,LB.y));
+}
+function lbZoomAt(cx,cy,s){
+  const el=document.getElementById('plb-img'),r=el.getBoundingClientRect();
+  // scaling is about the centre, so the centre only moves by the translation on screen
+  const c0x=r.left+r.width/2-LB.ax,c0y=r.top+r.height/2-LB.ay;
+  // keep the point under the finger where it is
+  const ox=cx-(c0x+LB.x),oy=cy-(c0y+LB.y);
+  const k=s/LB.s;
+  LB.x=LB.x-ox*(k-1);LB.y=LB.y-oy*(k-1);LB.s=s;
+}
+function lbInit(){
+  const el=document.getElementById('plb-img');if(!el||el._lb)return;el._lb=1;
+  el.addEventListener('pointerdown',e=>{
+    e.preventDefault();
+    try{el.setPointerCapture(e.pointerId);}catch(x){}
+    LB.pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    LB.moved=false;
+    const p=[...LB.pts.values()];
+    if(p.length===2){
+      LB.g={d:Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y)||1,s:LB.s,mx:(p[0].x+p[1].x)/2,my:(p[0].y+p[1].y)/2,x:LB.x,y:LB.y};
+    }else if(p.length===1){LB.g={px:e.clientX,py:e.clientY,x:LB.x,y:LB.y};}
+  });
+  el.addEventListener('pointermove',e=>{
+    if(!LB.pts.has(e.pointerId))return;
+    LB.pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    const p=[...LB.pts.values()],g=LB.g;if(!g)return;
+    if(p.length>=2&&g.d){
+      const d=Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y),mx=(p[0].x+p[1].x)/2,my=(p[0].y+p[1].y)/2;
+      const s=Math.max(1,Math.min(5,g.s*d/g.d));
+      LB.s=g.s;LB.x=g.x;LB.y=g.y;lbZoomAt(g.mx,g.my,s);
+      LB.x+=mx-g.mx;LB.y+=my-g.my;LB.moved=true;lbApply(false);
+    }else if(p.length===1&&g.px!==undefined){
+      const dx=e.clientX-g.px,dy=e.clientY-g.py;
+      if(Math.abs(dx)+Math.abs(dy)>6)LB.moved=true;
+      if(LB.s>1){LB.x=g.x+dx;LB.y=g.y+dy;lbApply(false);}
+    }
+  });
+  const up=e=>{
+    if(!LB.pts.has(e.pointerId))return;
+    LB.pts.delete(e.pointerId);
+    const left=[...LB.pts.values()];
+    if(left.length===1){LB.g={px:left[0].x,py:left[0].y,x:LB.x,y:LB.y};return;}
+    if(left.length)return;
+    if(!LB.moved&&e.type==='pointerup'){
+      const now=Date.now();
+      if(now-LB.tapT<320&&Math.abs(e.clientX-LB.tapX)<30&&Math.abs(e.clientY-LB.tapY)<30){
+        if(LB.s>1.01){LB.s=1;LB.x=0;LB.y=0;}else lbZoomAt(e.clientX,e.clientY,2.5);
+        LB.tapT=0;lbClamp();lbApply(true);return;
+      }
+      LB.tapT=now;LB.tapX=e.clientX;LB.tapY=e.clientY;
+    }
+    lbClamp();lbApply(true);LB.g=null;
+  };
+  el.addEventListener('pointerup',up);el.addEventListener('pointercancel',up);
+  el.addEventListener('wheel',e=>{
+    e.preventDefault();
+    lbZoomAt(e.clientX,e.clientY,Math.max(1,Math.min(5,LB.s*Math.exp(-e.deltaY*.0022))));
+    lbClamp();lbApply(false);
+  },{passive:false});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.getElementById('plb').classList.contains('active'))closeLb();});
 }
 
 /* ── new posts arriving while you read ───────────────────── */
@@ -4803,6 +6030,7 @@ function watchNewPosts(sinceTs){
     newPostCb=onChildAdded(newPostRef,s=>{
       const p={id:s.key,...(s.val()||{})};
       if(p.uid===user.uid)return;                 // our own, already on screen
+      if(BLOCKED[p.uid])return;
       if(feed.some(x=>x.id===p.id))return;
       if(waiting.some(x=>x.id===p.id))return;
       waiting.unshift(p);
@@ -4812,7 +6040,7 @@ function watchNewPosts(sinceTs){
   }catch(e){}
 }
 function stopNewPosts(){
-  try{if(newPostRef&&newPostCb)off(newPostRef,'child_added',newPostCb);}catch(e){}
+  detach(newPostCb);             // onChildAdded returned the detach function
   newPostRef=null;newPostCb=null;
 }
 function showWaiting(){
@@ -4825,6 +6053,8 @@ function showWaiting(){
 
 /* ── composing ───────────────────────────────────────────── */
 function openComposer(){
+  if(cantPost())return;
+  if(needTerms(openComposer))return;
   openSheet(`<div class="sheet-t">New post</div>
     <div class="sheet-s">Everyone on UNIT can see this. Your friends also get a notification.</div>
     <textarea class="ta" id="po-tx" maxlength="${HUB.POST_MAX}"
@@ -4840,8 +6070,10 @@ function openComposer(){
   countPost();
 }
 function postPrevHTML(){
-  return `<div class="pv-prev"><img src="${pendingPost}" alt="">
-    <button onclick="clearPostImg()">×</button></div>`;
+  if(!pendingPost)return '';
+  return `<div class="pv-prev"><img src="${pendingPost.feed}" alt="">
+    <button onclick="clearPostImg()" aria-label="Remove photo">×</button>
+    <span class="pv-res mono">${pendingPost.w}×${pendingPost.h}</span></div>`;
 }
 function clearPostImg(){
   pendingPost=null;
@@ -4856,9 +6088,12 @@ function countPost(){
 function cancelPost(){pendingPost=null;closeSheet();}
 async function submitPost(){
   const t=document.getElementById('po-tx');
-  const txt=((t&&t.value)||'').trim().slice(0,HUB.POST_MAX);
+  let txt=((t&&t.value)||'').trim().slice(0,HUB.POST_MAX);
   if(!txt&&!pendingPost){toast('Write something or add a photo');return;}
   if(!db||!user){toast('You need to be signed in');return;}
+  if(cantPost())return;
+  if(!modCheck(txt).ok){toast(MOD_MSG);return;}
+  txt=modClean(txt);
   const since=Date.now()-lastPostAt;
   if(since<HUB.COOLDOWN){toast('Give it '+Math.ceil((HUB.COOLDOWN-since)/1000)+'s before posting again');return;}
   const btn=document.getElementById('po-go');
@@ -4867,35 +6102,30 @@ async function submitPost(){
   const pid=uid('p');
   const ts=serverNow();
   const mn=collectMentions(txt);
-  const post={uid:user.uid,u:me.u,n:me.n,txt,img:!!pendingPost,ts,cN:0};
-  if(mn)post.mn=mn;
   const img=pendingPost;
-  /* Scrolling past a photo used to download the full 120KB. The feed only
-     ever needs a 420px version, so store both and fetch the big one only
-     when somebody actually opens it. */
-  let thumb='';
-  if(img){
-    try{thumb=await shrink(img,HUB.FEED_PX,HUB.FEED_Q);}catch(e){}
-    if(thumb&&thumb.length>HUB.FEED_BYTES*2){
-      try{thumb=await shrink(img,320,.5);}catch(e){}
-    }
-  }
+  const post={uid:user.uid,u:me.u,n:me.n,txt,img:!!img,ts,cN:0};
+  if(img){post.iw=img.w;post.ih=img.h;}           // the feed reserves the right shape before it loads
+  if(mn)post.mn=mn;
+  if(btn&&img)btn.textContent='Uploading photo…';
   try{
     const w={};
     w['posts/'+pid]=post;
-    if(img)w['postImg/'+pid]={d:img,t:thumb||img,uid:user.uid};
-    await withTimeout(update(rootRef(),w),25000);
+    // t is the feed copy; d, the original, is only written when it differs
+    if(img)w['postImg/'+pid]=img.full!==img.feed?{t:img.feed,d:img.full,uid:user.uid,w:img.w,h:img.h}
+                                               :{t:img.feed,uid:user.uid,w:img.w,h:img.h};
+    // a 2MB photo on gym signal needs longer than a text post
+    await withTimeout(update(rootRef(),w),img?120000:25000);
   }catch(e){
     if(btn){btn.disabled=false;btn.textContent='Post';}
-    toast(classifyErr(e)==='blocked'?'The database refused that post':'Could not reach the server');
+    toast(classifyErr(e)==='blocked'?'The database refused that post':'Could not reach the server — try again');
     return;
   }
   lastPostAt=Date.now();
   pendingPost=null;
   if(img){
-    imgCache.set(pid,thumb||img);
-    fullCache.set(pid,img);
-    idbPut('img',pid,{t:thumb||img,ts:Date.now()});
+    imgCache.set(pid,img.feed);
+    fullCache.set(pid,img.full);
+    idbPut('img',pid,{t:img.feed,ts:Date.now()});
   }
   feed.unshift({id:pid,...post});
   closeSheet();
@@ -4968,7 +6198,7 @@ async function toggleLike(pid){
   buzz(on?12:6);
   paintLike(pid);
   try{
-    await set(hubRef('posts/'+pid+'/lk/'+user.uid),on?true:null);
+    await update(rootRef(),{['posts/'+pid+'/lk/'+user.uid]:on?true:null,['users/'+user.uid+'/lk/'+pid]:on?true:null});
     if(on&&p.uid!==user.uid){
       const me=myCard();
       await set(hubRef('notif/'+p.uid+'/'+uid('n')),
@@ -5002,7 +6232,7 @@ async function toggleCmts(pid){
   if(b){b.innerHTML=cmtsHTML(pid);paintAvatars();}
 }
 function cmtsHTML(pid){
-  const list=cmtCache[pid]||[];
+  const list=(cmtCache[pid]||[]).filter(c=>!BLOCKED[c.uid]&&!isHidden('c:'+pid+':'+c.id));
   const post=feed.find(x=>x.id===pid)||waiting.find(x=>x.id===pid)||{};
   return `<div class="cmts">
     ${list.map(c=>{
@@ -5019,6 +6249,7 @@ function cmtsHTML(pid){
             <button class="ca${liked?' on':''}" id="cl-${pid}-${c.id}" onclick="likeCmt('${pid}','${c.id}')" aria-label="Like comment"><span class="ca-h">${liked?'♥':'♡'}</span><span class="ca-n">${n||''}</span></button>
             <span class="ca-t">${ago(c.ts||0)}</span>
             ${canDel?`<button class="ca d" onclick="delCmt('${pid}','${c.id}')">Delete</button>`:''}
+            ${user&&c.uid!==user.uid?`<button class="ca d" onclick="openReport('cmt','${pid}','${c.id}')">Report</button>`:''}
           </div>
         </div>
       </div>`;}).join('')||'<div class="hint" style="margin:0 0 11px">No comments yet.</div>'}
@@ -5085,8 +6316,11 @@ async function delCmt(pid,cid){
   if(p)p.cN=Math.max(0,(p.cN||1)-1);
   repaintCmts(pid);paintCmtCount(pid);
   try{
-    await set(hubRef('postCmt/'+pid+'/'+cid),null);
-    await set(hubRef('posts/'+pid+'/cN'),(p&&p.cN)||0);
+    const gone=before.find(x=>x.id===cid)||{};
+    const w={['postCmt/'+pid+'/'+cid]:null};
+    if(gone.uid===user.uid)w['users/'+user.uid+'/cm/'+pid+'/'+cid]=null;
+    await update(rootRef(),w);
+    bumpCmtCount(pid,-1);
     toast('Comment deleted');
   }catch(e){
     cmtCache[pid]=before;
@@ -5097,8 +6331,12 @@ async function delCmt(pid,cid){
 }
 async function sendCmt(pid){
   const i=document.getElementById('ci-'+pid);
-  const t=((i&&i.value)||'').trim().slice(0,HUB.CMT_MAX);
+  let t=((i&&i.value)||'').trim().slice(0,HUB.CMT_MAX);
   if(!t||!db||!user)return;
+  if(cantPost())return;
+  if(needTerms(()=>sendCmt(pid)))return;
+  if(!modCheck(t).ok){toast(MOD_MSG);return;}
+  t=modClean(t);
   const me=myCard();
   const mn=collectMentions(t);
   const c={uid:user.uid,n:me.n,t,ts:serverNow()};
@@ -5111,14 +6349,20 @@ async function sendCmt(pid){
   if(i)i.value='';
   repaintCmts(pid);paintCmtCount(pid);
   try{
-    await set(hubRef('postCmt/'+pid+'/'+cid),c);
-    await set(hubRef('posts/'+pid+'/cN'),(p&&p.cN)||1);
+    // the index under your own account is what lets Delete account find this later
+    await update(rootRef(),{['postCmt/'+pid+'/'+cid]:c,['users/'+user.uid+'/cm/'+pid+'/'+cid]:true});
+    bumpCmtCount(pid,1);                         // a transaction — two people commenting at once both count
     if(p&&p.uid!==user.uid&&!(mn&&mn[p.uid])){
       await set(hubRef('notif/'+p.uid+'/'+uid('n')),
         {t:'cmt',u:user.uid,n:me.n,pid,txt:t.slice(0,70),ts:serverNow(),r:false});
     }
     notifyTagged(mn,'cmt',pid,t);
-  }catch(e){toast('Comment did not send');}
+  }catch(e){
+    cmtCache[pid]=(cmtCache[pid]||[]).filter(x=>x.id!==cid);
+    if(p)p.cN=Math.max(0,(p.cN||1)-1);
+    repaintCmts(pid);paintCmtCount(pid);
+    toast(classifyErr(e)==='blocked'?'You can’t comment on this post':'Comment did not send');
+  }
 }
 
 /* ═══════════ NOTIFICATIONS ═══════════ */
@@ -5206,6 +6450,7 @@ function closeUser(){
   document.body.style.overflow='';
 }
 function userActions(u,fr){
+  if(BLOCKED[u])return `<button class="btn" onclick="unblockUser('${u}').then(()=>openUser('${u}'))">Unblock</button>`;
   if(fr)return `<button class="btn ghost" onclick="unfriend('${u}')">Remove friend</button>`;
   if(freqs[u])return `<button class="btn pri" onclick="acceptFriend('${u}')">Accept request</button>
       <button class="btn ghost" onclick="declineFriend('${u}')">Ignore</button>`;
@@ -5226,7 +6471,9 @@ function paintUser(u,c,snap,flags){
   const act=userActions(u,fr);
 
   let body='';
-  if(!fr){
+  if(BLOCKED[u]){
+    body=`<div class="lock"><b>You blocked ${esc(c.n||'this person')}</b>Their posts and comments are hidden from you, and they can't send you requests or comment on your posts.</div>`;
+  }else if(!fr){
     body=`<div class="lock"><b>${esc(c.n||'This person')} shares more with friends</b>
       Send a friend request. If they accept, you will see whatever they choose to share — routine, nutrition, grocery list or streak.</div>`;
   }else{
@@ -5246,7 +6493,11 @@ function paintUser(u,c,snap,flags){
       ${c.b?`<div class="uv-bio">${esc(c.b)}</div>`:''}
       <div class="uv-a" id="uv-act">${act}</div>
     </div>
-    ${body}`;
+    ${body}
+    <div class="uv-safe">
+      <button class="ca d" onclick="openReport('user','${u}')">Report profile</button>
+      ${BLOCKED[u]?'':`<button class="ca d" onclick="confirmBlock('${u}')">Block</button>`}
+    </div>`;
 }
 function routineHTML(r,u,c){
   const sp=SPLITS.find(s=>s.v===r.split);
@@ -5545,6 +6796,414 @@ async function doImport(){
 
 
 /* ═══════════════════════════════════════════════════════════
+   SAFETY — filter, report, block, moderate
+
+   What Apple (guideline 1.2) and Google ask of any app where people post:
+   agree to rules before posting, a filter on what can be posted, a way to
+   report anything, a way to block anyone, and someone who acts on reports
+   within 24 hours. That last one is you — the moderation queue below shows
+   up under You for any account listed in admins/ in the database.
+═══════════════════════════════════════════════════════════ */
+/* Blocked outright: slurs, sexual content, self-harm taunts. Matched as whole
+   words after undoing common disguises (sh1t, a$$, f u c k, fuuuck), so
+   "Scunthorpe" or "class" never trip it. A trailing * means "and anything
+   that starts with this". Extend the list as your community needs. */
+const MOD_HARD=['nigger*','nigga*','niggah*','faggot*','fag','fags','dyke*','tranny*','trannie*','retard','retards','retarded',
+  'kike*','chink*','spic','spics','wetback*','gook*','raghead*','towelhead*','beaner*','coon','coons','paki','pakis','jigaboo*',
+  'cunt*','whore*','slut*','rape','raped','raping','rapist*','pedo*','paedo*','pedophile*','molest*','porn*','blowjob*',
+  'handjob*','cumshot*','dildo*','nudes','kys'];
+const MOD_PHRASE=['kill yourself','kill urself','go kill yourself','hang yourself','neck yourself','go die'];
+// Allowed but starred out — gym talk is salty, and a masked word is not a banned one.
+const MOD_SOFT=['fuck*','motherfuck*','shit*','bullshit*','bitch*','bastard*','asshole*','dick','dicks','dickhead*','twat*','wanker*'];
+const modRx=l=>l.map(t=>{
+  const pre=t.endsWith('*'),w=pre?t.slice(0,-1):t;
+  return new RegExp('^'+w.split('').map(ch=>ch.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'+').join('')+(pre?'':'$'));
+});
+const RX_HARD=modRx(MOD_HARD),RX_SOFT=modRx(MOD_SOFT);
+const LEET={'0':'o','1':'i','3':'e','4':'a','5':'s','7':'t','8':'b','@':'a','$':'s','!':'i','|':'i','€':'e'};
+function modNorm(w){
+  return String(w).toLowerCase().normalize('NFKD').replace(/[̀-ͯ​-‍﻿]/g,'')
+    .split('').map(c=>LEET[c]||c).join('').replace(/[^a-z]/g,'');
+}
+function modWords(text){
+  // spaced-out letters ("f u c k") are joined back into one word before checking
+  const raw=String(text||'').split(/[\s\-_.,;:/\\*'"()]+/).filter(Boolean);
+  const out=[];let run='';
+  raw.forEach(t=>{const n=modNorm(t);if(n.length===1){run+=n;return;}if(run.length>2)out.push(run);run='';if(n)out.push(n);});
+  if(run.length>2)out.push(run);
+  return out;
+}
+function modCheck(text){
+  const words=modWords(text);
+  if(words.some(w=>RX_HARD.some(r=>r.test(w))))return{ok:false};
+  const flat=' '+words.join(' ')+' ';
+  if(MOD_PHRASE.some(p=>flat.includes(' '+p+' ')))return{ok:false};
+  return{ok:true};
+}
+function modClean(text){
+  return String(text||'').replace(/[^\s]+/g,tok=>{
+    const m=tok.match(/^([^A-Za-z0-9@$!|€]*)(.*?)([^A-Za-z0-9@$!|€]*)$/);
+    const core=m?m[2]:tok,n=modNorm(core);
+    if(!n||!RX_SOFT.some(r=>r.test(n)))return tok;
+    return (m?m[1]:'')+core.charAt(0)+'*'.repeat(Math.max(2,core.length-1))+(m?m[3]:'');
+  });
+}
+const MOD_MSG='That breaks the community guidelines — edit it and try again.';
+
+/* ── the rules, agreed once per account ── */
+const GUIDE_HTML=`<p><b>UNIT is a training community. Keep it that way.</b></p>
+  <p>By using the Hub you agree to these rules. There is <b>zero tolerance</b> for objectionable content or abusive users:</p>
+  <ul><li>No harassment, bullying, threats or encouraging self-harm.</li>
+  <li>No hate speech or slurs about race, ethnicity, religion, gender, sexuality or disability.</li>
+  <li>No nudity, sexual content or sexual comments about anyone.</li>
+  <li>No spam, scams, or selling steroids, drugs or anything illegal.</li>
+  <li>Only post photos you have the right to share, and never photograph other gym members without their permission.</li></ul>
+  <p>Anything can be reported from its <b>⋯</b> menu, and anyone can be blocked from their profile. Reports are reviewed within 24 hours; content that breaks the rules is removed and the account that posted it can be banned from posting.</p>
+  <p>Questions or problems: <a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a></p>`;
+const TERMS_HTML=`<p>These terms cover your use of UNIT. By creating an account you agree to them.</p>
+  <p><b>Your account.</b> Keep your password to yourself. You must be at least 13 years old (or the minimum age where you live). You can delete your account at any time under You → Delete account.</p>
+  <p><b>Your content.</b> You own what you post. By posting it in the Hub you let UNIT show it to other users of the app. Don't post anything you don't have the right to share.</p>
+  <p><b>Community guidelines.</b></p>${GUIDE_HTML}
+  <p><b>Health.</b> UNIT is a tracking tool, not medical or nutritional advice. Talk to a professional before starting a new training or diet programme.</p>
+  <p><b>Changes.</b> These terms may be updated; continuing to use the app means you accept the current version.</p>`;
+const PRIVACY_HTML=`<p>This summary explains what UNIT stores and why. It is a starting point, not legal advice.</p>
+  <p><b>What we store.</b> Your name, email, username, profile photo and bio; your training programme, logged workouts, meals, water, supplements, grocery list and streak; your posts, comments, likes, friend connections and notifications; reports you make.</p>
+  <p><b>What stays on your phone.</b> Progress photos are never uploaded.</p>
+  <p><b>Who sees what.</b> Everyone signed in to UNIT can see your name, username, photo, bio and Hub posts. Friends see only what you switch on under You → What friends can see. Nothing is sold or used for advertising.</p>
+  <p><b>Where.</b> Data is stored with Google Firebase (Realtime Database and Authentication).</p>
+  <p><b>Deleting it.</b> You → Delete account removes your account, programme, history, posts, comments and profile. Reports about other people's content may be kept so moderation decisions can be reviewed.</p>
+  <p><b>Contact.</b> <a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a></p>`;
+function openDoc(title,html){
+  const d=document.getElementById('doc');
+  document.getElementById('doc-t').textContent=title;
+  document.getElementById('doc-b').innerHTML=html;
+  d.classList.add('active');d.scrollTop=0;
+}
+function closeDoc(){document.getElementById('doc').classList.remove('active');}
+function openTermsDoc(){if(TERMS_URL)return window.open(TERMS_URL,'_blank','noopener');openDoc('Terms & Community Guidelines',TERMS_HTML);}
+function openPrivacyDoc(){if(PRIVACY_URL)return window.open(PRIVACY_URL,'_blank','noopener');openDoc('Privacy',PRIVACY_HTML);}
+function openGuidelines(){openDoc('Community guidelines',GUIDE_HTML);}
+/* Anyone who signed up before the rules existed agrees the first time they
+   post or comment. */
+let termsNext=null;
+function needTerms(then){
+  if(profile&&profile.terms)return false;
+  termsNext=then;
+  openSheet(`<div class="sheet-t">Before you post</div>
+    <div class="sheet-s">The Hub is shared with everyone on UNIT. Please read and agree to the community rules.</div>
+    <div class="doc-in">${GUIDE_HTML}</div>
+    <div class="sheet-a"><button class="btn ghost" onclick="closeSheet()">Not now</button>
+      <button class="btn pri" onclick="agreeTerms()">I agree</button></div>`);
+  return true;
+}
+async function agreeTerms(){
+  profile=profile||{};profile.terms=Date.now();
+  closeSheet();
+  await saveProfileCloud();
+  const t=termsNext;termsNext=null;
+  if(typeof t==='function')setTimeout(t,380);
+}
+function cantPost(){
+  if(isBanned){toast('Your account can no longer post in the Hub. Contact '+SUPPORT_EMAIL+' if you think this is a mistake.');return true;}
+  return false;
+}
+
+/* ── reporting ── */
+const HIDE_KEY=()=>'unit-hidden:'+(user?user.uid:'');
+let HIDDEN=null;
+function hiddenSet(){
+  if(!HIDDEN){try{HIDDEN=JSON.parse(localStorage.getItem(HIDE_KEY())||'{}')||{};}catch(e){HIDDEN={};}}
+  return HIDDEN;
+}
+function hideLocally(key){const h=hiddenSet();h[key]=Date.now();try{localStorage.setItem(HIDE_KEY(),JSON.stringify(h));}catch(e){}}
+function isHidden(key){return !!hiddenSet()[key];}
+function visiblePost(p){return p&&!BLOCKED[p.uid]&&!isHidden('p:'+p.id);}
+const REASONS=[['harass','Harassment or bullying'],['hate','Hate speech or symbols'],['sexual','Nudity or sexual content'],
+  ['violence','Violence, threats or self-harm'],['spam','Spam, scams or selling'],['other','Something else']];
+function openReport(kind,a,b){
+  if(!user)return;
+  let target='',prev='',what='post';
+  if(kind==='post'){const p=feed.find(x=>x.id===a)||waiting.find(x=>x.id===a)||{};target=p.uid;prev=p.txt||(p.img?'[photo]':'');}
+  else if(kind==='cmt'){const c=(cmtCache[a]||[]).find(x=>x.id===b)||{};target=c.uid;prev=c.t||'';what='comment';}
+  else{target=a;const c=pubCache.get(a)||{};prev=[c.n,c.u&&'@'+c.u,c.b].filter(Boolean).join(' · ');what='profile';}
+  if(!target||target===user.uid)return;
+  sheetCtx={rep:{kind,pid:kind==='user'?'':a,cid:kind==='cmt'?b:'',u:target,prev:String(prev).slice(0,240),why:'',block:false}};
+  const nm=((pubCache.get(target)||{}).n)||'this person';
+  openSheet(`<div class="sheet-t">Report ${what}</div>
+    <div class="sheet-s">Reports are private — ${esc(nm)} won't know who sent it. We review every report within 24 hours.</div>
+    <div id="rep-why">${REASONS.map(([k,l])=>`<div class="opt" data-k="${k}" onclick="pickReason(this)">
+      <div class="opt-t"><b>${l}</b></div><div class="opt-c"></div></div>`).join('')}</div>
+    <div class="fld" style="margin-top:6px"><label class="fld-lbl">Anything else? <span style="color:var(--txt4)">(optional)</span></label>
+      <input class="inp" id="rep-note" maxlength="300" placeholder="What happened"></div>
+    <div class="sh-row"><div class="sh-t"><b>Also block ${esc(nm)}</b><i>You won't see each other's posts or comments</i></div>
+      <div class="sw" id="rep-blk" onclick="repBlockToggle(this)"></div></div>
+    <div class="sheet-a"><button class="btn ghost" onclick="closeSheet()">Cancel</button>
+      <button class="btn pri" id="rep-go" onclick="submitReport()">Send report</button></div>`,!!viewUid);
+}
+function repBlockToggle(el){el.classList.toggle('on');if(sheetCtx.rep)sheetCtx.rep.block=el.classList.contains('on');buzz(8);}
+function pickReason(el){
+  document.querySelectorAll('#rep-why .opt').forEach(o=>o.classList.toggle('on',o===el));
+  sheetCtx.rep.why=el.dataset.k;buzz(8);
+}
+async function submitReport(){
+  const r=(sheetCtx||{}).rep;if(!r)return;
+  if(!r.why){toast('Pick a reason');return;}
+  if(!db||!user){toast('You need a connection to report');return;}
+  const b=document.getElementById('rep-go');if(b){b.disabled=true;b.textContent='Sending…';}
+  const rec={k:r.kind,u:r.u,by:user.uid,why:r.why,ts:serverNow(),prev:r.prev};
+  if(r.pid)rec.pid=r.pid;if(r.cid)rec.cid=r.cid;
+  const note=((document.getElementById('rep-note')||{}).value||'').trim().slice(0,300);
+  if(note)rec.note=note;
+  try{await withTimeout(set(push(ref(db,'reports')),rec),15000);}
+  catch(e){if(b){b.disabled=false;b.textContent='Send report';}toast('Could not send the report — try again');return;}
+  // whatever you reported disappears for you straight away
+  if(r.kind==='post')hideLocally('p:'+r.pid);
+  if(r.kind==='cmt')hideLocally('c:'+r.pid+':'+r.cid);
+  closeSheet();
+  if(r.block)await blockUser(r.u,true);
+  if(tab==='hub')paintHubList();
+  toast('Thanks — reported. We review every report within 24 hours.');
+}
+
+/* ── the ⋯ menu on a post ── */
+function openPostMenu(pid){
+  const p=feed.find(x=>x.id===pid)||waiting.find(x=>x.id===pid);if(!p)return;
+  const mine=user&&p.uid===user.uid;
+  openSheet(`<div class="sheet-t">Post</div>
+    ${mine?`<div class="opt" onclick="closeSheet();delPost('${pid}')"><div class="opt-i">🗑️</div><div class="opt-t"><b>Delete post</b><i>Removes it, its photo and its comments</i></div></div>`:
+    `<div class="opt" onclick="openReport('post','${pid}')"><div class="opt-i">🚩</div><div class="opt-t"><b>Report post</b><i>Tell us it breaks the rules</i></div></div>
+     <div class="opt" onclick="closeSheet();hideLocally('p:${pid}');paintHubList();toast('Post hidden')"><div class="opt-i">🙈</div><div class="opt-t"><b>Hide this post</b><i>Just for you</i></div></div>
+     <div class="opt" onclick="closeSheet();confirmBlock('${p.uid}')"><div class="opt-i">⛔</div><div class="opt-t"><b>Block ${esc(p.n||'this person')}</b><i>Hide everything they post, and stop them contacting you</i></div></div>`}
+    ${isAdmin&&!mine?`<div class="opt" onclick="closeSheet();modRemovePost('${pid}')"><div class="opt-i">🛡️</div><div class="opt-t"><b>Remove (moderator)</b><i>Delete this post for everyone</i></div></div>`:''}
+    <div class="sheet-a"><button class="btn ghost btn-full" onclick="closeSheet()">Cancel</button></div>`);
+}
+
+/* ── blocking ──
+   Private to you: the list lives in users/{you}/blocked, which only you can
+   read. Their posts and comments vanish from your screen, any friendship or
+   request between you is removed, and the database rules stop them sending
+   you requests, notifications or comments. */
+function confirmBlock(u){
+  if(!u||!user||u===user.uid)return;
+  const c=pubCache.get(u)||friends[u]||freqs[u]||{};
+  const nm=c.n||c.u||'this person';
+  openSheet(`<div class="sheet-t">Block ${esc(nm)}?</div>
+    <div class="sheet-s">They won't be told. You won't see their posts or comments, they can't send you friend requests or comment on your posts, and if you're friends that ends.</div>
+    <div class="sheet-a"><button class="btn ghost" onclick="closeSheet()">Cancel</button>
+      <button class="btn danger" onclick="closeSheet();blockUser('${u}')">Block</button></div>`,!!viewUid);
+}
+async function blockUser(u,quiet){
+  if(!db||!user||!u||u===user.uid)return;
+  const c=pubCache.get(u)||friends[u]||freqs[u]||{};
+  const rec={n:String(c.n||c.u||'').slice(0,60),ts:serverNow()};
+  BLOCKED[u]=rec;
+  const me=user.uid;
+  try{await withTimeout(set(ref(db,'users/'+me+'/blocked/'+u),rec),15000);}
+  catch(e){delete BLOCKED[u];toast('Could not block right now');return;}
+  // tidy up whatever connects you — each on its own, so one refusal doesn't stop the rest
+  const paths=['friends/'+me+'/'+u,'friends/'+u+'/'+me,'freq/'+me+'/'+u,'freq/'+u+'/'+me,'fsent/'+me+'/'+u,'fsent/'+u+'/'+me];
+  await Promise.all(paths.map(p=>set(ref(db,p),null).catch(()=>{})));
+  if(borrow&&borrow.uid===u)endBorrow(true);
+  feed=feed.filter(p=>p.uid!==u);waiting=waiting.filter(p=>p.uid!==u);
+  if(viewUid===u)closeUser();
+  if(tab==='hub')paintHubList();
+  if(!quiet)toast('Blocked. You won’t see them in the Hub.');
+  buzz([14,40,14]);
+}
+async function unblockUser(u){
+  if(!db||!user)return;
+  try{await set(ref(db,'users/'+user.uid+'/blocked/'+u),null);delete BLOCKED[u];toast('Unblocked');}
+  catch(e){toast('Could not unblock right now');}
+  if(document.getElementById('blk-list'))openBlockedSheet();
+  if(tab==='hub')loadFeed(true);
+}
+function openBlockedSheet(){
+  const ids=Object.keys(BLOCKED);
+  openSheet(`<div class="sheet-t">Blocked accounts</div>
+    <div class="sheet-s">They can't see that you blocked them. Unblocking doesn't restore a friendship.</div>
+    <div id="blk-list">${ids.length?ids.map(u=>`<div class="urow">
+      ${avHTMLFor(u,BLOCKED[u].n||'?','av-40')}
+      <div class="urow-t"><div class="urow-n">${esc(BLOCKED[u].n||'Someone')}</div><div class="urow-u">blocked ${ago(BLOCKED[u].ts||0)}</div></div>
+      <button class="urow-b" onclick="unblockUser('${u}')">Unblock</button></div>`).join('')
+      :'<div class="hint" style="text-align:center;padding:18px">You haven\'t blocked anyone.</div>'}</div>
+    <div class="sheet-a"><button class="btn btn-full" onclick="closeSheet()">Done</button></div>`);
+  paintAvatars();
+}
+
+/* ── roles: moderator and banned, read once per sign-in ── */
+async function checkRoles(){
+  if(!db||!user)return;
+  const me=user.uid;
+  try{const a=await withTimeout(get(ref(db,'admins/'+me)),10000);if(user&&user.uid===me)isAdmin=!!(a&&a.val()===true);}catch(e){isAdmin=false;}
+  try{const b=await withTimeout(get(ref(db,'banned/'+me)),10000);if(user&&user.uid===me)isBanned=!!(b&&b.exists());}catch(e){isBanned=false;}
+  if(tab==='profile')render();
+}
+
+/* ── the moderation queue ── */
+let modReports=[];
+async function openModeration(){
+  if(!isAdmin)return;
+  openSheet(`<div class="sheet-t">Moderation queue</div>
+    <div class="sheet-s">Act on every report within 24 hours — the app stores require it. Removing content deletes it for everyone; banning stops that account posting or commenting.</div>
+    <div id="mod-list"><div class="hub-load"><div class="sk"></div></div></div>
+    <div class="sheet-a"><button class="btn btn-full" onclick="closeSheet()">Done</button></div>`);
+  try{
+    const s=await withTimeout(get(query(ref(db,'reports'),orderByChild('ts'),limitToLast(60))),15000);
+    const v=(s&&s.val())||{};
+    modReports=Object.keys(v).map(k=>({id:k,...v[k]})).sort((a,b)=>(b.ts||0)-(a.ts||0));
+  }catch(e){modReports=null;}
+  paintModeration();
+}
+function paintModeration(){
+  const box=document.getElementById('mod-list');if(!box)return;
+  if(modReports===null){box.innerHTML='<div class="hint">Could not load reports — check the database rules for reports/ and admins/.</div>';return;}
+  if(!modReports.length){box.innerHTML='<div class="hint" style="text-align:center;padding:20px">Nothing to review. 🎉</div>';return;}
+  const why=Object.fromEntries(REASONS);
+  box.innerHTML=modReports.map(r=>`<div class="mod-i">
+    <div class="mod-h"><span class="tag g">${esc(r.k==='cmt'?'comment':r.k==='user'?'profile':'post')}</span>
+      <span class="tag">${esc(why[r.why]||r.why||'report')}</span><span class="ca-t">${ago(r.ts||0)}</span></div>
+    <div class="mod-p">${esc(r.prev||'(no text)')}</div>
+    ${r.note?`<div class="hint" style="margin-top:4px">“${esc(r.note)}”</div>`:''}
+    <div class="row-btns">
+      ${r.k!=='user'?`<button class="mini d" onclick="modAct('${r.id}','remove')">Remove</button>`:''}
+      <button class="mini d" onclick="modAct('${r.id}','ban')">${r.k==='user'?'Ban':'Remove + ban'}</button>
+      <button class="mini" onclick="openUser('${esc(r.u)}')">Profile</button>
+      <button class="mini" onclick="modAct('${r.id}','dismiss')">Dismiss</button>
+    </div></div>`).join('');
+}
+async function modRemovePost(pid){
+  if(!isAdmin||!db)return;
+  if(!confirm('Remove this post for everyone?'))return;
+  try{await update(rootRef(),{['posts/'+pid]:null,['postImg/'+pid]:null,['postCmt/'+pid]:null});
+    feed=feed.filter(p=>p.id!==pid);paintHubList();toast('Post removed');}
+  catch(e){toast('The database refused — check the moderator rules');}
+}
+async function modAct(id,what){
+  const r=(modReports||[]).find(x=>x.id===id);if(!r||!db)return;
+  if(what!=='dismiss'&&!confirm(what==='ban'?'Remove the content and ban this account from posting?':'Remove this content for everyone?'))return;
+  const w={};
+  if(what!=='dismiss'){
+    if(r.k==='post'&&r.pid){w['posts/'+r.pid]=null;w['postImg/'+r.pid]=null;w['postCmt/'+r.pid]=null;}
+    if(r.k==='cmt'&&r.pid&&r.cid)w['postCmt/'+r.pid+'/'+r.cid]=null;
+    if(what==='ban'&&r.u)w['banned/'+r.u]={ts:serverNow(),by:user.uid,why:r.why||''};
+  }
+  // clear every report about the same thing, not just this one
+  (modReports||[]).forEach(x=>{if(x.id===id||(x.k===r.k&&x.pid===r.pid&&x.cid===r.cid&&x.u===r.u))w['reports/'+x.id]=null;});
+  try{
+    await withTimeout(update(rootRef(),w),15000);
+    if(what!=='dismiss'&&r.k==='cmt'&&r.pid)bumpCmtCount(r.pid,-1);
+    modReports=modReports.filter(x=>w['reports/'+x.id]===undefined);
+    feed=feed.filter(p=>!(r.k==='post'&&p.id===r.pid));
+    paintModeration();
+    toast(what==='dismiss'?'Dismissed':what==='ban'?'Removed and banned':'Removed');
+  }catch(e){toast('The database refused — check the moderator rules');}
+}
+function bumpCmtCount(pid,by){
+  try{runTransaction(ref(db,'posts/'+pid+'/cN'),n=>{
+    if(n===null&&by<0)return;                 // the post is gone — leave it gone
+    return Math.max(0,(n||0)+by);
+  }).catch(()=>{});}catch(e){}
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DELETE ACCOUNT
+   Both stores require this inside the app, and Google also wants a web
+   link: opening the app with #delete-account on the end of its address
+   (e.g. https://your-site/#delete-account) brings this screen up after
+   sign-in — that is the URL to give Google Play.
+═══════════════════════════════════════════════════════════ */
+function openDeleteAccount(){
+  if(!user){toast('Sign in first');return;}
+  openSheet(`<div class="sheet-t" style="color:var(--red)">Delete your account</div>
+    <div class="sheet-s">This permanently deletes, for good:</div>
+    <ul class="del-list">
+      <li>Your account, sign-in and profile (name, photo, bio, username)</li>
+      <li>Your programme, meals, grocery list and every logged workout and day</li>
+      <li>Your posts, photos, comments and likes in the Hub</li>
+      <li>Your friends list, requests and notifications</li>
+    </ul>
+    <div class="sh-row"><div class="sh-t"><b>Also delete progress photos on this phone</b><i>They were never uploaded, so they only exist here</i></div>
+      <div class="sw on" id="del-ph" onclick="this.classList.toggle('on')"></div></div>
+    <div class="fld" style="margin-top:12px"><label class="fld-lbl">Enter your password to confirm</label>
+      <input class="inp" id="del-pass" type="password" autocomplete="current-password" placeholder="••••••••"></div>
+    <div class="auth-err" id="del-err" style="text-align:left"></div>
+    <div class="sheet-a"><button class="btn ghost" onclick="closeSheet()">Keep my account</button>
+      <button class="btn danger" id="del-go" onclick="deleteAccount()">Delete forever</button></div>`);
+}
+async function deleteAccount(){
+  const pass=(document.getElementById('del-pass')||{}).value||'';
+  const err=document.getElementById('del-err'),go=document.getElementById('del-go');
+  const photos=!!(document.getElementById('del-ph')||{}).classList?.contains('on');
+  if(!pass){err.textContent='Enter your password.';return;}
+  if(!user||!auth){err.textContent='You need to be signed in.';return;}
+  if(!db||!navigator.onLine){err.textContent='You need a connection to delete your account.';return;}
+  go.disabled=true;go.textContent='Checking…';
+  // proves it's really you — and Firebase refuses to delete a sign-in that isn't fresh
+  try{await reauthenticateWithCredential(user,EmailAuthProvider.credential(user.email,pass));}
+  catch(e){go.disabled=false;go.textContent='Delete forever';err.textContent=authErr(e);return;}
+  closeSheet();busy('Deleting your account');
+  const me=user.uid,uname=String((profile&&profile.username)||'').toLowerCase();
+  if(borrow)endBorrow(true);
+  if(sessId){try{await leaveSession();}catch(e){}}
+  tearing=true;clearTimeout(cloudT);cloudT=null;
+  const failed=[];
+  const wipe=async paths=>{
+    // one multi-path write per batch; if the rules refuse one, fall back to one at a time
+    for(let i=0;i<paths.length;i+=40){
+      const chunk=paths.slice(i,i+40),w={};chunk.forEach(p=>{w[p]=null;});
+      try{await withTimeout(update(rootRef(),w),20000);}
+      catch(e){for(const p of chunk){try{await withTimeout(set(ref(db,p),null),10000);}catch(x){failed.push(p);}}}
+    }
+  };
+  try{
+    const paths=[];
+    // posts you wrote
+    try{
+      const s=await withTimeout(get(query(ref(db,'posts'),orderByChild('uid'),equalTo(me))),20000);
+      Object.keys((s&&s.val())||{}).forEach(pid=>paths.push('posts/'+pid,'postImg/'+pid,'postCmt/'+pid));
+    }catch(e){feed.filter(p=>p.uid===me).forEach(p=>paths.push('posts/'+p.id,'postImg/'+p.id,'postCmt/'+p.id));}
+    // comments and likes you left on other people's posts
+    let mine={};
+    try{const s=await withTimeout(get(ref(db,'users/'+me)),20000);mine=(s&&s.val())||{};}catch(e){}
+    const cmPids=[];
+    Object.keys(mine.cm||{}).forEach(pid=>Object.keys(mine.cm[pid]||{}).forEach(cid=>{paths.push('postCmt/'+pid+'/'+cid);cmPids.push(pid);}));
+    Object.keys(mine.lk||{}).forEach(pid=>paths.push('posts/'+pid+'/lk/'+me));
+    // friendships and requests, from both ends
+    Object.keys(friends).forEach(u=>paths.push('friends/'+u+'/'+me));
+    Object.keys(fsent).forEach(u=>paths.push('freq/'+u+'/'+me));
+    Object.keys(freqs).forEach(u=>paths.push('fsent/'+u+'/'+me));
+    paths.push('friends/'+me,'freq/'+me,'fsent/'+me,'notif/'+me,'share/'+me,'pub/'+me);
+    await wipe(paths);
+    cmPids.forEach(pid=>bumpCmtCount(pid,-1));
+    if(uname){try{await set(ref(db,'usernames/'+uname),null);}catch(e){failed.push('usernames/'+uname);}}
+    await wipe(['users/'+me]);                 // programme, profile, history, block list — last, so the rest could still be found
+    await deleteUser(user);
+  }catch(e){
+    tearing=false;unbusy();
+    toast('Deleting did not finish — '+authErr(e));
+    return;
+  }
+  // this device: every copy of this account
+  try{
+    [LS+':'+me,PS+':'+me,'unit-hist:'+me,'unit-hidden:'+me,'unit-uname-tidy:'+me,'unit-backup','unit-sess','unit-timer'].forEach(k=>localStorage.removeItem(k));
+    openMirror().then(d=>{if(!d)return;try{const t=d.transaction('kv','readwrite').objectStore('kv');
+      [LS+':'+me,PS+':'+me,'unit-hist:'+me].forEach(k=>t.delete(k));}catch(e){}});
+    if(photos){try{indexedDB.deleteDatabase('unit-photos');photoDB=null;}catch(e){}}
+    try{indexedDB.deleteDatabase('unit-hub');hubDB=null;}catch(e){}
+  }catch(e){}
+  if(failed.length)console.warn('Could not remove',failed);
+  stopWatchOwnData();stopHub();closeUser();
+  user=null;profile=null;idToken='';
+  EX=emptyEX();CARDIO={};MEALS=[];SUPPS=[];GROCERY=[];grChecked={};
+  st={};ws={};wtr={};calDone={};HIST={w:{},f:{}};histQ={};HIDDEN=null;
+  PREFS={trainDays:[],split:'',doesCardio:false,onboarded:false};
+  dataKey=LS;profKey=PS;histKey='unit-hist:local';memBundle=null;memProfile=null;
+  tearing=false;tab='train';setSync('local');
+  unbusy();showAuth();render();
+  toast('Your account has been deleted');
+}
+
+/* ═══════════════════════════════════════════════════════════
    GLOBAL EXPORTS
 ═══════════════════════════════════════════════════════════ */
 Object.assign(window,{
@@ -5571,7 +7230,14 @@ Object.assign(window,{
   paintHubBadges,friendCount,
   cancelReq,mnScan,mnPick,mnClose,likeCmt,delCmt,refreshUserActions,
   openImport,importToday,startBorrow,importFull,pickImportDay,pickImportMode,doImport,endBorrow,
-  liveType,liveMacro
+  liveType,liveMacro,
+  // account, safety, legal
+  doReset,openTermsDoc,openPrivacyDoc,openGuidelines,closeDoc,agreeTerms,
+  openReport,pickReason,repBlockToggle,submitReport,openPostMenu,confirmBlock,blockUser,unblockUser,openBlockedSheet,
+  openModeration,modAct,modRemovePost,hideLocally,paintHubList,openDeleteAccount,deleteAccount,toggleUnit,
+  // finishing days, progress
+  openFinishWorkout,finToggle,finDate,commitWorkout,clearDayTicks,openFinishFuel,commitFuel,clearFuelTicks,toggleFuel,
+  progSet,progTable,progMore,openHist,delHist,chPoint,chLeave,chKey,lbBackdrop,setMacro
 });
 
 /* ═══════════════════════════════════════════════════════════
@@ -5583,8 +7249,12 @@ hydrateMirror().then(ok=>{if(ok){applyTheme();render();}});
 hydrateProfileMirror().then(ok=>{if(ok)render();});
 openPhotoDB().catch(()=>{});
 setupSW();
+lbInit();
 restoreTimer();
 render();
+// charts are drawn to the screen's width, so redraw them if it changes
+let rsT=null;
+window.addEventListener('resize',()=>{clearTimeout(rsT);rsT=setTimeout(()=>{if(tab==='cal')render();},180);});
 
 // keep the app on the real current day
 let lastDay=todayStr();
@@ -5619,16 +7289,29 @@ if(auth){
       busy('Loading your program');   // this covers the app before the splash lifts
       bootReady();
       useAccountKeys(u.uid);      // this account's own slot
+      histUseAccount(u.uid);
       loadLocal();loadProfileLocal();
       await hydrateMirror();      // localStorage may have been evicted since last time
       await hydrateProfileMirror();
+      await hydrateHistMirror();
       refreshIdToken(true);
-      await cloudLoad(u.uid);
+      /* In a gym basement the cloud may never answer. When this phone already
+         holds the program, open on it after a few seconds and let the cloud
+         catch up behind — newer-wins still decides what lands. Only a device
+         with nothing on it has to wait for the download. */
+      const haveLocal=weigh(storedBundle()||{})>0;
+      let cloudDone=false;
+      cloudReady=false;
+      const cl=cloudLoad(u.uid).finally(()=>{cloudDone=true;cloudReady=true;if(dirty)flushPending();});
+      await Promise.race([cl,new Promise(r=>setTimeout(r,haveLocal?(navigator.onLine?4000:600):20000))]);
+      if(!cloudDone)cl.then(()=>{if(user&&user.uid===u.uid){applyTheme();render();}});
+      histLoadCloud(u.uid).then(ok=>{if(ok&&tab==='cal')render();});
       if(!profile)profile={firstName:(u.displayName||'').split(' ')[0]||'',lastName:'',email:u.email||'',username:(u.email||'').split('@')[0]};
       saveLocal();saveProfileLocal();
       watchConnection();
       watchOwnData(u.uid);        // stay in step with this account's other devices
       startHub();                 // public card, friends, requests, notifications
+      tidyUsernameRecord();
       unbusy();applyTheme();hideAuth();
       if(!PREFS.onboarded){
         await runOnboarding();
@@ -5637,6 +7320,8 @@ if(auth){
       if(!isTrainingDay(day)&&PREFS.trainDays.length)day=PREFS.trainDays.includes(todayKey())?todayKey():day;
       saveLocal();render();
       flushPending();
+      // the web link the Play Store asks for: yoursite/#delete-account
+      if(/delete-account/.test(location.hash)){setTab('profile');setTimeout(openDeleteAccount,450);}
       if(sessId&&role){
         try{await set(ref(db,'sessions/'+sessId+'/'+role+'/profile'),pubProfile());}catch(e){}
         watchSession();
@@ -5667,18 +7352,36 @@ if(auth){
    cutting the intro short and never outstaying a slow answer by more than
    the safety net below. */
 (function(){
-  var MIN=2200, NET=7000, t0=Date.now(), gone=false, armed=false;
+  var MIN=2200, NET=7000, t0=Date.now(), gone=false, armed=false, failed=false;
   function drop(){
     if(gone)return;gone=true;
     var l=document.getElementById('loader');if(!l)return;
     l.classList.add('hidden');setTimeout(function(){l.style.display='none';},650);
   }
   window.__bootReady=function(){
-    if(armed||gone)return;armed=true;
+    if(armed||gone||failed)return;armed=true;
     setTimeout(drop,Math.max(0,MIN-(Date.now()-t0)));   // let the intro finish
   };
+  /* The app's code could not load — almost always no signal on a first visit,
+     before the offline copy exists. Dropping the splash here used to leave a
+     blank screen. Say what happened and offer a retry instead. */
+  window.__bootFail=function(){
+    if(failed||window.__unitBooted)return;failed=true;
+    var l=document.getElementById('loader');if(!l)return;
+    var s=l.querySelector('.ld-sub'),t=l.querySelector('.ld-track');
+    if(s)s.textContent=navigator.onLine?'Could not reach UNIT — check your connection':'You are offline';
+    if(t)t.style.display='none';
+    var p=document.createElement('div');p.className='ld-help';
+    p.textContent='UNIT needs a connection the first time it opens. After that it works offline.';
+    var b=document.createElement('button');b.className='btn pri ld-retry';b.textContent='Try again';
+    b.onclick=function(){location.reload();};
+    l.appendChild(p);l.appendChild(b);
+  };
   // if the answer never comes — blocked SDK, dead network — do not trap anyone
-  setTimeout(function(){window.__bootReady();},NET);
+  setTimeout(function(){
+    if(!window.__unitBooted)window.__bootFail();
+    else window.__bootReady();
+  },NET);
 })();
 </script>
 </body>
