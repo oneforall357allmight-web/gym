@@ -1074,24 +1074,48 @@ body::after{
 .lock b~b,.steps b{display:inline;margin:0;font-size:inherit;color:var(--txt)}
 /* add to Home Screen */
 .a2hs-hero{display:flex;gap:14px;align-items:center;margin-bottom:16px}
-.a2hs-ic{width:60px;height:60px;border-radius:14px;flex-shrink:0;border:1px solid var(--line);box-shadow:var(--shadow-sm)}
+.a2hs-ic{width:58px;height:58px;border-radius:14px;flex-shrink:0;border:1px solid var(--line);box-shadow:var(--shadow-sm)}
 .a2hs-hero .sheet-t{margin-bottom:3px}
 .a2hs-hero .sheet-s{margin-bottom:0}
+.a2hs-tabs{display:flex;gap:3px;padding:3px;background:var(--surf2);border:1px solid var(--line);border-radius:13px;margin-bottom:12px}
+.a2hs-tab{flex:1;border:0;background:transparent;color:var(--txt3);font-family:inherit;font-weight:600;font-size:13.5px;
+  padding:10px 4px;border-radius:10px;cursor:pointer;transition:background .2s,color .2s}
+.a2hs-tab.on{background:var(--surf);color:var(--txt);box-shadow:var(--shadow-sm)}
+.a2hs-tab:active{transform:scale(.97)}
+.a2hs-sub{display:flex;gap:6px;margin-bottom:10px}
+.a2hs-chip{border:1px solid var(--line);background:transparent;color:var(--txt3);font-family:inherit;font-weight:600;font-size:12px;
+  padding:7px 12px;border-radius:99px;cursor:pointer}
+.a2hs-chip.on{border-color:var(--gold);color:var(--gold);background:var(--gold-d1)}
 .a2hs-steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:7px;text-align:left}
-.a2hs-steps li{display:flex;gap:11px;align-items:flex-start;padding:11px 12px;background:var(--surf);
-  border:1px solid var(--line);border-radius:12px;font-size:13px;line-height:1.5;color:var(--txt2)}
+.a2hs-steps li{display:flex;gap:12px;align-items:center;padding:12px 12px 12px 13px;background:var(--surf);
+  border:1px solid var(--line);border-radius:13px;font-size:14px;line-height:1.45;color:var(--txt2);min-height:58px}
+.a2hs-st{flex:1;min-width:0}
 .a2hs-steps b{color:var(--txt);font-weight:650}
-.a2hs-steps i{display:block;font-style:normal;font-size:11.5px;color:var(--txt3);margin-top:3px}
-.a2hs-n{width:22px;height:22px;border-radius:50%;background:var(--gold-d1);color:var(--gold);flex-shrink:0;margin-top:1px;
-  font:700 11.5px 'JetBrains Mono',ui-monospace,monospace;display:flex;align-items:center;justify-content:center}
-.a2hs-g{width:18px;height:18px;stroke:var(--cyan);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;
+.a2hs-steps i{display:block;font-style:normal;font-size:12px;color:var(--txt3);margin-top:3px}
+.a2hs-n{width:24px;height:24px;border-radius:50%;background:var(--gold-d1);color:var(--gold);flex-shrink:0;
+  font:700 12px 'JetBrains Mono',ui-monospace,monospace;display:flex;align-items:center;justify-content:center}
+.a2hs-g{width:19px;height:19px;stroke:var(--cyan);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;
   vertical-align:-4px;margin:0 1px}
 .a2hs-g.dots{fill:var(--cyan);stroke:none}
-.a2hs-perks{display:flex;flex-direction:column;gap:8px;margin:2px 0 4px;padding:13px 14px;background:var(--surf);
-  border:1px solid var(--line);border-radius:12px;font-size:13px;color:var(--txt2)}
-.a2hs-perks div{display:flex;gap:10px;align-items:center}
-.a2hs-perks span{width:20px;text-align:center;flex-shrink:0}
-.a2hs-note{font-size:11.5px;color:var(--txt3);margin-top:12px;line-height:1.5}
+/* the little phone that shows where the first button is */
+.a2hs-ph{position:relative;width:30px;height:52px;border:2px solid var(--line2);border-radius:8px;flex-shrink:0;
+  background:linear-gradient(var(--surf2),var(--surf2)) no-repeat;background-size:100% 8px}
+.a2hs-ph.bot-c,.a2hs-ph.bot-r{background-position:0 100%}
+.a2hs-ph i{position:absolute;width:9px;height:9px;border-radius:50%;background:var(--gold);animation:a2hsPing 1.6s ease-out infinite}
+.a2hs-ph.top-r i{top:2px;right:3px}
+.a2hs-ph.bot-r i{bottom:2px;right:3px}
+.a2hs-ph.bot-c i{bottom:2px;left:50%;margin-left:-4.5px}
+@keyframes a2hsPing{0%{box-shadow:0 0 0 0 rgba(255,182,39,.7)}70%{box-shadow:0 0 0 7px rgba(255,182,39,0)}100%{box-shadow:0 0 0 0 rgba(255,182,39,0)}}
+@media (prefers-reduced-motion:reduce){.a2hs-ph i{animation:none}}
+.a2hs-then{font-size:12.5px;color:var(--green);margin-top:11px;line-height:1.5;padding-left:2px}
+.a2hs-big{padding:16px;font-size:15px}
+.a2hs-one{text-align:center;font-size:12.5px;color:var(--txt3);margin-top:9px}
+.a2hs-link{display:block;margin:10px auto 0;border:0;background:none;color:var(--txt3);font-family:inherit;font-weight:500;font-size:12.5px;
+  text-decoration:underline;text-underline-offset:3px;cursor:pointer;padding:6px}
+.a2hs-warn{padding:12px 13px;border-radius:12px;background:var(--red-d);border:1px solid rgba(255,77,94,.28);
+  font-size:12.5px;line-height:1.5;color:var(--txt2);margin-bottom:12px}
+.a2hs-warn b{display:block;color:var(--txt);font-size:13.5px;margin-bottom:3px}
+.a2hs-warn .brw-x{margin-top:9px}
 .steps li{margin-bottom:4px}
 /* a first visit with no signal */
 .ld-help{position:relative;font-size:12.5px;color:var(--txt3);text-align:center;max-width:280px;line-height:1.55;margin-top:18px}
@@ -4432,7 +4456,7 @@ let installEvt=null;
 window.addEventListener('beforeinstallprompt',e=>{
   e.preventDefault();                   // hold Chrome's own banner; we ask at the right moment instead
   installEvt=e;
-  if(document.getElementById('a2hs'))openInstallSheet();   // already showing the steps: swap in the one-tap button
+  a2hsPaint();                          // already showing the steps: swap in the one-tap button
 });
 window.addEventListener('appinstalled',()=>{
   installEvt=null;a2hsDone();
@@ -4457,56 +4481,121 @@ function canOfferInstall(){
   if(a2hsIsDone())return false;
   return installWhere()!=='desktop'||!!installEvt;
 }
+/* ── the sheet: one tab per kind of phone, three taps each ── */
 const G_SHARE='<svg class="a2hs-g" viewBox="0 0 24 24" aria-label="Share"><path d="M12 3.5v11M8 7.5l4-4 4 4"/><path d="M8.5 10.5H7a1.5 1.5 0 00-1.5 1.5v7A1.5 1.5 0 007 20.5h10a1.5 1.5 0 001.5-1.5v-7a1.5 1.5 0 00-1.5-1.5h-1.5"/></svg>';
 const G_ADD='<svg class="a2hs-g" viewBox="0 0 24 24" aria-label="Add"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8.5v7M8.5 12h7"/></svg>';
-const G_DOTS='<svg class="a2hs-g dots" viewBox="0 0 24 24" aria-label="More"><circle cx="5.5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="18.5" cy="12" r="1.8"/></svg>';
-const G_MENU='<svg class="a2hs-g dots" viewBox="0 0 24 24" aria-label="Menu"><circle cx="12" cy="5.5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="18.5" r="1.8"/></svg>';
-function installStepsHTML(w){
-  const li=(n,t)=>`<li><span class="a2hs-n">${n}</span><div>${t}</div></li>`;
-  if(w==='ios')return `<ol class="a2hs-steps">
-    ${li(1,`Tap <b>Share</b> ${G_SHARE} in Safari<i>Don't see it? Tap ${G_DOTS} first, then Share.</i>`)}
-    ${li(2,`Scroll down and tap ${G_ADD} <b>Add to Home Screen</b>`)}
-    ${li(3,`Keep <b>Open as Web App</b> on, then tap <b>Add</b>`)}
-    ${li(4,`Open UNIT from your Home Screen and sign in there`)}</ol>`;
-  if(w==='ios-other')return `<ol class="a2hs-steps">
-    ${li(1,`Tap <b>Share</b> ${G_SHARE} next to the address bar`)}
-    ${li(2,`Tap ${G_ADD} <b>Add to Home Screen</b>, then <b>Add</b><i>Not in the list? Open this page in Safari and do it there.</i>`)}
-    ${li(3,`Open UNIT from your Home Screen and sign in there`)}</ol>`;
-  if(w==='inapp')return `<ol class="a2hs-steps">
-    ${li(1,`You're inside another app's browser, which can't add apps. Tap its menu ${G_DOTS} and choose <b>Open in browser</b> (or <b>Open in Safari</b>)<i>No such option? Tap Copy link below and paste it into Safari or Chrome.</i>`)}
-    ${li(2,`Sign in, then come back to <b>You → Add UNIT to your Home Screen</b>`)}</ol>`;
-  if(w==='android')return `<ol class="a2hs-steps">
-    ${li(1,`Tap your browser's menu ${G_MENU} (top right, or bottom on Samsung Internet)`)}
-    ${li(2,`Tap <b>Add to Home screen</b> or <b>Install app</b>`)}
-    ${li(3,`Tap <b>Install</b> or <b>Add</b>`)}</ol>`;
-  return `<ol class="a2hs-steps">
-    ${li(1,`Click the <b>install</b> icon at the right end of the address bar, or open the browser menu and choose <b>Install UNIT</b>`)}</ol>`;
+const G_DOTS='<svg class="a2hs-g dots" viewBox="0 0 24 24" aria-label="More"><circle cx="5.5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="18.5" cy="12" r="1.9"/></svg>';
+const G_MENU='<svg class="a2hs-g dots" viewBox="0 0 24 24" aria-label="Menu"><circle cx="12" cy="5.5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="18.5" r="1.9"/></svg>';
+const G_LINES='<svg class="a2hs-g" viewBox="0 0 24 24" aria-label="Menu"><path d="M5 7h14M5 12h14M5 17h14"/></svg>';
+/* What to tap, per browser. The little phone next to step 1 shows where. */
+const A2HS_STEPS={
+  'ios-safari':{at:'bot-c',steps:[
+    `Tap ${G_SHARE} <b>Share</b> at the bottom<i>Don't see it? Tap ${G_DOTS} first</i>`,
+    `Scroll down, tap ${G_ADD} <b>Add to Home Screen</b>`,
+    `Tap <b>Add</b>`]},
+  'ios-chrome':{at:'top-r',steps:[
+    `Tap ${G_SHARE} <b>Share</b> at the top right`,
+    `Tap ${G_ADD} <b>Add to Home Screen</b>`,
+    `Tap <b>Add</b>`]},
+  'chrome':{at:'top-r',steps:[
+    `Tap ${G_MENU} at the top right`,
+    `Tap <b>Add to home screen</b><i>Or <b>Install app</b>, if that's what you see</i>`,
+    `Tap <b>Install</b>`]},
+  'samsung':{at:'bot-r',steps:[
+    `Tap ${G_LINES} at the bottom right`,
+    `Tap <b>Add page to</b>`,
+    `Tap <b>Home screen</b>, then <b>Add</b>`]}
+};
+function stepsHTML(key){
+  const d=A2HS_STEPS[key];
+  return `<ol class="a2hs-steps">${d.steps.map((t,i)=>`<li><span class="a2hs-n">${i+1}</span><div class="a2hs-st">${t}</div>${
+    i===0?`<div class="a2hs-ph ${d.at}" aria-hidden="true"><i></i></div>`:''}</li>`).join('')}</ol>`;
 }
+// kept for the notifications screen, which only ever needs the iPhone steps
+function installStepsHTML(w){return stepsHTML(w==='ios-other'?'ios-chrome':'ios-safari');}
+
+let a2hsSel=null,a2hsBrowser='chrome',a2hsPicked=false,a2hsManual=false;
+function a2hsGuess(){
+  const ua=navigator.userAgent||'';
+  a2hsBrowser=/SamsungBrowser/i.test(ua)?'samsung':'chrome';
+  if(isIOS())return 'ios';
+  if(/Pixel/i.test(ua))return 'pixel';
+  if(/Android/i.test(ua))return 'android';
+  return 'ios';
+}
+/* Chrome on Android hides the phone's model from websites unless asked. */
+async function a2hsModel(){
+  try{
+    const u=navigator.userAgentData;
+    if(u&&u.getHighEntropyValues){const v=await u.getHighEntropyValues(['model']);return (v&&v.model)||'';}
+  }catch(e){}
+  return '';
+}
+function inAppName(){
+  const ua=navigator.userAgent||'';
+  if(/Instagram/i.test(ua))return 'Instagram';
+  if(/FBAN|FBAV|FB_IAB/i.test(ua))return 'Facebook';
+  if(/TikTok|musical_ly/i.test(ua))return 'TikTok';
+  if(/Snapchat/i.test(ua))return 'Snapchat';
+  if(/LinkedInApp/i.test(ua))return 'LinkedIn';
+  return 'This app';
+}
+function a2hsBody(){
+  const here=installWhere();
+  if(a2hsSel==='ios'){
+    return stepsHTML(here==='ios-other'?'ios-chrome':'ios-safari')+
+      `<div class="a2hs-then">✓ UNIT is now on your Home Screen. Open it from there and sign in once more.</div>`;
+  }
+  let h='';
+  // Chrome, Edge and Samsung Internet can do it all in one tap
+  if(installEvt&&here!=='inapp'&&!a2hsManual){
+    return `<button class="btn pri btn-full a2hs-big" id="a2hs-go" onclick="installNow()">Add to Home Screen</button>
+      <div class="a2hs-one">One tap. Your phone does the rest.</div>
+      <button class="a2hs-link" onclick="a2hsHand()">Do it by hand instead</button>`;
+  }
+  if(a2hsSel==='android'){
+    h+=`<div class="a2hs-sub">${[['samsung','Samsung Internet'],['chrome','Chrome']].map(([k,t])=>
+      `<button class="a2hs-chip${a2hsBrowser===k?' on':''}" onclick="a2hsBrowserPick('${k}')">${t}</button>`).join('')}</div>`;
+  }
+  return h+stepsHTML(a2hsSel==='android'&&a2hsBrowser==='samsung'?'samsung':'chrome')+
+    `<div class="a2hs-then">✓ UNIT is now on your Home Screen. Open it from there.</div>`;
+}
+function a2hsPaint(){
+  if(!document.getElementById('a2hs'))return;
+  document.querySelectorAll('.a2hs-tab').forEach(b=>{
+    const on=b.dataset.k===a2hsSel;b.classList.toggle('on',on);b.setAttribute('aria-selected',on?'true':'false');
+  });
+  document.getElementById('a2hs-body').innerHTML=a2hsBody();
+}
+function a2hsTab(k){a2hsSel=k;a2hsPicked=true;a2hsManual=false;buzz(8);a2hsPaint();}
+function a2hsBrowserPick(b){a2hsBrowser=b;buzz(8);a2hsPaint();}
+function a2hsHand(){a2hsManual=true;a2hsPaint();}
 function openInstallSheet(){
-  const w=installWhere(),ios=w==='ios'||w==='ios-other';
-  const oneTap=!!installEvt&&w!=='inapp';
-  const perks=`<div class="a2hs-perks">
-      <div><span>📲</span>Opens full screen, like any app</div>
-      <div><span>⚡</span>One tap from your Home Screen</div>
-      ${ios?`<div><span>🔔</span>Rest timer and Hub alerts on your lock screen</div>`:''}
-    </div>`;
-  const body=oneTap
-    ? perks+`<div class="sheet-a"><button class="btn ghost" onclick="installLater()">Not now</button>
-        <button class="btn pri" id="a2hs-go" style="flex:1.8" onclick="installNow()">Add to Home Screen</button></div>`
-    : installStepsHTML(w)+(ios?`<div class="a2hs-note">iPhones don't let websites add themselves, so this part is up to you. It takes about 10 seconds.</div>`:'')+
-      `<div class="sheet-a">${w==='inapp'
-        ?`<button class="btn ghost" onclick="copyAppLink()">Copy link</button>`
-        :`<button class="btn ghost" onclick="installLater()">Not now</button>`}
-        <button class="btn pri" onclick="installLater(true)">Got it</button></div>`;
+  if(!a2hsSel)a2hsSel=a2hsGuess();
+  a2hsManual=false;
+  const here=installWhere();
+  const warn=here==='inapp'?`<div class="a2hs-warn"><b>First, open this page in Safari or Chrome</b>
+      ${inAppName()}'s built-in browser can't add apps. Tap its ${G_DOTS} menu and choose <b>Open in browser</b>.
+      <button class="brw-x" onclick="copyAppLink()">Copy link instead</button></div>`:'';
+  const tabs=[['ios','iPhone'],['android','Android'],['pixel','Pixel']];
   openSheet(`<div id="a2hs"><div class="a2hs-hero"><img class="a2hs-ic" src="icons/icon-192.png" alt="">
       <div><div class="sheet-t">Add UNIT to your Home Screen</div>
-      <div class="sheet-s">${oneTap?'Installs in one tap. No app store, nothing to download.':'Get UNIT as an app on your phone, next to your others.'}</div></div></div>
-    ${body}</div>`);
+      <div class="sheet-s">Opens full screen, like any app. Pick your phone:</div></div></div>
+    ${warn}
+    <div class="a2hs-tabs" role="tablist">${tabs.map(([k,t])=>
+      `<button class="a2hs-tab${a2hsSel===k?' on':''}" role="tab" data-k="${k}" aria-selected="${a2hsSel===k}" onclick="a2hsTab('${k}')">${t}</button>`).join('')}</div>
+    <div id="a2hs-body">${a2hsBody()}</div>
+    <div class="sheet-a"><button class="btn ghost" onclick="installLater()">Not now</button>
+      <button class="btn" onclick="installLater(true)">Done</button></div></div>`);
+  // an Android phone that turns out to be a Pixel gets the Pixel tab
+  if(/Android/i.test(navigator.userAgent)&&!a2hsPicked&&a2hsSel!=='pixel'){
+    a2hsModel().then(m=>{if(/Pixel/i.test(m)&&!a2hsPicked){a2hsSel='pixel';a2hsPaint();}});
+  }
 }
 /* Android's own install dialog — it can only be shown from a tap, and once. */
 async function installNow(){
   const e=installEvt;
-  if(!e){openInstallSheet();return;}
+  if(!e){a2hsManual=true;a2hsPaint();return;}
   installEvt=null;
   const b=document.getElementById('a2hs-go');if(b){b.disabled=true;b.textContent='Adding…';}
   try{
@@ -4515,7 +4604,7 @@ async function installNow(){
     closeSheet();
     if(c&&c.outcome==='accepted'){a2hsDone();toast('Adding UNIT to your Home Screen');}
     else toast('Any time — it’s under You → Add UNIT to your Home Screen');
-  }catch(err){openInstallSheet();return;}
+  }catch(err){a2hsManual=true;a2hsPaint();return;}
   if(tab==='profile')render();
 }
 function installLater(gotIt){
@@ -7776,7 +7865,7 @@ Object.assign(window,{
   // lock-screen notifications
   enablePush,disablePush,setPushPref,sendTestPush,openPushSheet,dismissNudge,
   // add to Home Screen
-  openInstallSheet,installNow,installLater,copyAppLink
+  openInstallSheet,installNow,installLater,copyAppLink,a2hsTab,a2hsBrowserPick,a2hsHand
 });
 
 /* ═══════════════════════════════════════════════════════════
