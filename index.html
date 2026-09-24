@@ -7,6 +7,12 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#06080E">
+<meta name="apple-mobile-web-app-title" content="UNIT">
+<meta name="application-name" content="UNIT">
+<!-- what makes "Add to Home Screen" a real app: its own icon, its own window, and (on iPhone) lock-screen notifications -->
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <title>UNIT</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1179,7 +1185,7 @@ body::after{
     <div class="pair-avs" id="pair-avs"></div>
     <div class="pair-txt"><div class="pair-t" id="pair-t">Training together</div><div class="pair-s" id="pair-s">Live</div></div>
     <span class="live-dot"></span>
-    <button class="pair-x" onclick="leaveSession()">Leave</button>
+    <button class="pair-x" onclick="confirmLeave()">Leave</button>
   </div>
   <div class="hdr-top">
     <div class="av av-40" id="hdr-av" onclick="setTab('profile')" style="cursor:pointer">?</div>
@@ -1248,6 +1254,7 @@ body::after{
     <svg viewBox="0 0 280 280"><circle class="ring-t" cx="140" cy="140" r="126"/><circle class="ring-f" id="ring-f" cx="140" cy="140" r="126"/></svg>
     <div class="ring-c"><div class="ring-time mono" id="ring-time">0:00</div><div class="ring-lbl">Rest</div></div>
   </div>
+  <div class="fst-next" id="fst-next"></div>
   <div class="fst-a">
     <button class="fst-b" onclick="adjustTimer(-15)">−15s</button>
     <button class="fst-b skip" onclick="skipTimer()">Skip</button>
@@ -1319,8 +1326,8 @@ const firebaseConfig={
   messagingSenderId:"930734468354",
   appId:"1:930734468354:web:5fb495b8bb74cac498a61b"
 };
-let db=null,auth=null;
-try{const app=initializeApp(firebaseConfig);db=getDatabase(app);auth=getAuth(app);}
+let db=null,auth=null,fbApp=null;
+try{fbApp=initializeApp(firebaseConfig);db=getDatabase(fbApp);auth=getAuth(fbApp);}
 catch(e){console.warn('Firebase unavailable',e);}
 
 /* ── Things to fill in before launch ─────────────────────────
@@ -1329,6 +1336,10 @@ catch(e){console.warn('Firebase unavailable',e);}
 const SUPPORT_EMAIL='haitamahir@gmail.com';   // shown in the app as the contact address — swap for a support inbox
 const PRIVACY_URL='';                          // e.g. 'https://yoursite.com/privacy'
 const TERMS_URL='';                            // e.g. 'https://yoursite.com/terms'
+/* Lock-screen notifications. Firebase console → Project settings → Cloud
+   Messaging → Web Push certificates → Generate key pair, then paste the key
+   here. It is a public key, safe to publish. Empty = the feature stays off. */
+const VAPID_KEY='';
 
 /* ═══════════════════════════════════════════════════════════
    CONSTANTS
@@ -1450,7 +1461,29 @@ function watchClock(){
   });}catch(e){}
 }
 
-function bundle(){return{EX,CARDIO,MEALS,SUPPS,MACROS,GROCERY,grChecked,st,ws,wtr,calDone,PREFS};}
+/* The database does not store empty values. A new set is {} until it has a
+   weight, so a fresh exercise's sets simply vanished on the way up — the
+   other phone in a session saw the exercise with nothing to tick, and a
+   program restored from the cloud came back with its set count reset and its
+   target reps gone. Every set now carries real fields, and every exercise
+   carries its own set count (sc) so the count survives even if they don't. */
+const blankSet=()=>({w:'',r:''});
+function fixSets(e){
+  if(!e||typeof e!=='object')return e;
+  const raw=e.sets;let arr=[];
+  if(Array.isArray(raw))arr=raw.slice();
+  else if(raw&&typeof raw==='object')Object.keys(raw).forEach(k=>{if(/^\d+$/.test(k))arr[+k]=raw[k];});
+  const n=Math.max(arr.length,parseInt(e.sc,10)||0)||3;
+  const out=[];
+  for(let i=0;i<n;i++){const x=arr[i];out.push(x&&typeof x==='object'?{w:x.w??'',r:x.r??''}:blankSet());}
+  e.sets=out;e.sc=out.length;
+  return e;
+}
+function stampSets(ex){
+  Object.keys(ex||{}).forEach(d=>{(ex[d]||[]).forEach(e=>{if(e&&Array.isArray(e.sets))e.sc=e.sets.length;});});
+  return ex;
+}
+function bundle(){stampSets(EX);return{EX,CARDIO,MEALS,SUPPS,MACROS,GROCERY,grChecked,st,ws,wtr,calDone,PREFS};}
 function stamped(){return{...bundle(),ts:serverNow(),_uid:user?user.uid:''};}
 
 /* How much real content a bundle holds. An empty program must never win a
@@ -1970,10 +2003,12 @@ function normalize(d){
   if(d.EX&&typeof d.EX==='object'){
     const out=emptyEX();
     Object.keys(out).forEach(k=>{
-      const list=Array.isArray(d.EX[k])?d.EX[k]:[];
+      const list=toArr(d.EX[k]);   // the database can hand an array back as an object
       out[k]=list.map(e=>{
         if(!e)return null;
-        if(Array.isArray(e.sets))return e;
+        // a current exercise whose sets were dropped in transit is repaired, not
+        // mistaken for the old format (which reset it to 3 sets and lost its reps)
+        if(e.sets!==undefined||e.sc!==undefined||e.reps!==undefined||e.s===undefined)return fixSets(e);
         const n=Math.max(1,parseInt(e.s,10)||3);
         return{n:e.n||'Exercise',reps:e.r||'',rest:parseInt(e.rest,10)||0,note:e.note||'',
           sets:Array.from({length:n},()=>({w:e.w||'',r:''}))};
@@ -2526,7 +2561,8 @@ function renderPairStrip(){
   document.getElementById('pair-avs').innerHTML=avHTML(me,'av-30')+avHTML(partner||{firstName:'?'},'av-30');
   const pn=partner?([partner.firstName,partner.lastName].filter(Boolean).join(' ')||partner.username):'';
   document.getElementById('pair-t').textContent=partner?('Training with '+pn):'Waiting for partner…';
-  const link=!online?'Reconnecting…':(peerStale?'Partner offline':'');
+  const away=partner&&(!peerOn||peerStale);
+  const link=!online?'Reconnecting…':(away?'Waiting for '+(partner.firstName||'partner')+' · still connected':'');
   document.getElementById('pair-s').textContent=link||(role==='host'
     ?(editGranted?'They have control · '+sessId:'You have control · '+sessId)
     :(editGranted?'You can edit':'Following '+(pn||'the host')));
@@ -2725,7 +2761,32 @@ function toggleSet(d,ei,si,el){
   else buzz(8);
   save();
   refreshCounters(d,ei);
-  if(on){const e=EX[d][ei];if(e&&e.rest)startRest(e.rest,e.n);}
+  if(on){const e=EX[d][ei];if(e&&e.rest)startRest(e.rest,e.n,restNextText(d,ei,si));}
+}
+/* What the rest is for: the next set of this exercise, else the next
+   exercise with sets left, else the end of the workout. Shown under the
+   timer and on the lock screen. */
+function restNextText(d,ei,si){
+  const list=EX[d]||[],cur=list[ei],u=unit();
+  const setTxt=(i,j)=>{
+    const x=setVals(d,i,j),parts=[];
+    if(x.hasW)parts.push(fmtW(x.w)+' '+u);
+    if(x.hasR)parts.push((x.hasW?'× ':'')+x.r+' reps');
+    else if(list[i].reps)parts.push((x.hasW?'× ':'')+list[i].reps+' reps');
+    return parts.join(' ');
+  };
+  const open=(i,j)=>!(ws[setKey(d,i,j)]||{}).done;
+  if(cur){
+    const n=(cur.sets||[]).length;
+    for(let j=si+1;j<n;j++)if(open(ei,j)){const t=setTxt(ei,j);return 'Set '+(j+1)+' of '+n+' · '+cur.n+(t?' · '+t:'');}
+    for(let j=0;j<si;j++)if(open(ei,j)){const t=setTxt(ei,j);return 'Set '+(j+1)+' of '+n+' · '+cur.n+(t?' · '+t:'');}
+  }
+  for(let k=1;k<list.length;k++){
+    const i=(ei+k)%list.length,e=list[i];
+    const left=(e.sets||[]).filter((_,j)=>open(i,j)).length;
+    if(left)return 'Next exercise: '+e.n+' · '+left+' set'+(left===1?'':'s')+(e.reps?' × '+e.reps:'');
+  }
+  return 'That was the last set — finish the workout';
 }
 // update just the numbers — avoids re-rendering the list under the user's thumb
 function refreshCounters(d,ei){
@@ -2749,7 +2810,7 @@ function refreshCounters(d,ei){
 function toggleCheck(k){st[k]=!st[k];buzz(12);save();render();}
 function addSet(d,ei){
   const e=EX[d][ei];const last=(e.sets||[])[e.sets.length-1]||{w:'',r:''};
-  e.sets=[...(e.sets||[]),{w:last.w,r:last.r}];
+  e.sets=[...(e.sets||[]),{w:last.w||'',r:last.r||''}];
   save();render();
 }
 function removeSet(d,ei){
@@ -3687,10 +3748,10 @@ function saveEx(){
     const e=EX[d][sheetCtx.ei];
     e.n=n;e.reps=reps;e.rest=rest;e.note=note;
     const cur=(e.sets||[]).length;
-    if(ns>cur)e.sets=[...e.sets,...Array.from({length:ns-cur},()=>({}))];
+    if(ns>cur)e.sets=[...e.sets,...Array.from({length:ns-cur},blankSet)];
     if(ns<cur){for(let i=ns;i<cur;i++)delete ws[setKey(d,sheetCtx.ei,i)];e.sets=e.sets.slice(0,ns);}
   }else{
-    EX[d]=[...(EX[d]||[]),{n,reps,rest,note,sets:Array.from({length:ns},()=>({}))}];
+    EX[d]=[...(EX[d]||[]),{n,reps,rest,note,sets:Array.from({length:ns},blankSet)}];
     openEx[d+'|'+(EX[d].length-1)]=true;
   }
   sheetCtx={};closeSheet();save();render();buzz([12,30,12]);
@@ -4007,15 +4068,17 @@ function chime(){
     });
   }catch(e){}
 }
-async function startRest(secs,name){
+let tNext='',restId='';
+async function startRest(secs,name,next){
   if(!secs)return;
-  tEnd=Date.now()+secs*1000;tTotal=secs;tName=name||'Rest';
-  try{localStorage.setItem('unit-timer',JSON.stringify({e:tEnd,t:tTotal,n:tName}));}catch(e){}
+  tEnd=Date.now()+secs*1000;tTotal=secs;tName=name||'Rest';tNext=next||'';restId=uid('r');
+  try{localStorage.setItem('unit-timer',JSON.stringify({e:tEnd,t:tTotal,n:tName,x:tNext,id:restId}));}catch(e){}
   document.getElementById('fst').classList.add('active');
   document.body.style.overflow='hidden';
   paintTimer();
   clearInterval(tInt);tInt=setInterval(tick,240);
-  initAudio();lockScreen();notify(secs,name);
+  initAudio();lockScreen();notify(secs);
+  restSignal();
   if(sessId)pushTimer();
 }
 function tick(){if(Math.ceil((tEnd-Date.now())/1000)<=0)endRest();else paintTimer();}
@@ -4031,6 +4094,8 @@ function paintTimer(){
   te.textContent=m+':'+String(s).padStart(2,'0');
   te.style.color=warn?'var(--red)':'var(--gold)';
   document.getElementById('fst-ex').textContent=tName;
+  const nx=document.getElementById('fst-next');
+  if(nx){nx.textContent=tNext?'Next: '+tNext.replace(/^Next exercise: /,''):'';nx.style.display=tNext?'':'none';}
   const f=document.getElementById('ring-f');
   f.style.strokeDashoffset=RING*(1-left/(tTotal||left||1));
   f.style.stroke=warn?'var(--red)':'var(--gold)';
@@ -4040,13 +4105,15 @@ function endRest(){
   clearInterval(tInt);tInt=null;tEnd=0;
   try{localStorage.removeItem('unit-timer');}catch(e){}
   closeTimer();chime();buzz([200,90,200,90,380]);
-  toast('Rest done — next set');
+  toast(tNext?('Rest done — '+tNext.replace(/^Next exercise: /,'')):'Rest done — next set');
+  restSignal();
   if(sessId)pushTimer();
 }
 function skipTimer(){
   clearInterval(tInt);tInt=null;tEnd=0;
   try{localStorage.removeItem('unit-timer');}catch(e){}
   closeTimer();buzz(14);
+  restSignal();
   if(sessId)pushTimer();
 }
 function closeTimer(){
@@ -4058,18 +4125,19 @@ function adjustTimer(n){
   if(!tEnd)return;
   tEnd=Math.max(Date.now()+1000,tEnd+n*1000);
   tTotal=Math.max(tTotal+n,1);
-  try{localStorage.setItem('unit-timer',JSON.stringify({e:tEnd,t:tTotal,n:tName}));}catch(e){}
-  paintTimer();buzz(10);notify(Math.ceil((tEnd-Date.now())/1000),tName);
+  try{localStorage.setItem('unit-timer',JSON.stringify({e:tEnd,t:tTotal,n:tName,x:tNext,id:restId}));}catch(e){}
+  paintTimer();buzz(10);notify(Math.ceil((tEnd-Date.now())/1000));
+  restSignal();
   if(sessId)pushTimer();
 }
 function restoreTimer(){
   try{
     const r=localStorage.getItem('unit-timer');if(!r)return;
-    const{e,t,n}=JSON.parse(r);
+    const{e,t,n,x,id}=JSON.parse(r);
     // more time left than the rest ever had means the clock moved under us
     const stale=t>0&&(e-Date.now())>(t*1000+60000);
     if(stale){localStorage.removeItem('unit-timer');return;}
-    if(e>Date.now()){tEnd=e;tTotal=t;tName=n;
+    if(e>Date.now()){tEnd=e;tTotal=t;tName=n;tNext=x||'';restId=id||uid('r');
       document.getElementById('fst').classList.add('active');
       document.body.style.overflow='hidden';
       paintTimer();tInt=setInterval(tick,240);lockScreen();}
@@ -4096,12 +4164,212 @@ function postSW(d){
   const s=(navigator.serviceWorker&&navigator.serviceWorker.controller)||(swReg&&(swReg.active||swReg.waiting||swReg.installing));
   if(s)try{s.postMessage(d);}catch(e){}
 }
-async function notify(secs,name){
-  if(!('Notification'in window))return;
-  if(Notification.permission==='default'){try{await Notification.requestPermission();}catch(e){}}
-  if(Notification.permission==='granted')postSW({type:'S',ms:secs*1000,n:name||'Next set'});
+/* The phone-only fallback: the worker times the rest itself. Android keeps it
+   running long enough for a normal rest; an iPhone does not, which is why
+   lock-screen alerts come from the server once they are switched on. It
+   also no longer asks for permission out of nowhere on the first tick —
+   that happens from the Notifications screen, when you ask for it. */
+function notify(secs){
+  if(PUSH.on)return;                                   // the server sends these now
+  if(!('Notification'in window)||Notification.permission!=='granted')return;
+  postSW({type:'S',ms:secs*1000,title:'Rest over — go',n:tNext||tName||'Next set'});
 }
 function cancelNotify(){postSW({type:'C'});}
+
+/* ═══════════════════════════════════════════════════════════
+   LOCK-SCREEN NOTIFICATIONS
+
+   A locked iPhone freezes the app, so it cannot raise its own alerts. The
+   server sends them instead (Cloud Functions, see functions/index.js):
+
+     · this phone registers for push and saves its token under
+       users/{uid}/push/tok — one entry per device
+     · a running rest is published to users/{uid}/rest, with bg:true the
+       moment the screen locks. The server answers with "Rest until …,
+       next: …", and at the exact end time with "Rest over — go"
+     · every Hub notification written to notif/{uid} is pushed as well
+
+   On iPhone this needs iOS 16.4+, UNIT added to the Home Screen from Safari,
+   and permission granted from inside the installed app.
+═══════════════════════════════════════════════════════════ */
+let PUSH={on:false,rest:true,hub:true,key:''};
+const MSG_URL='https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging.js';
+function isStandalone(){
+  try{return window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;}catch(e){return false;}
+}
+function isIOS(){return /iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);}
+function tokKey(t){let h=5381;for(let i=0;i<t.length;i++)h=((h<<5)+h+t.charCodeAt(i))>>>0;return 'd'+h.toString(36)+t.length.toString(36);}
+function pushLocalKey(){return 'unit-push:'+(user?user.uid:'');}
+/* What this phone can do right now, in plain words. */
+function pushState(){
+  if(!VAPID_KEY)return{ok:false,why:'setup'};
+  if(!('serviceWorker'in navigator)||!('Notification'in window)||!('PushManager'in window))
+    return{ok:false,why:isIOS()&&!isStandalone()?'install':'unsupported'};
+  if(isIOS()&&!isStandalone())return{ok:false,why:'install'};
+  if(Notification.permission==='denied')return{ok:false,why:'denied'};
+  return{ok:true};
+}
+let msgMod=null;
+async function messaging(){
+  if(!msgMod)msgMod=await import(MSG_URL);
+  if(!(await msgMod.isSupported()))throw new Error('unsupported');
+  return{m:msgMod,inst:msgMod.getMessaging(fbApp)};
+}
+async function saveToken(tok){
+  const k=tokKey(tok),me=user.uid;
+  const old=PUSH.key;
+  await withTimeout(set(ref(db,'users/'+me+'/push/tok/'+k),{t:tok,ts:serverNow(),dev:isIOS()?'iPhone':(/Android/.test(navigator.userAgent)?'Android':'Browser')}),15000);
+  if(old&&old!==k)set(ref(db,'users/'+me+'/push/tok/'+old),null).catch(()=>{});
+  PUSH.key=k;PUSH.on=true;
+  try{localStorage.setItem(pushLocalKey(),k);}catch(e){}
+}
+async function registerPush(){
+  const reg=await navigator.serviceWorker.ready;
+  const {m,inst}=await messaging();
+  const tok=await m.getToken(inst,{vapidKey:VAPID_KEY,serviceWorkerRegistration:reg});
+  if(!tok)throw new Error('no-token');
+  await saveToken(tok);
+}
+/* Must run straight from a tap — iPhones only ask for permission then. */
+async function enablePush(){
+  const s=pushState();
+  if(!s.ok){openPushSheet();return;}
+  const b=document.getElementById('push-go');if(b){b.disabled=true;b.textContent='Turning on…';}
+  try{
+    const perm=await Notification.requestPermission();
+    if(perm!=='granted'){openPushSheet();toast('Notifications were not allowed');return;}
+    await registerPush();
+    buzz([14,40,14]);toast('Lock-screen notifications are on');
+  }catch(e){
+    toast(e&&e.message==='unsupported'?'This browser can’t receive notifications':'Could not turn notifications on — try again');
+  }
+  openPushSheet();render();
+}
+async function disablePush(){
+  const me=user&&user.uid,k=PUSH.key;
+  PUSH.on=false;PUSH.key='';
+  try{localStorage.removeItem(pushLocalKey());}catch(e){}
+  if(me&&k&&db){try{await withTimeout(set(ref(db,'users/'+me+'/push/tok/'+k),null),8000);}catch(e){}}
+  try{if(msgMod){const {m,inst}=await messaging();await m.deleteToken(inst);}}catch(e){}
+  if(me&&db)set(ref(db,'users/'+me+'/rest'),null).catch(()=>{});
+  toast('Notifications off on this phone');openPushSheet();render();
+}
+/* After sign-in: pick up this phone's state and keep its token fresh. */
+async function pushInit(){
+  if(!user||!db)return;
+  const me=user.uid;
+  try{PUSH.key=localStorage.getItem(pushLocalKey())||'';}catch(e){PUSH.key='';}
+  PUSH.on=!!(PUSH.key&&VAPID_KEY&&('Notification'in window)&&Notification.permission==='granted');
+  try{
+    const p=await withTimeout(get(ref(db,'users/'+me+'/push/prefs')),10000);
+    const v=(p&&p.val())||{};
+    if(user&&user.uid===me){PUSH.rest=v.rest!==false;PUSH.hub=v.hub!==false;}
+  }catch(e){}
+  // permission taken away in Settings: stop pretending
+  if(PUSH.key&&!PUSH.on){set(ref(db,'users/'+me+'/push/tok/'+PUSH.key),null).catch(()=>{});PUSH.key='';try{localStorage.removeItem(pushLocalKey());}catch(e){}}
+  if(PUSH.on){try{await registerPush();}catch(e){}}   // tokens rotate; this keeps ours current
+  if(tab==='profile'||tab==='train')render();
+}
+async function pushSignOut(){
+  if(!user||!db||!PUSH.key)return;
+  try{await withTimeout(set(ref(db,'users/'+user.uid+'/push/tok/'+PUSH.key),null),5000);}catch(e){}
+  PUSH={on:false,rest:true,hub:true,key:''};
+}
+async function setPushPref(k){
+  if(!user||!db)return;
+  PUSH[k]=!PUSH[k];buzz(8);
+  try{await set(ref(db,'users/'+user.uid+'/push/prefs/'+k),PUSH[k]);}catch(e){PUSH[k]=!PUSH[k];toast('Could not change that');}
+  openPushSheet();
+}
+async function sendTestPush(){
+  if(!user||!db||!PUSH.on)return;
+  try{await set(ref(db,'users/'+user.uid+'/push/test'),{ts:serverNow()});toast('Test sent — lock your phone to see it on the lock screen');}
+  catch(e){toast('Could not send a test');}
+}
+/* ── the rest, published for the server ── */
+function clockTxt(ms){try{return new Date(ms).toLocaleTimeString([],{hour:'numeric',minute:'2-digit',second:'2-digit'});}catch(e){return '';}}
+function restSignal(){
+  if(!PUSH.on||!user||!db)return;
+  const r=ref(db,'users/'+user.uid+'/rest');
+  if(tEnd&&tEnd>Date.now()&&PUSH.rest){
+    set(r,{id:restId,end:tEnd+clockSkew,total:tTotal,ex:String(tName||'Rest').slice(0,60),
+      next:String(tNext||'').slice(0,140),at:clockTxt(tEnd),bg:!!document.hidden}).catch(()=>{});
+  }else set(r,null).catch(()=>{});
+}
+/* The screen locking is exactly when the socket freezes, so the "I'm in
+   the background" flag also goes out as a keepalive request, which the
+   phone finishes sending even as the page is frozen. */
+function restBg(hidden){
+  if(!PUSH.on||!PUSH.rest||!user||!db||!tEnd||tEnd<=Date.now())return;
+  update(ref(db,'users/'+user.uid+'/rest'),{bg:hidden}).catch(()=>{});
+  if(hidden&&idToken&&firebaseConfig.databaseURL){
+    try{
+      fetch(firebaseConfig.databaseURL.replace(/\/+$/,'')+'/users/'+user.uid+'/rest.json?print=silent&auth='+encodeURIComponent(idToken),
+        {method:'PATCH',keepalive:true,headers:{'Content-Type':'application/json'},body:JSON.stringify({bg:true})}).catch(()=>{});
+    }catch(e){}
+  }
+}
+document.addEventListener('visibilitychange',()=>restBg(document.hidden));
+window.addEventListener('pagehide',()=>restBg(true));
+/* ── the settings screen ── */
+function openPushSheet(){
+  const s=pushState(),dev=isIOS()?'iPhone':'phone';
+  let body='';
+  if(PUSH.on){
+    body=`<div class="brw" style="margin-bottom:14px"><div class="brw-i">🔔</div>
+        <div class="brw-t"><b>On for this ${dev}</b><i>Lock your screen during a rest to see it.</i></div></div>
+      <div class="sh-row"><div class="pf-row-i">⏱️</div><div class="sh-t"><b>Rest timer</b><i>When the screen locks: when your rest ends and what's next. Then an alert when it's over.</i></div>
+        <div class="sw${PUSH.rest?' on':''}" onclick="setPushPref('rest')"></div></div>
+      <div class="sh-row"><div class="pf-row-i">🌐</div><div class="sh-t"><b>Hub activity</b><i>Friend requests, likes, comments, tags and friends' posts</i></div>
+        <div class="sw${PUSH.hub?' on':''}" onclick="setPushPref('hub')"></div></div>
+      <div class="sheet-a"><button class="btn ghost" onclick="disablePush()">Turn off here</button>
+        <button class="btn" onclick="sendTestPush()">Send a test</button></div>`;
+  }else if(s.why==='setup'){
+    body=`<div class="lock" style="text-align:left"><b>Not switched on yet</b>The app is ready, but the notification server hasn't been set up for UNIT yet. Once it is, this screen gets a Turn on button.</div>`;
+  }else if(s.why==='install'){
+    body=`<div class="lock" style="text-align:left"><b>First, add UNIT to your Home Screen</b>
+      iPhones only send notifications to apps on the Home Screen:
+      <ol class="steps"><li>Open this page in <b>Safari</b></li><li>Tap <b>Share</b> <span class="mono">⎋</span>, then <b>Add to Home Screen</b></li>
+      <li>Open UNIT from the new icon, then come back to <b>You → Notifications</b></li></ol>
+      Needs iOS 16.4 or newer.</div>`;
+  }else if(s.why==='denied'){
+    body=`<div class="lock" style="text-align:left"><b>Notifications are blocked</b>${isIOS()
+      ?'Open the iPhone <b>Settings → Notifications → UNIT</b> and switch on <b>Allow Notifications</b>, then come back here.'
+      :'Allow notifications for this site in your browser or app settings, then come back here.'}</div>`;
+  }else if(s.why==='unsupported'){
+    body=`<div class="lock" style="text-align:left"><b>This browser can't receive notifications</b>Try Chrome on Android, or on iPhone add UNIT to the Home Screen from Safari.</div>`;
+  }else{
+    body=`<div class="lock" style="text-align:left"><b>What you'll get</b>
+      <ul class="steps"><li>Lock the screen mid-rest and see <b>when the rest ends</b> and <b>what's next</b></li>
+      <li>An alert the moment the rest is over</li><li>Friend requests, likes and comments from the Hub</li></ul></div>
+      <div class="sheet-a"><button class="btn ghost" onclick="closeSheet()">Not now</button>
+        <button class="btn pri" id="push-go" onclick="enablePush()">Turn on</button></div>`;
+  }
+  openSheet(`<div class="sheet-t">Lock-screen notifications</div>
+    <div class="sheet-s">Rest timer and Hub alerts, even when your phone is locked.</div>${body}
+    ${PUSH.on||s.ok?'':`<div class="sheet-a"><button class="btn btn-full" onclick="closeSheet()">Done</button></div>`}`);
+}
+/* One nudge on the Train screen, once the app is installed. */
+function pushNudge(){
+  if(PUSH.on||!user||role==='guest')return '';
+  const s=pushState();if(!s.ok)return '';
+  try{if(localStorage.getItem('unit-push-nudge'))return '';}catch(e){}
+  return `<div class="brw"><div class="brw-i">🔔</div>
+    <div class="brw-t"><b>See your rest timer on the lock screen</b><i>And get Hub alerts while your phone is in your pocket.</i></div>
+    <div class="stale-a"><button class="brw-x" onclick="enablePush()">Turn on</button>
+      <button class="brw-x ghost" onclick="dismissNudge()">Not now</button></div></div>`;
+}
+function dismissNudge(){try{localStorage.setItem('unit-push-nudge','1');}catch(e){}render();}
+/* A notification was tapped: go where it points. */
+function openFromNote(url){
+  const u=String(url||'');
+  if(/#notifs/.test(u)){setTab('hub');setTimeout(openNotifs,250);}
+  else if(/#hub/.test(u))setTab('hub');
+  else if(/#train/.test(u))setTab('train');
+}
+if('serviceWorker'in navigator){
+  navigator.serviceWorker.addEventListener('message',e=>{const d=e.data||{};if(d.type==='open')openFromNote(d.url);});
+}
 
 /* ═══════════════════════════════════════════════════════════
    TRAIN TOGETHER — both avatars, live
@@ -4237,7 +4505,7 @@ async function hostSession(){
     await set(sref('control'),{edit:false});
     await set(sref('ended'),false);
     await pushState();
-    armDisconnect();
+    armPresence();
   }catch(e){toast('Could not start the session');sessId=null;role=null;return;}
   startBeat();
   watchSession();
@@ -4267,7 +4535,8 @@ async function doJoin(){
     const s=await get(ref(db,'sessions/'+code));
     if(!s||!s.exists()){toast('No session with that code');return;}
     snapVal=s.val();
-    if(snapVal.ended){toast('That session has ended');return;}
+    // ended, or the host has left it — a quiet host (phone locked) is still joinable
+    if(snapVal.ended||!(snapVal.host&&snapVal.host.profile)){toast('That session has ended');return;}
   }catch(e){toast('Could not join');return;}
   // park our own program before the host's lands on top of it
   myBackup=JSON.stringify(bundle());
@@ -4277,7 +4546,7 @@ async function doJoin(){
   editGranted=!!(snapVal.control&&snapVal.control.edit);
   if(snapVal.state)applyRemoteState(snapVal.state);
   try{await set(sref('guest/profile'),pubProfile());}catch(e){}
-  armDisconnect();
+  armPresence();
   startBeat();
   watchSession();
   saveSess();closeSheet();tab='train';render();
@@ -4285,19 +4554,24 @@ async function doJoin(){
   connScreen('join',partner);
 }
 
-// if this device drops off, clear our presence so the other side is told
-function armDisconnect(){
+/* ── A locked phone is not a goodbye ──────────────────────────
+   This used to tell the server "if my connection drops, remove me" — and for
+   the host, "…and end the session". A phone that locks drops its connection
+   within seconds, so pocketing a phone between sets threw both people out.
+   Now a dropped connection only flips a presence flag (on:false), which the
+   partner sees as "waiting for …". The session ends only when someone taps
+   Leave or End session. When the phone wakes, reassert() rejoins and catches
+   up on anything that changed in the meantime. */
+function armPresence(){
   if(!db||!sessId||!role)return;
   try{
-    onDisconnect(sref(role+'/profile')).remove();
-    if(role==='host')onDisconnect(sref('ended')).set(true);
+    const r=sref(role+'/on');
+    onDisconnect(r).set(false);                 // tells the partner we've gone quiet — never ends anything
+    set(r,true).catch(()=>{});
   }catch(e){}
 }
-/* Connection resilience.
-   onDisconnect covers a clean drop, but a phone that sleeps or a flaky signal
-   can leave a stale session. We watch the socket, beat every 15s, and put
-   everything back the moment we are online again. */
-let online=true,beatT=null,staleT=null,peerSeen=0,peerStale=false;
+let online=true,beatT=null,staleT=null,peerSeen=0,peerStale=false,peerOn=true;
+let lastStateTs=0,quietRejoin=false,sessOverShown=false,leavingSess=false;
 let everOnline=false,dropT=null,connWatched=false;
 function watchConnection(){
   if(!db||connWatched)return;      // once per page — every sign-in used to add another
@@ -4333,19 +4607,46 @@ function watchConnection(){
     });
   }catch(e){}
 }
+/* Back after a lock, a signal drop or a reload: is the session still there,
+   put ourselves back in it, and catch up. */
+let reassertBusy=false;
 async function reassert(){
-  if(!db||!sessId||!role)return;
+  if(!db||!sessId||!role||reassertBusy||leavingSess)return;
+  reassertBusy=true;
+  const id=sessId,me=role;
   try{
-    await set(sref(role+'/profile'),pubProfile());
-    armDisconnect();
-    await beat();
-    if(role==='host')await pushState();
+    const s=await withTimeout(get(ref(db,'sessions/'+id)),12000);
+    if(sessId!==id||role!==me)return;
+    const v=(s&&s.exists())?s.val():null;
+    // only a deliberate end removes the host or sets ended — so this really is over
+    if(!v||v.ended===true||!(v.host&&v.host.profile)){
+      if(me==='guest')sessionOver(partner,'The session ended while you were away');
+      else{toast('That session was closed');leaveSession({quiet:true});}
+      return;
+    }
+    await withTimeout(set(sref(me+'/profile'),pubProfile()),10000);
+    armPresence();
+    beat();
+    if(me==='host'){
+      /* The guest may have changed the workout while this phone was asleep.
+         Take their newer copy instead of pushing an old one over it. */
+      const st=v.state;
+      if(st&&st.by==='guest'&&(st.ts||0)>lastStateTs){
+        applyRemoteState(st);lastStateTs=st.ts||0;
+        saveLocal();clearTimeout(cloudT);cloudT=setTimeout(cloudSave,900);render();
+      }else await pushState();
+      lastView='';pushView(true);                 // hand the guest the current screen
+    }else{
+      if(v.state&&v.state.by==='host'&&(v.state.ts||0)>lastStateTs){applyRemoteState(v.state);lastStateTs=v.state.ts||0;render();}
+      if(v.view)applyRemoteView(v.view);
+    }
     renderPairStrip();
   }catch(e){}
+  finally{reassertBusy=false;}
 }
 async function beat(){
   if(!db||!sessId||!role)return;
-  try{await set(sref(role+'/seen'),Date.now());}catch(e){}
+  try{await set(sref(role+'/seen'),serverNow());}catch(e){}   // server time, so two phones' clocks don't matter
 }
 function startBeat(){
   stopBeat();
@@ -4354,14 +4655,34 @@ function startBeat(){
   // if the other side has gone quiet, say so rather than pretending it is live
   staleT=setInterval(()=>{
     if(!sessId||!peerSeen)return;
-    const s=(Date.now()-peerSeen)>50000;
+    const s=(serverNow()-peerSeen)>50000;
     if(s!==peerStale){peerStale=s;renderPairStrip();}
   },10000);
 }
 function stopBeat(){
   clearInterval(beatT);clearInterval(staleT);
-  beatT=staleT=null;peerSeen=0;peerStale=false;
+  beatT=staleT=null;peerSeen=0;peerStale=false;peerOn=true;
 }
+/* The session is over for this guest — shown once, then back to their own program. */
+function sessionOver(gone,sub){
+  if(role!=='guest'||sessOverShown)return;
+  sessOverShown=true;
+  connScreen('part',gone,{sub:sub||(((gone&&gone.firstName)||'The host')+' ended the session'),
+    hold:2000,then:()=>{leaveSession({quiet:true,msg:'The session has ended'});}});
+}
+/* The Leave button in the header is small and near other buttons — make
+   sure it was meant. */
+function confirmLeave(){
+  const host=role==='host';
+  if(!confirm(host?'End the session for both of you?':'Leave the session?'))return;
+  leaveSession();
+}
+/* A phone coming back from being locked may still think its socket is fine.
+   Check in anyway — it costs one read. */
+function sessWake(){if(sessId&&role&&!document.hidden)reassert();}
+document.addEventListener('visibilitychange',sessWake);
+window.addEventListener('pageshow',e=>{if(e.persisted)sessWake();});
+window.addEventListener('online',sessWake);
 /* ═══════════════════════════════════════════════════════════
    SCREEN MIRROR
 
@@ -4512,20 +4833,35 @@ function watchSession(){
       if(peerStale){peerStale=false;renderPairStrip();}
     }
   });
+  // their phone locked or lost signal: say so, keep the session
+  watch(theirs+'/on',snap=>{
+    const was=peerOn;
+    peerOn=!(snap&&snap.exists()&&snap.val()===false);
+    if(peerOn&&!was&&partner){
+      peerStale=false;
+      toast((partner.firstName||'Your partner')+' is back');
+      if(isPresenter()){lastView='';pushView(true);}   // bring their screen up to date
+    }
+    renderPairStrip();
+  });
+  /* A profile only disappears when someone taps Leave or End session — a
+     locked phone no longer removes it — so this really is a goodbye. */
   watch(theirs+'/profile',snap=>{
     const has=!!(snap&&snap.exists());
     const had=!!partner,prev=partner;
     if(has)partner=snap.val();
     renderPairStrip();
     if(has&&!had){
-      connScreen('join',partner);
-      if(isPresenter())pushView(true);            // hand the newcomer the current screen
+      if(quietRejoin)toast('Back with '+(partnerName()||'your partner'));
+      else connScreen('join',partner);
+      quietRejoin=false;
+      if(isPresenter()){lastView='';pushView(true);}   // hand the newcomer the current screen
     }
     if(!has&&had){
       const gone=prev;
       partner=null;renderPairStrip();
       if(role==='host')connScreen('part',gone,{sub:((gone&&gone.firstName)||'Your partner')+' left. You can keep training — share the code again to reconnect.'});
-      else connScreen('part',gone,{hold:2000,then:()=>leaveSession()});
+      else sessionOver(gone);
     }
   });
   watch('control',snap=>{
@@ -4547,6 +4883,7 @@ function watchSession(){
     if(!snap||!snap.exists())return;
     const v=snap.val();
     if(v.by===mine)return; // our own write coming back to us
+    if(v.ts)lastStateTs=Math.max(lastStateTs,v.ts);
     applyRemoteState(v);
     // a guest's edit belongs to the host's program, so the host keeps it
     if(role==='host'){saveLocal();clearTimeout(cloudT);cloudT=setTimeout(cloudSave,900);}
@@ -4557,11 +4894,7 @@ function watchSession(){
     applyRemoteView(snap.val());
   });
   watch('ended',snap=>{
-    if(role==='guest'&&snap&&snap.exists()&&snap.val()===true){
-      const gone=partner;
-      connScreen('part',gone,{sub:((gone&&gone.firstName)||'The host')+' ended the session',
-        hold:2000,then:()=>leaveSession()});
-    }
+    if(role==='guest'&&snap&&snap.exists()&&snap.val()===true)sessionOver(partner);
   });
   watchTimer();
 }
@@ -4569,7 +4902,11 @@ function applyRemoteState(s){
   if(!s||!sessId)return;         // no session, no one else's program — ever
   // copy out of the snapshot — never keep a live reference to it
   const clone=v=>{try{return JSON.parse(JSON.stringify(v));}catch(e){return v;}};
-  if(s.EX)EX={...emptyEX(),...clone(s.EX)};
+  if(s.EX){
+    const ex={...emptyEX(),...clone(s.EX)};
+    Object.keys(ex).forEach(d=>{ex[d]=toArr(ex[d]).map(fixSets);});
+    EX=ex;
+  }
   if(s.ws)ws=clone(s.ws);
   if(s.st)st=clone(s.st);
   if(s.CARDIO)CARDIO=clone(s.CARDIO);
@@ -4583,8 +4920,11 @@ function applyRemoteState(s){
 }
 async function pushState(){
   if(!db||!sessId||!canWrite())return false;
-  try{await set(sref('state'),
-    {EX,ws,st,CARDIO,day,PREFS,MEALS,SUPPS,MACROS,wtr,calDone,by:role,ts:Date.now()});
+  try{
+    const ts=serverNow();                       // server time, so host and guest stamps compare
+    stampSets(EX);
+    await set(sref('state'),{EX,ws,st,CARDIO,day,PREFS,MEALS,SUPPS,MACROS,wtr,calDone,by:role,ts});
+    lastStateTs=Math.max(lastStateTs,ts);
     statePending=false;return true;}
   catch(e){statePending=true;return false;}
 }
@@ -4596,7 +4936,7 @@ async function pushState(){
 async function pushTimer(){
   if(!db||!sessId||!canWrite())return;
   try{
-    await set(sref('timer'),tEnd?{e:tEnd+clockSkew,t:tTotal,n:tName,by:role}:null);
+    await set(sref('timer'),tEnd?{e:tEnd+clockSkew,t:tTotal,n:tName,x:tNext||'',by:role}:null);
   }catch(e){}
 }
 function watchTimer(){
@@ -4605,35 +4945,46 @@ function watchTimer(){
     const v=snap&&snap.exists()?snap.val():null;
     // back from server time into this device's own clock
     const localEnd=v&&v.e?v.e-clockSkew:0;
-    if(!localEnd||localEnd<=Date.now()){if(tEnd){tEnd=0;clearInterval(tInt);closeTimer();}return;}
+    if(!localEnd||localEnd<=Date.now()){if(tEnd){tEnd=0;clearInterval(tInt);closeTimer();restSignal();}return;}
     if(v.by===role)return;                    // our own timer echoing back
     if(Math.abs(localEnd-tEnd)<900)return;    // already in step
     const left=Math.ceil((localEnd-Date.now())/1000);
     tEnd=localEnd;
     tTotal=Math.max(v.t||0,left);             // never let the ring read past full
-    tName=v.n||'Rest';
+    tName=v.n||'Rest';tNext=v.x||'';restId=uid('r');
     document.getElementById('fst').classList.add('active');
     document.body.style.overflow='hidden';
     paintTimer();clearInterval(tInt);tInt=setInterval(tick,240);
+    restSignal();                                   // your own lock screen gets it too
   });
 }
-async function leaveSession(){
+async function leaveSession(opts){
+  if(leavingSess)return;
+  leavingSess=true;
+  const o=opts||{};
   const wasHost=role==='host',id=sessId,myRole=role;
-  clearMirror();
-  unwatchAll();
-  if(db&&id&&myRole){
-    try{await set(ref(db,'sessions/'+id+'/'+myRole+'/profile'),null);}catch(e){}
-    if(wasHost){
-      try{await set(ref(db,'sessions/'+id+'/ended'),true);}catch(e){}
-      // give the guest a moment to see "ended", then clear the whole session away
-      setTimeout(()=>{try{remove(ref(db,'sessions/'+id)).catch(()=>{});}catch(e){}},8000);
+  try{
+    clearMirror();
+    unwatchAll();
+    if(db&&id&&myRole){
+      // no "went quiet" flag after we have gone
+      try{onDisconnect(ref(db,'sessions/'+id+'/'+myRole+'/on')).cancel();}catch(e){}
+      const w={[myRole+'/profile']:null,[myRole+'/on']:null,[myRole+'/seen']:null};
+      if(wasHost)w.ended=true;
+      /* With no signal this write is queued and goes out when the phone
+         reconnects — so don't sit waiting for it. */
+      try{await withTimeout(update(ref(db,'sessions/'+id),w),4000);}catch(e){}
+      if(wasHost){
+        // give the guest a moment to see "ended", then clear the whole session away
+        setTimeout(()=>{try{remove(ref(db,'sessions/'+id)).catch(()=>{});}catch(e){}},8000);
+      }
     }
-  }
-  stopBeat();
-  sessId=null;role=null;partner=null;editGranted=false;
-  saveSess();closeSheet();
-  if(wasHost){render();toast('Session ended');}
-  else{await reloadOwnData();toast('You left the session');}
+    stopBeat();
+    sessId=null;role=null;partner=null;editGranted=false;lastStateTs=0;quietRejoin=false;
+    saveSess();closeSheet();
+    if(wasHost){render();if(!o.quiet)toast('Session ended');}
+    else{await reloadOwnData();toast(o.msg||'You left the session');}
+  }finally{leavingSess=false;sessOverShown=false;}
 }
 async function reloadOwnData(){
   EX=emptyEX();CARDIO={};ws={};st={};
@@ -6580,7 +6931,7 @@ function importedEx(list){
     n:String(e.n||'Exercise').slice(0,60),
     reps:String(e.r||'').slice(0,20),
     rest:90,note:'',
-    sets:Array.from({length:Math.max(1,Math.min(20,parseInt(e.s,10)||3))},()=>({}))
+    sets:Array.from({length:Math.max(1,Math.min(20,parseInt(e.s,10)||3))},blankSet)
   }));
 }
 /* The snapshot on screen can be a few seconds old, and a routine can be
@@ -7218,7 +7569,7 @@ Object.assign(window,{
   toggleDay,calMove,closeSheet,promptOk,
   pickPhoto,savePhoto,openPv,closePv,clearAvatar,
   adjustTimer,skipTimer,
-  openPair,openLiveSheet,hideConn,hostSession,joinPrompt,doJoin,leaveSession,toggleEditAccess,
+  openPair,openLiveSheet,hideConn,hostSession,joinPrompt,doJoin,leaveSession,confirmLeave,toggleEditAccess,
   switchAuth,doLogin,doSignup,doSignOut,
   obGo,obNext,obDay,obSplit,obCardio,obFinish,
   save,render,toast,
@@ -7322,10 +7673,13 @@ if(auth){
       flushPending();
       // the web link the Play Store asks for: yoursite/#delete-account
       if(/delete-account/.test(location.hash)){setTab('profile');setTimeout(openDeleteAccount,450);}
+      /* A locked phone may have had its page closed by the system. The
+         session is still waiting — rejoin it quietly. */
       if(sessId&&role){
-        try{await set(ref(db,'sessions/'+sessId+'/'+role+'/profile'),pubProfile());}catch(e){}
+        quietRejoin=true;
+        startBeat();
         watchSession();
-        if(role==='host')pushState();
+        reassert();
         renderPairStrip();
       }
     }else{
