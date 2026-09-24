@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,12 +6,26 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#06080E">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#F5F2EC">
 <meta name="apple-mobile-web-app-title" content="UNIT">
 <meta name="application-name" content="UNIT">
 <!-- what makes "Add to Home Screen" a real app: its own icon, its own window, and (on iPhone) lock-screen notifications -->
 <link rel="manifest" href="manifest.webmanifest">
+<script>
+/* Light unless this phone's owner picked otherwise (You → Theme). Set before
+   the first paint, so nobody sees the wrong colours flash up first. On an
+   iPhone the status bar style is read here too: dark text over the light
+   app, white text over the dark one, so the clock is always readable. */
+(function(){try{
+  var p=localStorage.getItem('unit-theme')||'light',t=p;
+  if(p==='system')t=(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light';
+  if(t!=='dark')t='light';
+  document.documentElement.setAttribute('data-theme',t);
+  var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute('content',t==='light'?'#F5F2EC':'#06080E');
+  var b=document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');if(b)b.setAttribute('content',t==='light'?'default':'black-translucent');
+}catch(e){document.documentElement.setAttribute('data-theme','light');}})();
+</script>
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <title>UNIT</title>
@@ -1428,7 +1443,7 @@ let st={};                 // cardio/meal checkmarks
 let ws={};                 // set state {done,w,r}
 let wtr={};                // water per day
 let calDone={};            // {YYYY-MM-DD:true}
-let PREFS={trainDays:[],split:'',doesCardio:false,onboarded:false,theme:'system'};
+let PREFS={trainDays:[],split:'',doesCardio:false,onboarded:false,theme:'light'};
 /* History — what actually happened, by date. Kept out of the program bundle
    on purpose: the bundle is rewritten on every save, and a year of workouts
    riding along with each keystroke would be a slow, expensive save.
@@ -2087,7 +2102,7 @@ function normalize(d){
     trainDays:Array.isArray(up.trainDays)?up.trainDays:[],
     split:up.split||'',
     doesCardio:!!up.doesCardio,
-    theme:up.theme||'system',
+    theme:up.theme||'light',
     onboarded:up.onboarded!==undefined?!!up.onboarded:true};
   return d;
 }
@@ -2460,8 +2475,25 @@ const THEMES=[
   {v:'light', i:'☀️',t:'Light',         d:'Warm paper, same gold'}
 ];
 const sysLight=()=>window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches;
+/* Light is the default. Accounts from before stored "system" without anyone
+   choosing it, so only a "system" picked in You → Theme (themeSet) counts. */
+function themePref(){
+  const t=PREFS.theme;
+  if(!t||(t==='system'&&!PREFS.themeSet))return 'light';
+  return t;
+}
+/* Before anyone has signed in, this phone shows what it showed last time
+   (light the very first time) — the account's own choice takes over once
+   it has loaded. */
+function activePref(){
+  if(!user){
+    let h='';try{h=localStorage.getItem('unit-theme')||'';}catch(e){}
+    if(h==='light'||h==='dark'||h==='system')return h;
+  }
+  return themePref();
+}
 function resolvedTheme(){
-  const t=PREFS.theme||'system';
+  const t=activePref();
   return t==='system'?(sysLight()?'light':'dark'):t;
 }
 function applyTheme(){
@@ -2469,9 +2501,13 @@ function applyTheme(){
   document.documentElement.setAttribute('data-theme',r);
   const m=document.querySelector('meta[name="theme-color"]');
   if(m)m.setAttribute('content',r==='light'?'#F5F2EC':'#06080E');
+  // remembered for the next launch, before the app has loaded (see <head>)
+  if(user){try{localStorage.setItem('unit-theme',themePref());}catch(e){}}
+  const b=document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+  if(b)b.setAttribute('content',r==='light'?'default':'black-translucent');
 }
 function setTheme(v){
-  PREFS.theme=v;applyTheme();save();buzz(10);
+  PREFS.theme=v;PREFS.themeSet=true;applyTheme();save();buzz(10);
   if(document.getElementById('sheet-bd').classList.contains('active'))openThemeSheet();
   render();
 }
@@ -2479,7 +2515,7 @@ function setTheme(v){
 try{
   if(window.matchMedia){
     const mq=window.matchMedia('(prefers-color-scheme: light)');
-    const onSys=()=>{if((PREFS.theme||'system')==='system')applyTheme();};
+    const onSys=()=>{if(activePref()==='system')applyTheme();};
     if(mq.addEventListener)mq.addEventListener('change',onSys);
     else if(mq.addListener)mq.addListener(onSys);
   }
@@ -3522,8 +3558,8 @@ function viewProfile(){
 
     <div class="pf-sec">Appearance</div>
     <div class="pf-row" onclick="openThemeSheet()">
-      <div class="pf-row-i">${(THEMES.find(t=>t.v===(PREFS.theme||'system'))||THEMES[0]).i}</div>
-      <div class="pf-row-t"><b>Theme</b><i>${(THEMES.find(t=>t.v===(PREFS.theme||'system'))||THEMES[0]).t}</i></div>
+      <div class="pf-row-i">${(THEMES.find(t=>t.v===themePref())||THEMES[0]).i}</div>
+      <div class="pf-row-t"><b>Theme</b><i>${(THEMES.find(t=>t.v===themePref())||THEMES[0]).t}</i></div>
       <div class="pf-row-v">›</div>
     </div>
 
@@ -3947,7 +3983,7 @@ function saveSplit(){PREFS.split=sheetCtx.split||'';closeSheet();save();render()
 function openThemeSheet(){
   openSheet(`<div class="sheet-t">Theme</div>
     <div class="sheet-s">Pick how UNIT looks. This is saved with your account.</div>
-    ${THEMES.map(t=>`<div class="opt${(PREFS.theme||'system')===t.v?' on':''}" onclick="setTheme('${t.v}')">
+    ${THEMES.map(t=>`<div class="opt${themePref()===t.v?' on':''}" onclick="setTheme('${t.v}')">
       <div class="opt-i">${t.i}</div><div class="opt-t"><b>${t.t}</b><i>${t.d}</i></div>
       <div class="opt-c"></div></div>`).join('')}
     <div class="sheet-a"><button class="btn btn-full" onclick="closeSheet()">Done</button></div>`);
@@ -5411,6 +5447,7 @@ async function doSignup(){
   EX=emptyEX();CARDIO={};MEALS=[];SUPPS=[];GROCERY=[];grChecked={};
   st={};ws={};wtr={};calDone={};MACROS={cal:'',protein:'',carbs:'',fat:''};
   PREFS={trainDays:[],split:'',doesCardio:false,onboarded:false};
+  applyTheme();
   HIST={w:{},f:{}};histQ={};histSaveLocal();
   if(db){
     // uid only — an email in here was readable by anyone who knew the handle
