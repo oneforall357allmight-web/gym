@@ -1072,6 +1072,26 @@ body::after{
   color:var(--txt);line-height:1.45;padding:10px 16px;border-radius:14px;background:var(--surf2);border:1px solid var(--line2)}
 .steps{margin:10px 0 10px 20px;line-height:1.6}
 .lock b~b,.steps b{display:inline;margin:0;font-size:inherit;color:var(--txt)}
+/* add to Home Screen */
+.a2hs-hero{display:flex;gap:14px;align-items:center;margin-bottom:16px}
+.a2hs-ic{width:60px;height:60px;border-radius:14px;flex-shrink:0;border:1px solid var(--line);box-shadow:var(--shadow-sm)}
+.a2hs-hero .sheet-t{margin-bottom:3px}
+.a2hs-hero .sheet-s{margin-bottom:0}
+.a2hs-steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:7px;text-align:left}
+.a2hs-steps li{display:flex;gap:11px;align-items:flex-start;padding:11px 12px;background:var(--surf);
+  border:1px solid var(--line);border-radius:12px;font-size:13px;line-height:1.5;color:var(--txt2)}
+.a2hs-steps b{color:var(--txt);font-weight:650}
+.a2hs-steps i{display:block;font-style:normal;font-size:11.5px;color:var(--txt3);margin-top:3px}
+.a2hs-n{width:22px;height:22px;border-radius:50%;background:var(--gold-d1);color:var(--gold);flex-shrink:0;margin-top:1px;
+  font:700 11.5px 'JetBrains Mono',ui-monospace,monospace;display:flex;align-items:center;justify-content:center}
+.a2hs-g{width:18px;height:18px;stroke:var(--cyan);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;
+  vertical-align:-4px;margin:0 1px}
+.a2hs-g.dots{fill:var(--cyan);stroke:none}
+.a2hs-perks{display:flex;flex-direction:column;gap:8px;margin:2px 0 4px;padding:13px 14px;background:var(--surf);
+  border:1px solid var(--line);border-radius:12px;font-size:13px;color:var(--txt2)}
+.a2hs-perks div{display:flex;gap:10px;align-items:center}
+.a2hs-perks span{width:20px;text-align:center;flex-shrink:0}
+.a2hs-note{font-size:11.5px;color:var(--txt3);margin-top:12px;line-height:1.5}
 .steps li{margin-bottom:4px}
 /* a first visit with no signal */
 .ld-help{position:relative;font-size:12.5px;color:var(--txt3);text-align:center;max-width:280px;line-height:1.55;margin-top:18px}
@@ -3461,6 +3481,13 @@ function viewProfile(){
       <div class="pf-row-v mono">${unit()}</div>
     </div>
 
+    ${canOfferInstall()?`<div class="pf-sec">App</div>
+    <div class="pf-row" onclick="openInstallSheet()">
+      <div class="pf-row-i">📲</div>
+      <div class="pf-row-t"><b>Add UNIT to your Home Screen</b><i>Opens full screen, like any app</i></div>
+      <div class="pf-row-v">›</div>
+    </div>`:''}
+
     <div class="pf-sec">Notifications</div>
     <div class="pf-row" onclick="openPushSheet()">
       <div class="pf-row-i">🔔</div>
@@ -4351,11 +4378,8 @@ function openPushSheet(){
   }else if(s.why==='setup'){
     body=`<div class="lock" style="text-align:left"><b>Not switched on yet</b>The app is ready, but the notification server hasn't been set up for UNIT yet. Once it is, this screen gets a Turn on button.</div>`;
   }else if(s.why==='install'){
-    body=`<div class="lock" style="text-align:left"><b>First, add UNIT to your Home Screen</b>
-      iPhones only send notifications to apps on the Home Screen:
-      <ol class="steps"><li>Open this page in <b>Safari</b></li><li>Tap <b>Share</b> (on newer iPhones it's under <b>⋯</b>), then <b>Add to Home Screen</b> — keep <b>Open as Web App</b> on</li>
-      <li>Open UNIT from the new icon, then come back to <b>You → Notifications</b></li></ol>
-      Needs iOS 16.4 or newer.</div>`;
+    body=`<div class="lock" style="text-align:left;margin-bottom:12px"><b>First, add UNIT to your Home Screen</b>
+      iPhones only send notifications to apps on the Home Screen. Needs iOS 16.4 or newer.</div>${installStepsHTML(installWhere())}`;
   }else if(s.why==='denied'){
     body=`<div class="lock" style="text-align:left"><b>Notifications are blocked</b>${isIOS()
       ?'Open the iPhone <b>Settings → Notifications → UNIT</b> and switch on <b>Allow Notifications</b>, then come back here.'
@@ -4393,6 +4417,135 @@ function openFromNote(url){
 }
 if('serviceWorker'in navigator){
   navigator.serviceWorker.addEventListener('message',e=>{const d=e.data||{};if(d.type==='open')openFromNote(d.url);});
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ADD TO HOME SCREEN
+
+   Offered once, straight after a new account is made, on phones and
+   tablets. On Android (Chrome, Edge, Samsung Internet) the button adds
+   UNIT in one tap. iPhones don't let a website add itself, so there the
+   sheet shows the taps to do by hand. It never appears inside the
+   installed app, and after that first offer it only lives under You.
+═══════════════════════════════════════════════════════════ */
+let installEvt=null;
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();                   // hold Chrome's own banner; we ask at the right moment instead
+  installEvt=e;
+  if(document.getElementById('a2hs'))openInstallSheet();   // already showing the steps: swap in the one-tap button
+});
+window.addEventListener('appinstalled',()=>{
+  installEvt=null;a2hsDone();
+  if(document.getElementById('a2hs'))closeSheet();
+  toast('UNIT is on your Home Screen');
+  if(tab==='profile')render();
+});
+function a2hsDone(){try{localStorage.setItem('unit-a2hs-done','1');}catch(e){}}
+function a2hsIsDone(){
+  if(isStandalone())return true;
+  try{return localStorage.getItem('unit-a2hs-done')==='1';}catch(e){return false;}
+}
+/* Where are we? Decides which steps make sense. */
+function installWhere(){
+  const ua=navigator.userAgent||'';
+  if(/FBAN|FBAV|FB_IAB|Instagram|Line\/|TikTok|musical_ly|Snapchat|LinkedInApp|GSA\//i.test(ua))return 'inapp';
+  if(isIOS())return /CriOS|FxiOS|EdgiOS|OPiOS|OPT\//.test(ua)?'ios-other':'ios';
+  if(/Android/i.test(ua))return 'android';
+  return 'desktop';
+}
+function canOfferInstall(){
+  if(a2hsIsDone())return false;
+  return installWhere()!=='desktop'||!!installEvt;
+}
+const G_SHARE='<svg class="a2hs-g" viewBox="0 0 24 24" aria-label="Share"><path d="M12 3.5v11M8 7.5l4-4 4 4"/><path d="M8.5 10.5H7a1.5 1.5 0 00-1.5 1.5v7A1.5 1.5 0 007 20.5h10a1.5 1.5 0 001.5-1.5v-7a1.5 1.5 0 00-1.5-1.5h-1.5"/></svg>';
+const G_ADD='<svg class="a2hs-g" viewBox="0 0 24 24" aria-label="Add"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8.5v7M8.5 12h7"/></svg>';
+const G_DOTS='<svg class="a2hs-g dots" viewBox="0 0 24 24" aria-label="More"><circle cx="5.5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="18.5" cy="12" r="1.8"/></svg>';
+const G_MENU='<svg class="a2hs-g dots" viewBox="0 0 24 24" aria-label="Menu"><circle cx="12" cy="5.5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="18.5" r="1.8"/></svg>';
+function installStepsHTML(w){
+  const li=(n,t)=>`<li><span class="a2hs-n">${n}</span><div>${t}</div></li>`;
+  if(w==='ios')return `<ol class="a2hs-steps">
+    ${li(1,`Tap <b>Share</b> ${G_SHARE} in Safari<i>Don't see it? Tap ${G_DOTS} first, then Share.</i>`)}
+    ${li(2,`Scroll down and tap ${G_ADD} <b>Add to Home Screen</b>`)}
+    ${li(3,`Keep <b>Open as Web App</b> on, then tap <b>Add</b>`)}
+    ${li(4,`Open UNIT from your Home Screen and sign in there`)}</ol>`;
+  if(w==='ios-other')return `<ol class="a2hs-steps">
+    ${li(1,`Tap <b>Share</b> ${G_SHARE} next to the address bar`)}
+    ${li(2,`Tap ${G_ADD} <b>Add to Home Screen</b>, then <b>Add</b><i>Not in the list? Open this page in Safari and do it there.</i>`)}
+    ${li(3,`Open UNIT from your Home Screen and sign in there`)}</ol>`;
+  if(w==='inapp')return `<ol class="a2hs-steps">
+    ${li(1,`You're inside another app's browser, which can't add apps. Tap its menu ${G_DOTS} and choose <b>Open in browser</b> (or <b>Open in Safari</b>)<i>No such option? Tap Copy link below and paste it into Safari or Chrome.</i>`)}
+    ${li(2,`Sign in, then come back to <b>You → Add UNIT to your Home Screen</b>`)}</ol>`;
+  if(w==='android')return `<ol class="a2hs-steps">
+    ${li(1,`Tap your browser's menu ${G_MENU} (top right, or bottom on Samsung Internet)`)}
+    ${li(2,`Tap <b>Add to Home screen</b> or <b>Install app</b>`)}
+    ${li(3,`Tap <b>Install</b> or <b>Add</b>`)}</ol>`;
+  return `<ol class="a2hs-steps">
+    ${li(1,`Click the <b>install</b> icon at the right end of the address bar, or open the browser menu and choose <b>Install UNIT</b>`)}</ol>`;
+}
+function openInstallSheet(){
+  const w=installWhere(),ios=w==='ios'||w==='ios-other';
+  const oneTap=!!installEvt&&w!=='inapp';
+  const perks=`<div class="a2hs-perks">
+      <div><span>📲</span>Opens full screen, like any app</div>
+      <div><span>⚡</span>One tap from your Home Screen</div>
+      ${ios?`<div><span>🔔</span>Rest timer and Hub alerts on your lock screen</div>`:''}
+    </div>`;
+  const body=oneTap
+    ? perks+`<div class="sheet-a"><button class="btn ghost" onclick="installLater()">Not now</button>
+        <button class="btn pri" id="a2hs-go" style="flex:1.8" onclick="installNow()">Add to Home Screen</button></div>`
+    : installStepsHTML(w)+(ios?`<div class="a2hs-note">iPhones don't let websites add themselves, so this part is up to you. It takes about 10 seconds.</div>`:'')+
+      `<div class="sheet-a">${w==='inapp'
+        ?`<button class="btn ghost" onclick="copyAppLink()">Copy link</button>`
+        :`<button class="btn ghost" onclick="installLater()">Not now</button>`}
+        <button class="btn pri" onclick="installLater(true)">Got it</button></div>`;
+  openSheet(`<div id="a2hs"><div class="a2hs-hero"><img class="a2hs-ic" src="icons/icon-192.png" alt="">
+      <div><div class="sheet-t">Add UNIT to your Home Screen</div>
+      <div class="sheet-s">${oneTap?'Installs in one tap. No app store, nothing to download.':'Get UNIT as an app on your phone, next to your others.'}</div></div></div>
+    ${body}</div>`);
+}
+/* Android's own install dialog — it can only be shown from a tap, and once. */
+async function installNow(){
+  const e=installEvt;
+  if(!e){openInstallSheet();return;}
+  installEvt=null;
+  const b=document.getElementById('a2hs-go');if(b){b.disabled=true;b.textContent='Adding…';}
+  try{
+    await e.prompt();
+    const c=await e.userChoice;
+    closeSheet();
+    if(c&&c.outcome==='accepted'){a2hsDone();toast('Adding UNIT to your Home Screen');}
+    else toast('Any time — it’s under You → Add UNIT to your Home Screen');
+  }catch(err){openInstallSheet();return;}
+  if(tab==='profile')render();
+}
+function installLater(gotIt){
+  closeSheet();
+  if(!gotIt)toast('Any time — it’s under You → Add UNIT to your Home Screen');
+}
+async function copyAppLink(){
+  const u=location.origin+location.pathname;
+  try{await navigator.clipboard.writeText(u);toast('Link copied — paste it into Safari or Chrome');}
+  catch(e){toast('Open '+u+' in Safari or Chrome');}
+}
+/* The one-time offer, right after a new account's onboarding. */
+let a2hsOffered=false;
+function offerInstallAfterSignup(){
+  if(a2hsOffered||a2hsIsDone()||installWhere()==='desktop')return;
+  a2hsOffered=true;
+  let tries=0,waited=0;
+  const show=()=>{
+    if(!user||a2hsIsDone())return;
+    // something else is on screen (a sheet, the timer): wait for it to close
+    const busyNow=document.getElementById('sheet-bd').classList.contains('active')||
+      document.getElementById('fst').classList.contains('active');
+    if(busyNow){if(++tries<40)setTimeout(show,1500);return;}
+    openInstallSheet();
+  };
+  // Android: give Chrome a moment to offer its one-tap install before choosing the steps
+  const t=setInterval(()=>{
+    waited+=250;
+    if(installEvt||installWhere()!=='android'||waited>=3000){clearInterval(t);show();}
+  },250);
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -5160,6 +5313,7 @@ async function doSignup(){
   // From here the account exists. Everything below is best-effort and must never
   // surface as a signup failure.
   user=cred.user;
+  justSignedUp=true;                  // the Home Screen offer waits for the end of onboarding
   try{await updateProfile(user,{displayName:first+(last?' '+last:'')});}catch(e){}
   profile={firstName:first,lastName:last,email,username:uname,avatar:'',terms:Date.now()};
   useAccountKeys(user.uid);
@@ -5212,6 +5366,7 @@ async function doSignOut(){
   }
   if(histOwed()&&user&&db){busy('Saving your history');await histFlush();}
   await pushSignOut();                // the next person on this phone must not get your alerts
+  justSignedUp=false;
   busy('Signing out');
   saveLocal({force:true});saveProfileLocal();histSaveLocal();
   tearing=true;                       // block writes while the state is torn down
@@ -5238,6 +5393,7 @@ async function doSignOut(){
    ONBOARDING
 ═══════════════════════════════════════════════════════════ */
 let obDone=null,obStep=0,obPick={days:[],split:'',cardio:false};
+let justSignedUp=false;
 function runOnboarding(){
   return new Promise(res=>{
     obDone=res;obStep=0;obPick={days:[],split:'',cardio:false};
@@ -5292,6 +5448,7 @@ function obFinish(){
   document.getElementById('ob').classList.remove('active');
   saveLocal();
   if(obDone){obDone();obDone=null;}
+  if(justSignedUp){justSignedUp=false;setTimeout(offerInstallAfterSignup,1600);}   // new accounts only, once
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -7617,7 +7774,9 @@ Object.assign(window,{
   openFinishWorkout,finToggle,finDate,commitWorkout,clearDayTicks,openFinishFuel,commitFuel,clearFuelTicks,toggleFuel,
   progSet,progTable,progMore,openHist,delHist,chPoint,chLeave,chKey,lbBackdrop,setMacro,
   // lock-screen notifications
-  enablePush,disablePush,setPushPref,sendTestPush,openPushSheet,dismissNudge
+  enablePush,disablePush,setPushPref,sendTestPush,openPushSheet,dismissNudge,
+  // add to Home Screen
+  openInstallSheet,installNow,installLater,copyAppLink
 });
 
 /* ═══════════════════════════════════════════════════════════
